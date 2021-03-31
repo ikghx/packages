@@ -1,0 +1,63 @@
+
+###########################
+#        Blocklist        #
+###########################
+
+## Rules for name-based query blocking, one per line
+## 基于域名的查询阻止规则，每行一个
+##
+## Example of valid patterns:
+## 有效模式的示例：
+##
+## ads.*         | matches anything with an "ads." prefix
+## ads.*         | 匹配域名头部。
+## *.example.com | matches example.com and all names within that zone such as www.example.com
+## *.example.com | 通配符域名匹配，表示所有相关的子域名。
+## example.com   | identical to the above
+## example.com   | 同上
+## =example.com  | block example.com but not *.example.com
+## =example.com  | 仅匹配指定名称的域名，只含这一个域名。
+## *sex*         | matches any name containing that substring
+## *sex*         | 匹配包含该子字符串的任何域名。
+## ads[0-9]*     | matches "ads" followed by one or more digits
+## ads[0-9]*     | 匹配“ads”后跟多少位字符
+## ads*.example* | *, ? and [] can be used anywhere, but prefixes/suffixes are faster
+## ads*.example* | 匹配部分头部和部分域名主体与任意尾部。
+
+ad.*
+ads.*
+banner.*
+banners.*
+creatives.*
+oas.*
+oascentral.*        # inline comments are allowed after a pound sign
+stats.*
+tag.*
+telemetry.*
+tracker.*
+*.local
+eth0.me
+*.workgroup
+
+*.test
+*.onion
+*.localhost
+*.local
+*.invalid
+*.bind
+*.lan
+*.internal
+*.intranet
+*.private
+*.workgroup
+
+*.10.in-addr.arpa
+*.16.172.in-addr.arpa
+*.168.192.in-addr.arpa
+*.254.169.in-addr.arpa
+*.d.f.ip6.arpa
+
+## Time-based rules
+
+# *.youtube.*  @time-to-sleep
+# facebook.com @work

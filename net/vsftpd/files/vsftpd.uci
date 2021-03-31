@@ -1,0 +1,52 @@
+
+config logging
+
+config listen 'listen'
+	option enable6 '0'
+	option port '21'
+	option dataport '20'
+	option enable4 '0'
+
+config local 'local'
+	option enabled '1'
+
+config global 'global'
+	option write '1'
+	option download '1'
+	option dotfile '0'
+	option umask '022'
+	option dirlist '1'
+	option lsrecurse '0'
+	option dirmessage '0'
+	option localtime '1'
+	option seccomp '0'
+
+config connection 'connection'
+	option portmode '1'
+	option pasvmode '1'
+	option ascii 'disabled'
+	option idletimeout '600'
+	option conntimeout '120'
+	option dataconntimeout '120'
+	option maxclient '0'
+	option maxperip '0'
+	option maxrate '0'
+	option maxretry '3'
+
+config anonymous 'anonymous'
+	option enabled '0'
+	option username 'ftp'
+	option root '/mnt/sda'
+	option umask '022'
+	option writemkdir '0'
+	option upload '0'
+	option others '0'
+	option maxrate '0'
+
+config log 'log'
+	option syslog '0'
+
+config vuser 'vuser'
+	option enabled '0'
+	option username 'ftp'
+

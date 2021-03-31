@@ -1,0 +1,46 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2021 admin@ikghx.com
+
+START=95
+
+USE_PROCD=1
+
+PROG=/usr/bin/filebrowser
+
+start_instance () {
+	local cfg="$1"
+
+	config_get ipaddr "$cfg" 'ipaddr'
+	config_get database "$cfg" 'database'
+	config_get port "$cfg" 'port'
+	config_get dir "$cfg" 'dir'
+	config_get cert "$cfg" 'cert'
+	config_get key "$cfg" 'key'
+
+	config_get_bool enable "$cfg" enable 0
+	[ "$enable" -gt 0 ] || return 1
+
+	procd_open_instance
+	procd_set_param command "$PROG"
+	procd_set_param file /etc/config/filebrowser
+	procd_append_param command -a $ipaddr
+	procd_append_param command -d $database
+	procd_append_param command -p $port
+	procd_append_param command -r $dir
+	if [ -n "$cert" ] && [ -n "$key" ]; then
+		procd_append_param command -t $cert -k $key
+	fi
+	procd_set_param respawn
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_close_instance
+}
+
+start_service() {
+	config_load 'filebrowser'
+	config_foreach start_instance 'filebrowser'
+}
+
+service_triggers() {
+	procd_add_reload_trigger "filebrowser"
+}

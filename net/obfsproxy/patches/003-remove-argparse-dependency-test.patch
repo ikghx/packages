@@ -1,0 +1,10 @@
+--- a/setup.py
++++ b/setup.py
+@@ -37,7 +37,6 @@ setup(
+         'setuptools',
+         'PyCrypto',
+         'Twisted',
+-        'argparse',
+         'pyptlib >= 0.0.6',
+         'pyyaml'
+         ],

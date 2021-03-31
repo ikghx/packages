@@ -1,0 +1,14 @@
+--- a/setup.py
++++ b/setup.py
+@@ -27,6 +27,11 @@ setup(
+             'obfsproxy = obfsproxy.pyobfsproxy:run'
+             ]
+         },
++    options = {
++        'build_scripts': {
++            'executable': '/usr/bin/python'
++            },
++        },
+ 
+     install_requires = [
+         'setuptools',

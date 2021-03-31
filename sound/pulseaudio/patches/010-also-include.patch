@@ -1,0 +1,111 @@
+From 993d3fd89e5611997f1e165bf03edefb0204b0a4 Mon Sep 17 00:00:00 2001
+From: Olaf Hering <olaf@aepfle.de>
+Date: Wed, 27 Mar 2019 09:35:05 +0100
+Subject: [PATCH] alsa: Use correct header path
+
+Consumers are expected to use <alsa/asoundlib.h> instead of
+<asoundlib.h>.
+
+This is in preparation of an change to pkgconfig(alsa) to
+not pollute CFLAGS with -I/usr/include/alsa anymore.
+
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+---
+ src/modules/alsa/alsa-mixer.c         | 2 +-
+ src/modules/alsa/alsa-mixer.h         | 2 +-
+ src/modules/alsa/alsa-sink.c          | 2 +-
+ src/modules/alsa/alsa-source.c        | 2 +-
+ src/modules/alsa/alsa-ucm.c           | 2 +-
+ src/modules/alsa/alsa-util.c          | 2 +-
+ src/modules/alsa/alsa-util.h          | 2 +-
+ src/modules/alsa/module-alsa-source.c | 2 +-
+ 8 files changed, 8 insertions(+), 8 deletions(-)
+
+--- a/src/modules/alsa/alsa-mixer.c
++++ b/src/modules/alsa/alsa-mixer.c
+@@ -23,7 +23,7 @@
+ #endif
+ 
+ #include <sys/types.h>
+-#include <asoundlib.h>
++#include <alsa/asoundlib.h>
+ #include <math.h>
+ 
+ #ifdef HAVE_VALGRIND_MEMCHECK_H
+--- a/src/modules/alsa/alsa-mixer.h
++++ b/src/modules/alsa/alsa-mixer.h
+@@ -21,7 +21,7 @@
+   along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
+ ***/
+ 
+-#include <asoundlib.h>
++#include <alsa/asoundlib.h>
+ 
+ #include <pulse/sample.h>
+ #include <pulse/mainloop-api.h>
+--- a/src/modules/alsa/alsa-sink.c
++++ b/src/modules/alsa/alsa-sink.c
+@@ -25,7 +25,7 @@
+ #include <signal.h>
+ #include <stdio.h>
+ 
+-#include <asoundlib.h>
++#include <alsa/asoundlib.h>
+ 
+ #ifdef HAVE_VALGRIND_MEMCHECK_H
+ #include <valgrind/memcheck.h>
+--- a/src/modules/alsa/alsa-source.c
++++ b/src/modules/alsa/alsa-source.c
+@@ -25,7 +25,7 @@
+ #include <signal.h>
+ #include <stdio.h>
+ 
+-#include <asoundlib.h>
++#include <alsa/asoundlib.h>
+ 
+ #include <pulse/rtclock.h>
+ #include <pulse/timeval.h>
+--- a/src/modules/alsa/alsa-ucm.c
++++ b/src/modules/alsa/alsa-ucm.c
+@@ -27,7 +27,7 @@
+ #include <ctype.h>
+ #include <sys/types.h>
+ #include <limits.h>
+-#include <asoundlib.h>
++#include <alsa/asoundlib.h>
+ 
+ #ifdef HAVE_VALGRIND_MEMCHECK_H
+ #include <valgrind/memcheck.h>
+--- a/src/modules/alsa/alsa-util.c
++++ b/src/modules/alsa/alsa-util.c
+@@ -23,7 +23,7 @@
+ #endif
+ 
+ #include <sys/types.h>
+-#include <asoundlib.h>
++#include <alsa/asoundlib.h>
+ 
+ #include <pulse/sample.h>
+ #include <pulse/xmalloc.h>
+--- a/src/modules/alsa/alsa-util.h
++++ b/src/modules/alsa/alsa-util.h
+@@ -21,7 +21,7 @@
+   along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
+ ***/
+ 
+-#include <asoundlib.h>
++#include <alsa/asoundlib.h>
+ 
+ #include <pulse/sample.h>
+ #include <pulse/channelmap.h>
+--- a/src/modules/alsa/module-alsa-source.c
++++ b/src/modules/alsa/module-alsa-source.c
+@@ -24,7 +24,7 @@
+ 
+ #include <stdio.h>
+ 
+-#include <asoundlib.h>
++#include <alsa/asoundlib.h>
+ 
+ #ifdef HAVE_VALGRIND_MEMCHECK_H
+ #include <valgrind/memcheck.h>

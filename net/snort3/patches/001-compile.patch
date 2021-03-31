@@ -1,0 +1,48 @@
+--- a/daqs/daq_file.c
++++ b/daqs/daq_file.c
+@@ -33,7 +33,7 @@
+ 
+ #include <sys/types.h>
+ #include <sys/time.h>
+-#include <sys/unistd.h>
++#include <unistd.h>
+ 
+ #include <daq_api.h>
+ #include <sfbpf_dlt.h>
+--- a/daqs/daq_hext.c
++++ b/daqs/daq_hext.c
+@@ -35,7 +35,7 @@
+ #include <arpa/inet.h>
+ #include <sys/types.h>
+ #include <sys/time.h>
+-#include <sys/unistd.h>
++#include <unistd.h>
+ #include <sys/socket.h>
+ 
+ #include <daq_api.h>
+--- a/src/network_inspectors/appid/service_plugins/service_rpc.cc
++++ b/src/network_inspectors/appid/service_plugins/service_rpc.cc
+@@ -27,6 +27,7 @@
+ 
+ #include <netdb.h>
+ 
++#include <tirpc/rpc/rpcent.h>
+ #if defined(__FreeBSD__) || defined(__OpenBSD__)
+ #include <rpc/rpc.h>
+ #elif defined(__sun)
+--- a/src/utils/util.cc
++++ b/src/utils/util.cc
+@@ -605,13 +605,8 @@ const char* get_error(int errnum)
+ {
+     static THREAD_LOCAL char buf[128];
+ 
+-#if (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE < 200112L && \
+-        defined(_XOPEN_SOURCE) && _XOPEN_SOURCE < 600) || _GNU_SOURCE
+-    return strerror_r(errnum, buf, sizeof(buf));
+-#else
+     (void)strerror_r(errnum, buf, sizeof(buf));
+     return buf;
+-#endif
+ }
+ 
+ char* snort_strndup(const char* src, size_t dst_size)

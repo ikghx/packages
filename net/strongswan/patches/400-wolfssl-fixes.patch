@@ -1,0 +1,127 @@
+--- a/src/libstrongswan/credentials/auth_cfg.c
++++ b/src/libstrongswan/credentials/auth_cfg.c
+@@ -552,7 +552,7 @@ static signature_params_t *create_rsa_ps
+ 		rsa_pss_params_t pss = {
+ 			.hash = hash,
+ 			.mgf1_hash = hash,
+-			.salt_len = RSA_PSS_SALT_LEN_DEFAULT,
++			.salt_len = _RSA_PSS_SALT_LEN_DEFAULT,
+ 		};
+ 		signature_params_t pss_params = {
+ 			.scheme = SIGN_RSA_EMSA_PSS,
+--- a/src/libstrongswan/credentials/keys/signature_params.c
++++ b/src/libstrongswan/credentials/keys/signature_params.c
+@@ -35,10 +35,10 @@ bool rsa_pss_params_set_salt_len(rsa_pss
+ 
+ 		switch (params->salt_len)
+ 		{
+-			case RSA_PSS_SALT_LEN_DEFAULT:
++			case _RSA_PSS_SALT_LEN_DEFAULT:
+ 				params->salt_len = hash_len;
+ 				break;
+-			case RSA_PSS_SALT_LEN_MAX:
++			case _RSA_PSS_SALT_LEN_MAX:
+ 				if (modbits)
+ 				{
+ 					/* emBits = modBits - 1 */
+--- a/src/libstrongswan/credentials/keys/signature_params.h
++++ b/src/libstrongswan/credentials/keys/signature_params.h
+@@ -106,9 +106,9 @@ struct rsa_pss_params_t {
+ 	/** Salt value, for unit tests (not all implementations support this) */
+ 	chunk_t salt;
+ /** Use a salt length equal to the length of the hash */
+-#define RSA_PSS_SALT_LEN_DEFAULT -1
++#define _RSA_PSS_SALT_LEN_DEFAULT -1
+ /** Use the maximum salt length depending on the hash and key length */
+-#define RSA_PSS_SALT_LEN_MAX -2
++#define _RSA_PSS_SALT_LEN_MAX -2
+ };
+ 
+ /**
+@@ -135,7 +135,7 @@ bool rsa_pss_params_build(rsa_pss_params
+  * are used
+  *
+  * @param params	parameters to update
+- * @param modbits	RSA modulus length in bits (required if RSA_PSS_SALT_LEN_MAX
++ * @param modbits	RSA modulus length in bits (required if _RSA_PSS_SALT_LEN_MAX
+  *					is used)
+  * @return			salt length to use, negative on error
+  */
+--- a/src/libstrongswan/tests/suites/test_signature_params.c
++++ b/src/libstrongswan/tests/suites/test_signature_params.c
+@@ -200,7 +200,7 @@ rsa_pss_params_t rsa_pss_build_invalid_t
+ 	/* invalid mgf */
+ 	{ .hash = HASH_SHA256, .mgf1_hash = HASH_UNKNOWN, .salt_len = HASH_SIZE_SHA256, },
+ 	/* undetermined salt */
+-	{ .hash = HASH_UNKNOWN, .mgf1_hash = HASH_SHA1, .salt_len = RSA_PSS_SALT_LEN_DEFAULT, },
++	{ .hash = HASH_UNKNOWN, .mgf1_hash = HASH_SHA1, .salt_len = _RSA_PSS_SALT_LEN_DEFAULT, },
+ };
+ 
+ START_TEST(test_rsa_pss_params_build_invalid)
+@@ -218,21 +218,21 @@ static struct {
+ 	rsa_pss_params_t params;
+ } rsa_pss_salt_len_tests[] = {
+ 	{ HASH_SIZE_SHA256, 0,
+-		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = RSA_PSS_SALT_LEN_DEFAULT, }},
++		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = _RSA_PSS_SALT_LEN_DEFAULT, }},
+ 	{ HASH_SIZE_SHA256, 3072,
+-		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = RSA_PSS_SALT_LEN_DEFAULT, }},
++		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = _RSA_PSS_SALT_LEN_DEFAULT, }},
+ 	{ -1, 0,
+-		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = RSA_PSS_SALT_LEN_MAX, }},
++		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = _RSA_PSS_SALT_LEN_MAX, }},
+ 	{ 0, 256,
+-		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = RSA_PSS_SALT_LEN_MAX, }},
++		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = _RSA_PSS_SALT_LEN_MAX, }},
+ 	{ 350, 3071,
+-		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = RSA_PSS_SALT_LEN_MAX, }},
++		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = _RSA_PSS_SALT_LEN_MAX, }},
+ 	{ 350, 3072,
+-		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = RSA_PSS_SALT_LEN_MAX, }},
++		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = _RSA_PSS_SALT_LEN_MAX, }},
+ 	{ 350, 3073,
+-		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = RSA_PSS_SALT_LEN_MAX, }},
++		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = _RSA_PSS_SALT_LEN_MAX, }},
+ 	{ 478, 4096,
+-		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = RSA_PSS_SALT_LEN_MAX, }},
++		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = _RSA_PSS_SALT_LEN_MAX, }},
+ 	{ 10, 0,
+ 		{ .hash = HASH_SHA256, .mgf1_hash = HASH_SHA256, .salt_len = 10, }},
+ 	{ 10, 3072,
+--- a/src/libtpmtss/tpm_tss_tss2_v1.c
++++ b/src/libtpmtss/tpm_tss_tss2_v1.c
+@@ -596,8 +596,8 @@ METHOD(tpm_tss_t, supported_signature_sc
+ 				{
+ 					ssize_t salt_len;
+ 
+-					salt_len = this->fips_186_4 ? RSA_PSS_SALT_LEN_DEFAULT :
+-												  RSA_PSS_SALT_LEN_MAX;
++					salt_len = this->fips_186_4 ? _RSA_PSS_SALT_LEN_DEFAULT :
++												  _RSA_PSS_SALT_LEN_MAX;
+ 					rsa_pss_params_t pss_params = {
+ 						.hash = digest,
+ 						.mgf1_hash = digest,
+--- a/src/libtpmtss/tpm_tss_tss2_v2.c
++++ b/src/libtpmtss/tpm_tss_tss2_v2.c
+@@ -550,8 +550,8 @@ METHOD(tpm_tss_t, supported_signature_sc
+ 				{
+ 					ssize_t salt_len;
+ 
+-					salt_len = this->fips_186_4 ? RSA_PSS_SALT_LEN_DEFAULT :
+-												  RSA_PSS_SALT_LEN_MAX;
++					salt_len = this->fips_186_4 ? _RSA_PSS_SALT_LEN_DEFAULT :
++												  _RSA_PSS_SALT_LEN_MAX;
+ 					rsa_pss_params_t pss_params = {
+ 						.hash = digest,
+ 						.mgf1_hash = digest,
+--- a/src/pki/pki.c
++++ b/src/pki/pki.c
+@@ -298,7 +298,7 @@ signature_params_t *get_signature_scheme
+ 		rsa_pss_params_t pss_params = {
+ 			.hash = digest,
+ 			.mgf1_hash = digest,
+-			.salt_len = RSA_PSS_SALT_LEN_DEFAULT,
++			.salt_len = _RSA_PSS_SALT_LEN_DEFAULT,
+ 		};
+ 		signature_params_t pss_scheme = {
+ 			.scheme = SIGN_RSA_EMSA_PSS,

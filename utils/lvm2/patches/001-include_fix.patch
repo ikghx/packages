@@ -1,0 +1,11 @@
+--- a/lib/device/dev-type.c
++++ b/lib/device/dev-type.c
+@@ -23,7 +23,7 @@
+ #include "lib/label/label.h"
+ 
+ #ifdef BLKID_WIPING_SUPPORT
+-#include <blkid.h>
++#include <blkid/blkid.h>
+ #endif
+ 
+ #ifdef UDEV_SYNC_SUPPORT

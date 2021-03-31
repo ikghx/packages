@@ -1,0 +1,21 @@
+#
+#       -l|--local-port
+#        Sets the UDP listening port. 
+#        设置服务器监听的UDP端口
+-l=7777
+#
+#       -c
+#        Specify in supernodes.list the list of allowed communities
+#        设置允许接入服务器的N2N网络组列表，如不设置则默认允许任意网络组接入。
+#-c=/etc/supernodes.list
+#
+#       -t
+#        Management UDP Port (for multiple edges on a machine).
+#        节点管理系统UDP端口，默认5644（如果要运行多个节点，请启用此参数）。
+#-t=5644
+#
+#       -v
+#        Increase verbosity. Can be used multiple times.
+#        输出更详细的日志。
+#-v
+#

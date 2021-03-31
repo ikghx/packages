@@ -1,0 +1,10 @@
+--- a/cmake/include_libraries.cmake
++++ b/cmake/include_libraries.cmake
+@@ -14,7 +14,6 @@ if (ENABLE_UNIT_TESTS)
+ endif (ENABLE_UNIT_TESTS)
+ 
+ # optional libraries
+-find_package(LibLZMA QUIET)
+ find_package(Asciidoc QUIET)
+ find_package(DBLATEX QUIET)
+ find_package(Ruby QUIET 1.8.7)
