@@ -23,7 +23,6 @@ start_instance () {
 
 	procd_open_instance
 	procd_set_param command "$PROG"
-	procd_set_param file /etc/config/memcached
 	procd_append_param command -u $user
 	procd_append_param command -c $maxconn
 	procd_append_param command -l $listen
