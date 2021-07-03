@@ -1,0 +1,1 @@
+/mnt/sda *(ro,all_squash,insecure,sync)

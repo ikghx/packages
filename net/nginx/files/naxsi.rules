@@ -1,0 +1,12 @@
+#NAXSI防火墙相关配置
+#启用 naxsi，禁用则为SecRulesDisabled
+SecRulesEnabled;
+#启用学习模式，启用后只记录错误日志，不阻止任何访问。
+#LearningMode;
+DeniedUrl "/RequestDenied"; #指定阻止请求时要显示的页面文件。
+#CheckRules，设置各规则的触发阈值。检测到相关访问请求达到阈值，请求将被阻止。
+CheckRule "$SQL >= 8" BLOCK;
+CheckRule "$RFI >= 8" BLOCK;
+CheckRule "$TRAVERSAL >= 4" BLOCK;
+CheckRule "$EVADE >= 4" BLOCK;
+CheckRule "$XSS >= 8" BLOCK;

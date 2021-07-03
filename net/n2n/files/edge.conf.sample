@@ -1,0 +1,132 @@
+#
+#       -d|--tun-device
+#        Specifies the name of the TUN interface. 
+#        设置虚拟网卡接口名称。
+-d=n2n
+#
+#       -c|--community
+#        Specifies the n2n community name the edge belongs to.
+#        设置N2N网络组名称。
+-c=mynetwork
+#
+#       -k
+#        Sets the encryption key (ASCII). The environment variable N2N_KEY=<key> can also be used. 
+#        设置加密密钥，也可以使用环境变量N2N_KEY=<key>
+-k=mypassword
+#
+#       N2N_KEY
+#        Encryption key (ASCII). Not with -k.
+#        加密密钥文件路径。不可与-k参数一起使用。
+#N2N_KEY=/etc/n2nkey
+#
+#       -a
+#        Sets the interface address. For DHCP use '-r -a dhcp:0.0.0.0'.
+#        设置接口IP地址，静态地址直接配置即可。
+#        动态地址请使用'-a=dhcp:0.0.0.0'，需确保N2N网络组中已存在DHCP服务器。
+-a=10.0.0.1
+#-a=dhcp:0.0.0.0
+#
+#       -s
+#        Edge interface netmask in dotted decimal notation (255.255.255.0).
+#        设置网络掩码，默认为255.255.255.0
+-s=255.255.255.0
+#
+#       -m
+#        Specified the MAC address for the TAP interface (random otherwise).
+#        设置固定的MAC地址，默认使用随机MAC地址。
+#-m=DE:AD:BE:EF:99:99
+#
+#       -l|--supernode-list
+#        Specifies the supernode IP and port.
+#        设置超级节点IP和端口，也可以使用域名。
+-l=127.0.0.1:7777
+#
+#       -p
+#        Sets the local UDP port to a fixed port.
+#        将节点绑定到固定UDP端口，默认为随机端口。
+#        设置固定端口后，节点重启后可继续P2P连接，而不用再次通过超级节点。
+-p=50001
+#
+#       -r
+#        Enable packet forwarding through n2n community.
+#        启用数据包转发，如果要使用静态路由表转发远程IP，请务必启用此参数。
+-r
+#
+#       -D
+#        Enable PMTU discovery. PMTU discovery can reduce fragmentation but causes connections stall when not properly supported.
+#        启用PMTU发现。PMTU发现可以减少数据包碎片，但如果对端不支持，则会导致连接中断。
+#-D
+#
+#       -M
+#        Specify n2n MTU of edge interface (default 1290).
+#        设置n2n接口的MTU大小，默认为1290，可用范围：100-1500
+#-M=1500
+#
+#       -i
+#        Registration interval, for NAT hole punching (default 20 seconds)
+#        注册间隔，NAT打孔间隔（默认20秒）
+#-i=20
+#
+#       -L
+#        TTL for registration packet when UDP NAT hole punching through supernode (default 0 for not set )
+#        UDP NAT穿孔通过超级节点时用于注册数据包的TTL（默认值为0（未设置））
+#        这是一个高级标记，用来确保当注册包离开本地nat时立即被丢弃，这样它就不会在目标端触发某些防火墙行为。
+#        使用路由追踪来确定如何设置此参数，当路由第一跳出现公网IP，则设置-L=1，第二跳才出现公网IP，则为-L=2
+#-L=1
+#
+#       -A1
+#        Disable payload encryption. Do not use with key (defaulting to Twofish then)
+#        禁用加密
+#       -A2
+#        Use Twofish for encryption. (default)
+#        使用 Twofish 进行加密 （默认）
+#       -A3
+#        Use AES-CBC for encryption.
+#        使用 AES-CBC 进行加密
+#       -A4
+#        Use ChaCha20 for encryption.
+#        使用 ChaCha20 进行加密
+#       -A5
+#        Enable full header encryption. Requires supernode with fixed community.
+#        启用完全标头加密。需要具有固定网络组的超级节点。
+-A5
+#
+#       -z1
+#        Enable lzo1x compression for outgoing data packets (default=disabled).
+#        为发送的数据包启用 lzo1x 压缩（默认禁用）。
+#       -z2
+#        Enable zstd compression for outgoing data packets (default=disabled).
+#        为发送的数据包启用 zstd 压缩（默认禁用）。
+-z2
+#
+#       -E
+#        Accept multicast MAC addresses (default=drop).
+#        接受组播MAC地址（默认丢弃）。
+#-E
+#
+#       -S
+#        Do not connect P2P. Always use the supernode.
+#        不进行P2P连接，始终使用超级节点转发所有流量。
+#-S
+#
+#       -T
+#        TOS for packets (e.g. 0x48 for SSH like priority)
+#        设置N2N数据包的TOS标记（与SSH类似的优先级是0x48）
+#-T=0x48
+#
+#       -n
+#        Route an IPv4 network via the gw. Use 0.0.0.0/0 for the default gw. Can be set multiple times.
+#        通过指定网关路由IPv4网络。默认网关使用0.0.0.0/0 可以设置多次。
+#-n 0.0.0.0/0:192.168.99.1
+#-n 192.168.100.0/24:192.168.99.1
+#
+#       -v
+#        Make more verbose. Repeat as required.
+#        输出更详细的日志。
+#-v
+#
+#       -t
+#        Management UDP Port (for multiple edges on a machine).
+#        节点管理系统UDP端口，默认5644（如果要运行多个节点，请启用此参数）。
+#-t=5644
+#
