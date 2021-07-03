@@ -408,9 +408,16 @@ mwan3_delete_iface_iptables()
 
 }
 
+mwan3_extra_tables_routes()
+{
+	$IP route list table "$1"
+}
+
 mwan3_get_routes()
 {
-	$IP route list table main | sed -ne "$MWAN3_ROUTE_LINE_EXP" | uniq
+	( $IP route list table main ;
+		config_list_foreach "globals" "rt_table_lookup" mwan3_extra_tables_routes ) | \
+		sed -ne "$MWAN3_ROUTE_LINE_EXP" | uniq
 }
 
 mwan3_create_iface_route()
