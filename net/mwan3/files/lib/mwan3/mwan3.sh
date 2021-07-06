@@ -415,9 +415,10 @@ mwan3_extra_tables_routes()
 
 mwan3_get_routes()
 {
-	( $IP route list table main ;
-		config_list_foreach "globals" "rt_table_lookup" mwan3_extra_tables_routes ) | \
-		sed -ne "$MWAN3_ROUTE_LINE_EXP" | uniq
+	{
+		$IP route list table main
+		config_list_foreach "globals" "rt_table_lookup" mwan3_extra_tables_routes
+	} | sed -ne "$MWAN3_ROUTE_LINE_EXP" | sort -u
 }
 
 mwan3_create_iface_route()
