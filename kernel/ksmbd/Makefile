@@ -5,7 +5,7 @@ PKG_VERSION:=3.4.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/cifsd-team/cifsd/tar.gz/$(PKG_VERSION)?
+PKG_SOURCE_URL:=https://codeload.github.com/cifsd-team/ksmbd/tar.gz/$(PKG_VERSION)?
 PKG_HASH:=36fe6b8fb641c302909e65de58f0e7cff4fa641c6ad6979597fd4319d6acf775
 
 PKG_MAINTAINER:=Andy Walsh <andy.walsh44+github@gmail.com>
@@ -38,7 +38,9 @@ define KernelPackage/fs-ksmbd
 		+kmod-crypto-aead \
 		+kmod-crypto-ccm \
 		+kmod-crypto-gcm \
-		+kmod-lib-crc32c
+		+kmod-lib-crc32c \
+		+kmod-asn1-decoder \
+		+kmod-fs-nfs-common-rpcsec
 endef
 
 define KernelPackage/fs-ksmbd/description
