@@ -442,11 +442,11 @@ endif
 
 ifeq ($(CONFIG_NGINX_RTMP_MODULE),y)
   define Download/nginx-rtmp
-    VERSION:=23ec4ce2d769830124abf3be1353dd9b105ab09c
+    VERSION:=8e344d799483145666fa875344bddf67a324e561
     SUBDIR:=nginx-rtmp
     FILE:=ngx-rtmp-module-$$(VERSION).tar.xz
     URL:=https://github.com/sergey-dryabzhinsky/nginx-rtmp-module.git
-    MIRROR_HASH:=ceaa2ea46c8f15b189b79b8262ff9f9e9c39f0ad1f63c776ed854c792a88c8f8
+    MIRROR_HASH:=48020151bb40a1edb207e89dfee9a72b95bac3d8b54b2d2307d3c54303b61a9a
     PROTO:=git
   endef
   $(eval $(call Download,nginx-rtmp))
@@ -479,11 +479,11 @@ endif
 
 ifeq ($(CONFIG_NGINX_NAXSI),y)
   define Download/nginx-naxsi
-    VERSION:=aa9da98b1b9b52e5d95bbc28dc8126c0920cb4cb
+    VERSION:=0395b102b7e9b5165e89e99bb62e9ddaa0a74910
     SUBDIR:=nginx-naxsi
     FILE:=nginx-naxsi-module-$$(VERSION).tar.xz
     URL:=https://github.com/nbs-system/naxsi.git
-    MIRROR_HASH:=229a941e292d04dcc055cc84a372f816b8c5189d2b38d3a3e838562f0cbb39fa
+    MIRROR_HASH:=170e6e1ad933c70a6b75fbdc102761a043caf653bc7ca8f462cce30ecd10ee34
     PROTO:=git
   endef
   $(eval $(call Download,nginx-naxsi))
@@ -497,11 +497,11 @@ endif
 
 ifeq ($(CONFIG_NGINX_LUA),y)
   define Download/lua-nginx
-    VERSION:=88a52c44af56476f68c95c9200a380cd82f696dd
+    VERSION:=e94f2e5d64daa45ff396e262d8dab8e56f5f10e0
     SUBDIR:=lua-nginx
     FILE:=lua-nginx-module-$$(VERSION).tar.xz
     URL:=https://github.com/openresty/lua-nginx-module.git
-    MIRROR_HASH:=f3759cfc2e9d01e5f092d93eba3484066988a70e4f26a1776fde93eaec9a1957
+    MIRROR_HASH:=27729921964f066d97e99c263da153b34622a2f4b811114e4c3ee61c6fc71395
     PROTO:=git
   endef
   $(eval $(call Download,lua-nginx))

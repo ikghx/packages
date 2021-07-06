@@ -11,7 +11,7 @@ PKG_RELEASE:=2
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_VERSION:=$(PKG_VERSION)
-PKG_SOURCE_URL:=https://github.com/amule-project/amule
+PKG_SOURCE_URL:=https://github.com/amule-project/amule.git
 PKG_SOURCE_DATE:=2021-02-08
 PKG_MIRROR_HASH:=cbeb586e99f16eb4aec1123adcb5981f608ad0fbc39f00c03208c21324792067
 
