@@ -104,8 +104,8 @@ endef
 define Build/Compile
 	( \
 		cd "$(PKG_BUILD_DIR)/src" ; \
-		. ../init_env.sh "$(ARCH)" "$(BOARD)" $(CPU_TYPE) $(CPU_SUBTYPE) "$(TOOLCHAIN_DIR)" ; \
-		export naive_flags="$$$${naive_flags} $$$${naive_ccache_flags}" ; \
+		. ../init_env.sh "$(ARCH)" $(CPU_TYPE) $(CPU_SUBTYPE) "$(TOOLCHAIN_DIR)" ; \
+		export naive_flags+=" $$$${naive_ccache_flags}" ; \
 		mkdir -p "out" ; \
 		./gn/out/gn gen "out/Release" --args="$$$${naive_flags}" --script-executable="$(STAGING_DIR_HOSTPKG)/bin/python3" ; \
 	)

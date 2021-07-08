@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ddns-scripts
 PKG_VERSION:=2.8.2
-PKG_RELEASE:=10
+PKG_RELEASE:=11
 
 PKG_LICENSE:=GPL-2.0
 
@@ -210,6 +210,12 @@ define Package/ddns-scripts/install
 	$(INSTALL_BIN) ./files/usr/lib/ddns/dynamic_dns_lucihelper.sh \
 		$(1)/usr/lib/ddns
 	$(INSTALL_BIN) ./files/usr/lib/ddns/dynamic_dns_updater.sh \
+		$(1)/usr/lib/ddns
+	$(INSTALL_BIN) ./files/usr/lib/ddns/update_aliyun_com.sh \
+		$(1)/usr/lib/ddns
+	$(INSTALL_BIN) ./files/usr/lib/ddns/update_dnspod_cn.sh \
+		$(1)/usr/lib/ddns
+	$(INSTALL_BIN) ./files/usr/lib/ddns/update_dnspod_com.sh \
 		$(1)/usr/lib/ddns
 
 	$(INSTALL_DIR) $(1)/usr/bin
