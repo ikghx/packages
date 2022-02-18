@@ -1,0 +1,85 @@
+include $(TOPDIR)/rules.mk
+
+PKG_NAME:=frp
+PKG_VERSION:=0.39.1
+PKG_RELEASE:=$(AUTORELEASE)
+
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://codeload.github.com/fatedier/frp/tar.gz/v${PKG_VERSION}?
+PKG_HASH:=858a4a1920f3f3c90161f7acba468eddcd1dbd1b18c3f4028a0f6eca77da9397
+
+PKG_MAINTAINER:=Richard Yu <yurichard3839@gmail.com>
+PKG_LICENSE:=Apache-2.0
+PKG_LICENSE_FILES:=LICENSE
+
+PKG_BUILD_DEPENDS:=golang/host
+PKG_BUILD_PARALLEL:=1
+PKG_USE_MIPS16:=0
+
+PKG_CONFIG_DEPENDS := \
+	CONFIG_FRPC_COMPRESS_UPX \
+	CONFIG_FRPS_COMPRESS_UPX
+
+GO_PKG:=github.com/fatedier/frp
+GO_PKG_BUILD_PKG:=github.com/fatedier/frp/cmd/...
+
+include $(INCLUDE_DIR)/package.mk
+include ../../lang/golang/golang-package.mk
+
+define Package/frp/install
+	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
+
+	$(INSTALL_DIR) $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/$(2) $(1)/usr/bin/
+endef
+
+define Package/frp/template
+  define Package/$(1)
+    SECTION:=net
+    CATEGORY:=Network
+    SUBMENU:=Web Servers/Proxies
+    TITLE:=$(1) - fast reverse proxy $(2)
+    URL:=https://github.com/fatedier/frp
+    DEPENDS:=$(GO_ARCH_DEPENDS)
+  endef
+
+  define Package/$(1)/description
+    $(1) is a fast reverse proxy $(2) to help you expose a local server behind
+    a NAT or firewall to the internet.
+  endef
+
+  define Package/frpc/config
+	config FRPC_COMPRESS_UPX
+		bool "Compress executable files with UPX"
+		default n
+  endef
+
+  define Package/frps/config
+	config FRPS_COMPRESS_UPX
+		bool "Compress executable files with UPX"
+		default n
+  endef
+
+  define Build/Compile
+	$(call GoPackage/Build/Compile)
+  ifeq ($(CONFIG_FRPC_COMPRESS_UPX),y)
+	upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/frpc
+  endif
+  ifeq ($(CONFIG_FRPS_COMPRESS_UPX),y)
+	upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/frps
+  endif
+  endef
+
+  define Package/$(1)/conffiles
+/etc/config/$(1)
+  endef
+
+  define Package/$(1)/install
+    $(call Package/frp/install,$$(1),$(1))
+  endef
+endef
+
+$(eval $(call Package/frp/template,frpc,client))
+$(eval $(call Package/frp/template,frps,server))
+$(eval $(call BuildPackage,frpc))
+$(eval $(call BuildPackage,frps))

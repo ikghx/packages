@@ -1,0 +1,17 @@
+
+config globals 'globals'
+	option log_driver 'local'
+	option log_level 'warn'
+	list hosts 'unix:///var/run/docker.sock'
+	option remote_endpoint '0'
+	option data_root '/mnt/sdb/docker'
+	option bip '172.18.0.1/24'
+	option iptables '1'
+	list registry_mirrors 'https://hub-mirror.c.163.com'
+	list registry_mirrors 'https://ustc-edu-cn.mirror.aliyuncs.com'
+	option enabled '0'
+
+config firewall 'firewall'
+	option device 'docker0'
+	list blocked_interfaces 'wan'
+

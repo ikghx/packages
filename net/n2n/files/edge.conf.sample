@@ -1,0 +1,214 @@
+#
+#       -d|--tun-device
+#        TAP device name.
+#        设置虚拟网卡设备名称。
+-d=n2n
+#
+#       -c|--community
+#        Specifies the n2n community name the edge belongs to.
+#        All edges within the same community appear on the same LAN (layer 2 network segment).
+#        Community name is 16 bytes in length. A name smaller than this is padded with 0x00 bytes and a name longer than this is truncated to take the first 16 bytes.
+#        设置 N2N 网络组名称。
+#        同一网络组内的所有节点都出现在同一 LAN（第 2 层网段）上。
+#        网络组名称的长度为 16 字节。小于此值的名称用 0x00 字节填充，长于此值的名称将被截断为前 16 字节。
+-c=mynetwork
+#
+#       -k
+#        Sets the encryption key (ASCII). The environment variable N2N_KEY=<key> can also be used. 
+#        If -k not specified then edge uses cleartext mode (no encryption).
+#        设置加密密钥，也可以使用环境变量 N2N_KEY=<key>
+#        如果未指定 -k 参数，则节点使用明文模式（无加密）。
+-k=mypassword
+#
+#       -a
+#        interface address and optional CIDR subnet, default '/24', For DHCP use '-r -a dhcp:0.0.0.0'.
+#        设置接口IP地址，静态地址直接配置即可。
+#        动态地址请使用'-a=dhcp:0.0.0.0'，需确保 N2N 网络组中已存在 DHCP 服务器。
+-a=10.0.0.1/24
+#-a=dhcp:0.0.0.0
+#
+#       -m
+#        Specified the MAC address for the TAP interface (random otherwise).
+#        设置固定的 MAC 地址，默认使用随机 MAC 地址。
+#-m=10:20:30:40:50:60
+#
+#       -l|--supernode-list
+#        sets the n2n supernode IP address and port to register to. Multiple supernodes can be specified.
+#        设置要注册到的 n2n 超级节点 IP 地址和端口。可以同时指定多个超级节点。
+-l=127.0.0.1:7654
+#
+#       -p
+#        Sets the local UDP port to a fixed port.
+#        将节点绑定到固定 UDP 端口，默认为随机端口。
+#        设置固定端口后，节点重启后可继续 P2P 连接，而不用再次通过超级节点。
+#        需要设置防火墙规则允许此端口通信。
+-p=50001
+#
+#       -r
+#        Enable packet forwarding through n2n community.
+#        启用数据包转发，如果要使用 DHCP 或静态路由表转发，则必须启用此参数。
+-r
+#
+#       -D
+#        Enable PMTU discovery. PMTU discovery can reduce fragmentation but causes connections stall when not properly supported.
+#        启用 PMTU 发现。PMTU 发现可以减少数据包碎片，但如果对端不支持，则会导致连接中断。
+#-D
+#
+#       -M
+#        Specify n2n MTU of edge interface (default 1290).
+#        设置 n2n 接口的 MTU 值大小，默认为1290，可用范围：100-1500
+#-M=1500
+#
+#       -i
+#        registration interval, for NAT hole punching (default 20 seconds)
+#        注册间隔，NAT 打孔间隔（默认20秒）
+#-i=20
+#
+#       -L
+#        TTL for registration packet for NAT hole punching through supernode (default 0 for not set)
+#        超节点 NAT 打洞注册包的 TTL（默认0未设置）
+#        这是一个高级标记，用来确保当注册包离开本地 NAT 时立即被丢弃，这样它就不会在目标端触发某些防火墙行为。
+#        使用路由追踪来确定如何设置此参数，当路由第一跳出现公网 IP，则设置 -L=1，第二跳出现公网IP，则为 -L=2
+#-L=1
+#
+#       -A1
+#        disable payload encryption, do not use with key, defaults to AES then
+#        禁用加密
+#       -A2
+#        Use Twofish for encryption.
+#        使用 Twofish 进行加密
+#       -A3
+#        Use AES for encryption. (default if key provided)
+#        使用 AES 进行加密（如果提供了密钥，则为默认值）
+#       -A4
+#        Use ChaCha20 for encryption.
+#        使用 ChaCha20 进行加密
+#       -A5
+#        Use Speck-CTR for encryption.
+#        使用 Speck-CTR 进行加密
+-A3
+#
+#       -H
+#        use header encryption, supernode needs fixed community.
+#        使用头部加密，超级节点需要固定的网络组名称。
+-H
+#
+#       -z1|-z2
+#        compress outgoing data packets, -z1 = lzo1x, -z2 = zstd, disabled by default
+#        压缩传出数据包，-z1 = lzo1x，-z2 = zstd，默认禁用。
+-z2
+#
+#       --select-rtt
+#        select supernode by round trip time if several to choose from (federation).
+#        defaults to load-based selection strategy if not provided.
+#        如果有多个超级节点可供选择（超级节点联盟），则按往返时间的先后顺序选择超级节点（毫秒）。
+#        如果未提供，则默认为基于负载的选择策略。
+#--select-rtt=200
+#
+#       --select-mac
+#        select supernode by MAC address if several to choose from (federation).
+#        lowest MAC address first.
+#        如果有多个超级节点可供选择（超级节点联盟），则按 MAC 地址选择超级节点。
+#        最低的 MAC 地址优先。
+#--select-mac=10:20:30:40:50:60
+#
+#       -e
+#        advertises the provided local IP address as preferred, useful if multicast peer detection is not available, e.g.disabled on routers. 
+#        "-e=auto" tries auto-detection of local IP address.
+#        如果组播对等体检测不可用，则将提供的本地 IP 地址作为首选，例如在路由器上禁用。
+#        "-e=auto" 尝试自动检测本地 IP 地址。
+#-e=auto
+#
+#       -E
+#        accept multicast MAC addresses, drop by default.
+#        接受组播 MAC 地址（默认丢弃）。
+#-E
+#
+#       -I
+#        annotate the edge's description used for easier identification in management port output or username.
+#        节点的注释，以便在管理端口输出或用户名中更容易识别。
+#-I=OpenWrt-Life
+#
+#       -J
+#        password for user-password edge authentication.
+#        用户密码，节点认证的密码。
+#-J=password
+#
+#       -P
+#        federation public key for user-password authentication.
+#        用于用户密码认证的联盟公钥。
+#-P=public key
+#
+#       -R
+#        drop or accept packets by rules, can be set multiple times.
+#        rule_str format:"src_ip/len:[b_port,e_port],dst_ip/len:[s_port,e_port],TCP+/-,UDP+/-,ICMP+/-".
+#        ip/len indicate a cidr block, len can be ignore, means single ip(not cidr block)
+#        +,- after TCP,UDP,ICMP proto type indicate allow or drop packet of that proto.
+#        if any of above three proto missed, the rule will not take effect for that proto.
+#        Packets that cannot match any rule will be accepted by default.
+#        按规则丢弃或接受数据包，可设置多个规则叠加使用。
+#        规则格式：源IP:[起始端口,结束端口],目录IP:[起始端口,结束端口],TCP+/-,UDP+/-,ICMP+/-
+#        + 或 - 在 TCP,UDP,ICMP 协议类型之后表示允许或丢弃该协议的数据包。
+#        默认情况下将接受无法匹配任何规则的数据包。
+#示例：丢弃来自 192.168.9.x 网段发出的所有数据包，禁止其通过 n2n 节点。
+#-R=192.168.9.0/24:[0,65535],0.0.0.0/0:[0,65535],TCP-,UDP-,ICMP-
+#
+#       -x
+#        set TAP interface metric, defaults to 0 (auto)
+#        e.g. set to 1 for better multiplayer game detection
+#        设置虚拟网卡接口的跃点数，默认为 0（自动）
+#-x=0
+#
+#       -f|--foreground
+#        do not fork and run as a daemon, rather run in foreground.
+#        禁用守护进程模式并在前台运行。
+-f
+#
+#       -S1|-S2
+#        Do not connect P2P. Always use the supernode.
+#        -S1 = via UDP, -S2 = via TCP
+#        不进行 P2P 连接，始终使用超级节点转发所有流量。
+#        -S1 = 使用 UDP, -S2 = 使用 TCP
+#-S1
+#
+#       -T
+#        TOS for packets (e.g. 0x48 for SSH like priority)
+#        设置 N2N 数据包的 TOS 标记（与 SSH 类似的优先级是 0x48 ）
+#-T=0x48
+#
+#       -n
+#        Route an IPv4 network via the gw. Use 0.0.0.0/0 for the default gw. Can be set multiple times.
+#        通过指定网关路由 IPv4 网络。默认网关使用 0.0.0.0/0 可以设置多个。
+#        此选项等同于设置系统静态路由表。
+#-n 192.168.10.0/24:10.0.0.2
+#-n 0.0.0.0/0:10.0.0.1
+#
+#       -t|--mgmt-port
+#        management UDP port, for multiple edges on a machine, defaults to 5645
+#        管理 UDP 端口，用于一台机器上运行多个节点，默认为 5645
+#-t=5645
+#
+#       --management-password
+#        sets the password for access to JSON API at the management port, defaults to 'n2n'.
+#        设置在管理端口访问 JSON API 的密码，默认为“n2n”。
+#--management-password=n2n
+#
+#       N2N_COMMUNITY
+#        Community Name (ASCII). Not with -c.
+#        网络组名称文件路径。不可与 -c 参数同时使用。
+#N2N_COMMUNITY=/etc/n2n/n2ncommunity
+#
+#       N2N_KEY
+#        Encryption key (ASCII). Not with -k.
+#        加密密钥文件路径。不可与 -k 参数同时使用。
+#N2N_KEY=/etc/n2n/n2nkey
+#
+#       N2N_PASSWORD
+#        password (ASCII) for user-password authentication. Not with -J.
+#        用户密码文件路径。不可与 -J 参数同时使用。
+#N2N_PASSWORD=/etc/n2n/n2npassword
+#
+#       -v
+#        use verbose logging.
+#        使用详细日志记录。
+#-v

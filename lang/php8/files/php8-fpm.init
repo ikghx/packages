@@ -1,0 +1,41 @@
+#!/bin/sh /etc/rc.common
+
+START=50
+
+USE_PROCD=1
+PROG=/usr/bin/php8-fpm
+CONFIG=/etc/php8-fpm.conf
+
+SERVICE_PID_FILE=/var/run/php-fpm/php8-fpm.pid
+SESSION=/var/run/php-fpm/session
+OPCACHE=/var/run/php-fpm/opcache
+
+start_instance() {
+	local cfg="$1"
+	local enabled
+
+	config_get_bool enabled "$cfg" 'enabled' 0
+	[ $enabled -gt 0 ] || return 1
+
+	[ -d "$SESSION" ] || mkdir -p "$SESSION"
+	[ -d "$SESSION" ] && chown -R ftp:ftp "$SESSION"
+	[ -d "$OPCACHE" ] || mkdir -p "$OPCACHE"
+	[ -d "$OPCACHE" ] && chown -R ftp:ftp "$OPCACHE"
+	procd_open_instance
+	procd_set_param command $PROG -y $CONFIG -g $SERVICE_PID_FILE
+	procd_set_param file $CONFIG
+	procd_close_instance
+}
+
+start_service() {
+	config_load 'php8-fpm'
+	config_foreach start_instance 'base'
+}
+
+stop_service() {
+	killall -9 php-fpm >/dev/null 2>&1
+}
+
+service_triggers() {
+	procd_add_reload_trigger "php8-fpm"
+}
