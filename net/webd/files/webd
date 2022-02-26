@@ -23,12 +23,10 @@ start_service() {
 	config_foreach start_instance 'base'
 }
 
-stop_service()
-{
+stop_service() {
 	service_stop $PROG
 }
 
-service_triggers()
-{
+service_triggers() {
 	procd_add_reload_trigger "webd"
 }
