@@ -56,6 +56,7 @@ CONFIGURE_ARGS+= \
 	--disable-stl \
 	--disable-omf \
 	--disable-debug_flag \
+	--disable-mediactrl \
 	--disable-debug_info \
 	--disable-debug_gdb \
 	--disable-debug_cntxt \
@@ -66,6 +67,7 @@ CONFIGURE_ARGS+= \
 	--disable-compat22 \
 	--disable-compat24 \
 	--enable-intl \
+	--enable-ipv6 \
 	--disable-backtrace \
 	--enable-exceptions \
 	--disable-sound \
@@ -105,6 +107,7 @@ CONFIGURE_ARGS+= \
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wx-config $(1)/usr/bin/
+	$(SED) "s,$(PKG_BUILD_DIR),$(STAGING_DIR)/usr,g" $(1)/usr/bin/wx-config
 	$(SED) 's,-I$$$${includedir}/wx-3.0,-I$(STAGING_DIR)/usr/include/wx-3.0,g' $(1)/usr/bin/wx-config
 	$(SED) 's,-I$$$${libdir}/wx/include,-I$(STAGING_DIR)/usr/lib/wx/include,g' $(1)/usr/bin/wx-config
 

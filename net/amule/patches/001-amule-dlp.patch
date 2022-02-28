@@ -1,6 +1,17 @@
---- a/configure.ac	2021-02-08 06:25:11.000000000 +0800
-+++ b/configure.ac	2021-02-11 23:10:03.000000000 +0800
-@@ -91,6 +91,14 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -30,10 +30,6 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_R
+ 
+ AC_PREREQ(2.62)
+ 
+-# autoconf 2.70 introduced some incompatibilities that will make the build fail
+-# As a "workaround" reject 2.70 and above for now.
+-m4_if(m4_version_compare(m4_defn([AC_AUTOCONF_VERSION]), [2.70]), [-1],, [m4_fatal([autoconf ]m4_defn([AC_AUTOCONF_VERSION])[ is known to not work with aMule. Please use 2.69 instead.])])
+-
+ AC_CONFIG_SRCDIR([src/amule.cpp])
+ AC_CONFIG_HEADERS([config.h])
+ AC_CONFIG_MACRO_DIR([m4])
+@@ -91,6 +87,14 @@ MULE_IF_ENABLED([static], [MULE_APPEND([
  KDE_CONFIG_OPTIONS
  QT_CONFIG_OPTIONS
  
@@ -15,7 +26,16 @@
  # Default is yes, because they're most likely compatible.
  # However, this is only used when cross-compiling.
  AC_ARG_WITH(
-@@ -451,6 +459,8 @@
+@@ -214,7 +218,7 @@ MULE_ARG_ENABLE([upnp], [yes], [do not c
+ MULE_IF_ENABLED_ANY([monolithic, amule-daemon],, [MULE_ENABLEVAR([upnp])=no])
+ MULE_IF_ENABLED([upnp], [
+ 	LIBUPNP_CHECK(
+-		[1.6.6],
++		[1.6.7],
+ 		[MULE_APPEND([LIBUPNP_CPPFLAGS], [-DENABLE_UPNP=1])],
+ 		[MULE_ENABLEVAR([upnp])=disabled
+ 		MULE_WARNING([UPnP code has been disabled because ${libupnp_error}.])]
+@@ -451,6 +455,8 @@ AM_CONDITIONAL(NEED_CORESERVICES, test x
  AM_CONDITIONAL(COMPILE_NLS, test x$USE_NLS = xyes)
  AM_CONDITIONAL(INSTALL_SKINS, test MULE_IS_ENABLED_ANY([monolithic, amule-gui]))
  AM_CONDITIONAL(PLASMAMULE, test MULE_IS_ENABLED([plasmamule]))
@@ -24,8 +44,8 @@
  
  AM_CONDITIONAL([COMPILE_LIB_COMMON],	[test MULE_IS_ENABLED_ANY([monolithic, amule-daemon, amulecmd, webserver, amule-gui, fileview])])
  AM_CONDITIONAL([COMPILE_LIB_EC],	[test MULE_IS_ENABLED_ANY([monolithic, amule-daemon, amulecmd, webserver, amule-gui])])
---- a/po/zh_CN.po	2021-02-08 06:25:11.000000000 +0800
-+++ b/po/zh_CN.po	2021-02-11 23:15:14.000000000 +0800
+--- a/po/zh_CN.po
++++ b/po/zh_CN.po
 @@ -7,6 +7,7 @@
  # xiaoqiao <29551030@qq.com>, 2007, 2008.
  # JimHu <jimhuyiwei@gmail.com>, 2009.
@@ -34,7 +54,7 @@
  # Yi Qi <u4781098@anu.edu.au>, 2011.
  #
  msgid ""
-@@ -471,6 +472,12 @@
+@@ -471,6 +472,12 @@ msgstr " 版权所有 (c) 2002-2011 Peta
  msgid "http://kademlia.scs.cs.nyu.edu\n"
  msgstr "http://kademlia.scs.cs.nyu.edu\n"
  
@@ -47,7 +67,7 @@
  #: src/amuleDlg.cpp:509 src/KadDlg.cpp:193 src/PartFile.cpp:919
  #: src/PartFile.cpp:927 src/PrefsUnifiedDlg.cpp:637 src/PrefsUnifiedDlg.cpp:742
  #: src/PrefsUnifiedDlg.cpp:862
-@@ -2145,7 +2152,7 @@
+@@ -2145,7 +2152,7 @@ msgstr "丢弃了 %d 字节，但是下�
  #: src/HTTPDownload.cpp:341
  #, c-format
  msgid "Protocol not supported for HTTP download: %s"
@@ -56,7 +76,7 @@
  
  #: src/HTTPDownload.cpp:384
  msgid "Unable to connect to HTTP download server"
-@@ -3253,13 +3260,13 @@
+@@ -3253,13 +3260,13 @@ msgstr "启用此选项将使 aMule 最�
  
  #: src/muuli_wdr.cpp:1494
  msgid "Show notifications when finished downloading"
@@ -72,7 +92,7 @@
  
  #: src/muuli_wdr.cpp:1500
  msgid "Tooltip delay time: "
-@@ -3878,6 +3885,9 @@
+@@ -3878,6 +3885,9 @@ msgstr "Kad 信息"
  msgid "Click on this button to update the nodes list from URL ..."
  msgstr "按此更新节点列表自网址..."
  
@@ -82,7 +102,7 @@
  #: src/muuli_wdr.cpp:2652
  msgid "Nodes (0)"
  msgstr "节点（0）"
-@@ -4804,7 +4814,7 @@
+@@ -4804,7 +4814,7 @@ msgstr "更改语言"
  
  #: src/Preferences.cpp:770
  msgid "There are no translations installed for aMule"
@@ -91,7 +111,7 @@
  
  #: src/Preferences.cpp:770
  #, fuzzy
-@@ -5145,7 +5155,7 @@
+@@ -5145,7 +5155,7 @@ msgstr "以下变量将被替换："
  
  #: src/SearchDlg.cpp:274
  msgid "It's impossible to search when both eD2k and Kademlia are disabled."
@@ -100,7 +120,7 @@
  
  #: src/SearchDlg.cpp:275
  #, fuzzy
-@@ -6992,7 +7002,7 @@
+@@ -6992,7 +7002,7 @@ msgstr "无法打开 %s"
  
  #: src/utils/aLinkCreator/src/ed2khash.cpp:146
  msgid "Out of memory while calculating ed2k hash!"
@@ -109,7 +129,7 @@
  
  #: src/utils/wxCas/src/linuxmon.cpp:77
  #, c-format
-@@ -7449,6 +7459,42 @@
+@@ -7449,6 +7459,42 @@ msgid "Processing request [redirected]:
  msgstr "正在处理请求 [已重定向]："
  
  #~ msgid ""
@@ -152,9 +172,18 @@
  #~ "Invalid URL for HTTP download or HTTP redirection (did you forget "
  #~ "'http://' ?)"
  #~ msgstr "非法的HTTP下载或重定向地址（您是否忘记了加“http://”？）"
---- a/src/amuleAppCommon.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/amuleAppCommon.cpp	2021-02-11 23:10:49.000000000 +0800
-@@ -64,7 +64,8 @@
+--- a/src/amuleAppCommon.cpp
++++ b/src/amuleAppCommon.cpp
+@@ -24,7 +24,7 @@
+ 
+ //
+ // This file is for functions common to all three apps (amule, amuled, amulegui),
+-// but preprocessor-dependent (using theApp, thePrefs), so it is compiled seperately for each app.
++// but preprocessor-dependent (using theApp, thePrefs), so it is compiled separately for each app.
+ //
+ 
+ 
+@@ -64,7 +64,8 @@ CamuleAppCommon::CamuleAppCommon()
  	} else {
  		m_configFile	= wxT("amule.conf");
  		m_logFile		= wxT("logfile");
@@ -164,7 +193,16 @@
  		if (IsDaemon()) {
  			m_appName	= wxT("aMuleD");
  		} else {
-@@ -443,6 +444,21 @@
+@@ -231,7 +232,7 @@ bool CamuleAppCommon::InitCommon(int arg
+ #else
+ 
+ #ifdef __WINDOWS__
+-	// MSW shows help otions in a dialog box, and the formatting doesn't fit there
++	// MSW shows help options in a dialog box, and the formatting doesn't fit there
+ #define HELPTAB wxT("\t")
+ #else
+ #define HELPTAB wxT("\t\t\t")
+@@ -443,6 +444,21 @@ bool CamuleAppCommon::InitCommon(int arg
  		return false;
  	}
  
@@ -186,8 +224,8 @@
  	// Load Preferences
  	CPreferences::BuildItemList(thePrefs::GetConfigDir());
  	CPreferences::LoadAllItems( wxConfigBase::Get() );
---- a/src/amule.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/amule.cpp	2021-02-11 23:11:03.000000000 +0800
+--- a/src/amule.cpp
++++ b/src/amule.cpp
 @@ -87,6 +87,11 @@
  #include <wx/sysopt.h>			// Do_not_auto_remove
  #endif
@@ -200,7 +238,52 @@
  #ifndef AMULE_DAEMON
  	#ifdef __WXMAC__
  		#include <CoreFoundation/CFBundle.h>  // Do_not_auto_remove
-@@ -517,6 +522,11 @@
+@@ -206,7 +211,7 @@ CamuleApp::CamuleApp()
+ 
+ 	enable_daemon_fork = false;
+ 
+-	// Apprently needed for *BSD
++	// Apparently needed for *BSD
+ 	SetResourceLimits();
+ 
+ #ifdef _MSC_VER
+@@ -332,7 +337,7 @@ int CamuleApp::OnExit()
+ 
+ #if wxUSE_MEMORY_TRACING
+ 	AddLogLineNS(_("Memory debug results for aMule exit:"));
+-	// Log mem debug mesages to wxLogStderr
++	// Log mem debug messages to wxLogStderr
+ 	wxLog* oldLog = wxLog::SetActiveTarget(new wxLogStderr);
+ 	//AddLogLineNS(wxT("**************Classes**************");
+ 	//wxDebugContext::PrintClasses();
+@@ -347,7 +352,7 @@ int CamuleApp::OnExit()
+ 
+ 	StopTickTimer();
+ 
+-	// Return 0 for succesful program termination
++	// Return 0 for successful program termination
+ 	return AMULE_APP_BASE::OnExit();
+ }
+ 
+@@ -484,7 +489,7 @@ bool CamuleApp::OnInit()
+ 			}
+ 		}
+ 
+-		// We havent run this version before?
++		// We haven't run this version before?
+ 		if ( !found ) {
+ 			// Insert new at top to provide faster searches
+ 			vfile.InsertLine( newMule, 0 );
+@@ -492,7 +497,7 @@ bool CamuleApp::OnInit()
+ 			Trigger_New_version( newMule );
+ 		}
+ 
+-		// Keep at most 10 entires
++		// Keep at most 10 entries
+ 		while ( vfile.GetLineCount() > 10 )
+ 			vfile.RemoveLine( vfile.GetLineCount() - 1 );
+ 
+@@ -517,6 +522,11 @@ bool CamuleApp::OnInit()
  	uploadqueue	= new CUploadQueue();
  	ipfilter	= new CIPFilter();
  
@@ -212,7 +295,52 @@
  	// Creates all needed listening sockets
  	wxString msg;
  	if (!ReinitializeNetwork(&msg)) {
-@@ -2063,3 +2073,8 @@
+@@ -760,7 +770,7 @@ bool CamuleApp::ReinitializeNetwork(wxSt
+ 	*msg << CFormat( wxT("*** TCP socket (TCP) listening on %s:%u\n") )
+ 		% ip % (unsigned int)(thePrefs::GetPort());
+ 	// Notify(true) has already been called to the ListenSocket, so events may
+-	// be already comming in.
++	// be already coming in.
+ 	if (!listensocket->IsOk()) {
+ 		// If we wern't able to start listening, we need to warn the user
+ 		wxString err;
+@@ -1250,7 +1260,7 @@ void CamuleApp::OnCoreTimer(CTimerEvent&
+ 	}
+ 
+ 
+-	// Recomended by lugdunummaster himself - from emule 0.30c
++	// Recommended by lugdunummaster himself - from emule 0.30c
+ 	serverconnect->KeepConnectionAlive();
+ 
+ 	// Disarm recursion protection
+@@ -1784,7 +1794,7 @@ bool CamuleApp::CanDoCallback(uint32 cli
+ 				//Only Kad Connected - Kad Firewalled
+ 				return false;
+ 			} else {
+-				//Only Kad Conected - Kad Open
++				//Only Kad Connected - Kad Open
+ 				return true;
+ 			}
+ 		}
+@@ -1839,7 +1849,7 @@ void CamuleApp::ListenSocketHandler(wxSo
+ 		listensocket->OnAccept();
+ 	} else if (m_app_state == APP_STATE_STARTING) {
+ 		// When starting up, connection may be made before we are able
+-		// to handle them. However, if these are ignored, no futher
++		// to handle them. However, if these are ignored, no further
+ 		// connection-events will be triggered, so we have to accept it.
+ 		CLibSocket* socket = listensocket->Accept(false);
+ 
+@@ -2049,7 +2059,7 @@ uint32 CamuleApp::GetID() const {
+ 	} else if( theApp->serverconnect->IsConnected() ) {
+ 		ID = theApp->serverconnect->GetClientID();
+ 	} else if ( Kademlia::CKademlia::IsConnected() && Kademlia::CKademlia::IsFirewalled() ) {
+-		// A firewalled Kad client get's a "1"
++		// A firewalled Kad client gets a "1"
+ 		ID = 1;
+ 	} else {
+ 		ID = 0;
+@@ -2063,3 +2073,8 @@ DEFINE_LOCAL_EVENT_TYPE(wxEVT_CORE_SOURC
  DEFINE_LOCAL_EVENT_TYPE(wxEVT_CORE_UDP_DNS_DONE)
  DEFINE_LOCAL_EVENT_TYPE(wxEVT_CORE_SERVER_DNS_DONE)
  // File_checked_for_headers
@@ -221,9 +349,36 @@
 +#ifdef AMULE_DLP
 +DLP* theDLP;
 +#endif
---- a/src/amuled.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/amuled.cpp	2021-02-11 23:11:09.000000000 +0800
-@@ -783,4 +783,10 @@
+--- a/src/amuled.cpp
++++ b/src/amuled.cpp
+@@ -591,7 +591,7 @@ int CamuleDaemonApp::OnRun()
+ 		AddLogLineCS(_("ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"));
+ 		return 0;
+ 	} else if (thePrefs::ECPassword().IsEmpty()) {
+-		AddLogLineCS(_("ERROR: A valid password is required to use external connections, and aMule daemon cannot be used without external connections. To run aMule deamon, you must set the \"ECPassword\" field in the file ~/.aMule/amule.conf with an appropriate value. Execute amuled with the flag --ec-config to set the password. More information can be found at http://wiki.amule.org"));
++		AddLogLineCS(_("ERROR: A valid password is required to use external connections, and aMule daemon cannot be used without external connections. To run aMule daemon, you must set the \"ECPassword\" field in the file ~/.aMule/amule.conf with an appropriate value. Execute amuled with the flag --ec-config to set the password. More information can be found at http://wiki.amule.org"));
+ 		return 0;
+ 	}
+ 
+@@ -602,7 +602,7 @@ int CamuleDaemonApp::OnRun()
+ #ifdef AMULED_APPTRAITS
+ 	// Process the return code of dead children so that we do not create
+ 	// zombies. wxBase does not implement wxProcess callbacks, so no one
+-	// actualy calls wxHandleProcessTermination() in console applications.
++	// actually calls wxHandleProcessTermination() in console applications.
+ 	// We do our best here.
+ 	DEBUG_ONLY( int ret = 0; )
+ 	DEBUG_ONLY( ret = ) sigaction(SIGCHLD, NULL, &m_oldSignalChildAction);
+@@ -633,7 +633,7 @@ int CamuleDaemonApp::OnRun()
+ #endif
+ 	}
+ 
+-	// ShutDown is beeing called twice. Once here and again in OnExit().
++	// ShutDown is being called twice. Once here and again in OnExit().
+ 	ShutDown();
+ 
+ 	return 0;
+@@ -783,4 +783,10 @@ int CamuleDaemonApp::ShowAlert(wxString
  	return 0;	// That's neither yes nor no, ok, cancel
  }
  
@@ -234,9 +389,9 @@
 +}
 +
  // File_checked_for_headers
---- a/src/amuleDlg.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/amuleDlg.cpp	2021-02-11 23:11:25.000000000 +0800
-@@ -311,7 +311,7 @@
+--- a/src/amuleDlg.cpp
++++ b/src/amuleDlg.cpp
+@@ -311,7 +311,7 @@ m_clientSkinNames(CLIENT_SKIN_SIZE)
  	wxNotebook* logs_notebook = CastChild( ID_SRVLOG_NOTEBOOK, wxNotebook);
  	wxNotebook* networks_notebook = CastChild( ID_NETNOTEBOOK, wxNotebook);
  
@@ -245,7 +400,7 @@
  	wxASSERT(networks_notebook->GetPageCount() == 2);
  
  	for (uint32 i = 0; i < logs_notebook->GetPageCount(); ++i) {
-@@ -494,7 +494,8 @@
+@@ -494,7 +494,8 @@ void CamuleDlg::OnAboutButton(wxCommandE
  #ifdef SVNDATE
  	msg << _("Snapshot:") << wxT("\n ") << wxT(SVNDATE);
  #endif
@@ -255,7 +410,7 @@
  		_("Website: http://www.amule.org \n") <<
  		_("Forum: http://forum.amule.org \n") <<
  		_("FAQ: http://wiki.amule.org \n\n") <<
-@@ -502,8 +503,14 @@
+@@ -502,8 +503,14 @@ void CamuleDlg::OnAboutButton(wxCommandE
  		_("Copyright (c) 2003-2019 aMule Team \n\n") <<
  		_("Part of aMule is based on \n") <<
  		_("Kademlia: Peer-to-peer routing based on the XOR metric.\n") <<
@@ -272,7 +427,7 @@
  
  	if (m_is_safe_state) {
  		wxMessageBox(msg, _("Message"), wxOK | wxICON_INFORMATION, this);
-@@ -657,6 +664,22 @@
+@@ -657,6 +664,22 @@ void CamuleDlg::AddServerMessageLine(wxS
  	}
  }
  
@@ -295,7 +450,16 @@
  
  void CamuleDlg::ShowConnectionState(bool skinChanged)
  {
-@@ -1436,6 +1459,8 @@
+@@ -1323,7 +1346,7 @@ void CamuleDlg::Apply_Toolbar_Skin(wxToo
+ 	wndToolbar->ToggleTool(ID_BUTTONDOWNLOADS, true);
+ 
+ 	// Needed for non-GTK platforms, where the
+-	// items don't get added immediatly.
++	// items don't get added immediately.
+ 	wndToolbar->Realize();
+ 
+ 	// Updates the "Connect" button, and so on.
+@@ -1436,6 +1459,8 @@ void CamuleDlg::DoNetworkRearrange()
  		logs_notebook->AddPage(m_logpages[3].page, m_logpages[3].name);
  	}
  
@@ -304,9 +468,9 @@
  	// Set the main window.
  	// If we have both networks active, activate a notebook to select between them.
  	// If only one is active, show the window directly without a surrounding one tab notebook.
---- a/src/amuleDlg.h	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/amuleDlg.h	2021-02-11 23:11:33.000000000 +0800
-@@ -114,6 +114,9 @@
+--- a/src/amuleDlg.h
++++ b/src/amuleDlg.h
+@@ -114,6 +114,9 @@ public:
  
  	void AddLogLine(const wxString& line);
  	void AddServerMessageLine(wxString& message);
@@ -316,7 +480,16 @@
  	void ResetLog(int id);
  
  	void ShowUserCount(const wxString& info = wxEmptyString);
-@@ -222,7 +225,7 @@
+@@ -138,7 +141,7 @@ public:
+ 	void SetActiveDialog(DialogType type, wxWindow* dlg);
+ 
+ 	/**
+-	 * Helper function for deciding if a certian dlg is visible.
++	 * Helper function for deciding if a certain dlg is visible.
+ 	 *
+ 	 * @return True if the dialog is visible to the user, false otherwise.
+ 	 */
+@@ -222,7 +225,7 @@ private:
  	WX_DECLARE_STRING_HASH_MAP(wxZipEntry*, ZipCatalog);
  	ZipCatalog cat;
  
@@ -325,9 +498,18 @@
  	PageType m_networkpages[2];
  
  	bool LoadGUIPrefs(bool override_pos, bool override_size);
---- a/src/amule-gui.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/amule-gui.cpp	2021-02-11 23:11:40.000000000 +0800
-@@ -333,6 +333,21 @@
+--- a/src/amule-gui.cpp
++++ b/src/amule-gui.cpp
+@@ -140,7 +140,7 @@ int CamuleGuiBase::InitGui(bool geometry
+ 		long width = geometry_width;
+ 		long height = geometry_height;
+ 
+-		// Get the avilable display area
++		// Get the available display area
+ 		wxRect display = wxGetClientDisplayRect();
+ 
+ 		// We want to place aMule inside the client area by default
+@@ -333,6 +333,21 @@ wxString CamuleGuiApp::GetLog(bool reset
  	return CamuleApp::GetLog(reset);
  }
  
@@ -349,9 +531,9 @@
  
  wxString CamuleGuiApp::GetServerLog(bool reset)
  {
---- a/src/amule.h	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/amule.h	2021-02-11 23:11:54.000000000 +0800
-@@ -134,6 +134,8 @@
+--- a/src/amule.h
++++ b/src/amule.h
+@@ -134,6 +134,8 @@ protected:
  	bool		m_geometryEnabled;
  	wxString	m_geometryString;
  	wxString	m_logFile;
@@ -360,7 +542,7 @@
  	wxString	m_appName;
  	wxString	m_PidFile;
  
-@@ -409,6 +411,7 @@
+@@ -409,6 +411,7 @@ public:
  	wxString GetLog(bool reset = false);
  	wxString GetServerLog(bool reset = false);
  	void AddServerMessageLine(wxString &msg);
@@ -368,7 +550,16 @@
  	DECLARE_EVENT_TABLE()
  };
  
-@@ -573,6 +576,8 @@
+@@ -551,7 +554,7 @@ private:
+ 	// does not, leaving wxConvFile being set to wxConvLibc. File
+ 	// name conversion should be set otherwise amuled will abort to
+ 	// handle non-ASCII file names which monolithic amule can handle.
+-	// This function are overrided to perform this.
++	// This function are overridden to perform this.
+ 	virtual bool Initialize(int& argc_, wxChar **argv_);
+ 
+ #ifdef AMULED_APPTRAITS
+@@ -573,6 +576,8 @@ public:
  
  	virtual int ShowAlert(wxString msg, wxString title, int flags);
  
@@ -377,7 +568,7 @@
  	DECLARE_EVENT_TABLE()
  };
  
-@@ -583,3 +588,8 @@
+@@ -583,3 +588,8 @@ extern CamuleDaemonApp *theApp;
  
  #endif // AMULE_H
  // File_checked_for_headers
@@ -386,8 +577,8 @@
 +class DLP;	//forward declaretion
 +extern DLP* theDLP;
 +#endif
---- a/src/antiLeech.h	1970-01-01 08:00:00.000000000 +0800
-+++ b/src/antiLeech.h	2020-05-31 20:19:13.000000000 +0800
+--- /dev/null
++++ b/src/antiLeech.h
 @@ -0,0 +1,48 @@
 +#ifndef ANTILEECH_H
 +#define ANTILEECH_H
@@ -437,8 +628,8 @@
 +extern "C" int destoryAntiLeechInstant(IantiLeech*);
 +
 +#endif
---- a/src/antiLeech_wx.h	1970-01-01 08:00:00.000000000 +0800
-+++ b/src/antiLeech_wx.h	2020-05-31 20:19:13.000000000 +0800
+--- /dev/null
++++ b/src/antiLeech_wx.h
 @@ -0,0 +1,49 @@
 +#ifndef ANTILEECH_WX_H
 +#define ANTILEECH_WX_H
@@ -465,10 +656,10 @@
 +#define _istpunct(var)		iswpunct(var)
 +#define _istspace(var)		iswspace(var)
 +#define _istxdigit(var)		iswxdigit(var)
-+inline float _tstof(const wchar_t* str){
-+	wchar_t** ptail = NULL;
-+	return wcstof(str, ptail);
-+}
++//inline float _tstof(const wchar_t* str){
++//	wchar_t** ptail = NULL;
++//	return wcstof(str, ptail);
++//}
 +//This function is not used. by Orzogc Lee
 +//But I think there is no need to removing, linker will remove it.
 +/*
@@ -489,21 +680,29 @@
 +#define _tcsicmp(a, b)		wcscasecmp(a, b)
 +
 +#endif
---- a/src/BaseClient.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/BaseClient.cpp	2021-02-11 23:12:21.000000000 +0800
-@@ -23,6 +23,11 @@
- // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
- //
+--- a/src/BaseClient.cpp
++++ b/src/BaseClient.cpp
+@@ -83,6 +83,10 @@
+ #include "kademlia/kademlia/UDPFirewallTester.h"
+ #include "kademlia/routing/RoutingZone.h"
  
 +//Dynamic Leech Protect - Bill Lee
 +#ifdef AMULE_DLP
 +#include "DLP.h"
 +#endif
-+
- #include <wx/wx.h>
- #include <wx/mstream.h>
- #include <wx/tokenzr.h>
-@@ -290,6 +295,10 @@
+ 
+ //#define __PACKET_DEBUG__
+ 
+@@ -127,7 +131,7 @@ CUpDownClient::CUpDownClient(uint16 in_p
+ 		} else {
+ 			m_nConnectIP = wxUINT32_SWAP_ALWAYS(in_userid);
+ 		}
+-		// Will be on right endianess now
++		// Will be on right endianness now
+ 		m_FullUserIP = m_nConnectIP;
+ 	}
+ 
+@@ -290,6 +294,10 @@ void CUpDownClient::Init()
  	m_cMessagesReceived = 0;
  	m_cMessagesSent = 0;
  
@@ -514,7 +713,7 @@
  }
  
  
-@@ -635,6 +644,15 @@
+@@ -635,6 +643,15 @@ bool CUpDownClient::ProcessHelloTypePack
  				m_fSharedDirectories = 1;
  				dwEmuleTags |= 4;
  				break;
@@ -530,7 +729,7 @@
  		}
  	}
  
-@@ -717,6 +735,12 @@
+@@ -717,6 +734,12 @@ bool CUpDownClient::ProcessHelloTypePack
  		Kademlia::CKademlia::Bootstrap(wxUINT32_SWAP_ALWAYS(GetIP()), GetKadPort());
  	}
  
@@ -543,7 +742,7 @@
  	return bIsMule;
  }
  
-@@ -966,6 +990,14 @@
+@@ -966,6 +989,14 @@ bool CUpDownClient::ProcessMuleInfoPacke
  							% GetClientFullInfo()
  					);
  
@@ -558,7 +757,7 @@
  					break;
  			}
  		}
-@@ -1003,6 +1035,12 @@
+@@ -1003,6 +1034,12 @@ bool CUpDownClient::ProcessMuleInfoPacke
  		m_byInfopacketsReceived |= IP_EMULEPROTPACK;
  	}
  
@@ -571,7 +770,7 @@
  	return (protocol_version == 0xFF); // This was a OS_Info?
  }
  
-@@ -1033,7 +1071,8 @@
+@@ -1033,7 +1070,8 @@ void CUpDownClient::SendHelloTypePacket(
  	}
  	tagcount ++; // eMule misc flags 2 (kad version)
  
@@ -581,7 +780,7 @@
  	// Kry - This is the tagcount!!! Be sure to update it!!
  	// Last update: CT_EMULECOMPAT_OPTIONS included
  	data->WriteUInt32(tagcount + 1);
-@@ -1156,7 +1195,7 @@
+@@ -1156,7 +1194,7 @@ void CUpDownClient::SendHelloTypePacket(
  
  	tagMisCompatOptions.WriteTagToFile(data);
  
@@ -590,7 +789,45 @@
  	wxString mod_name(MOD_VERSION_LONG);
  	CTagString tagModName(ET_MOD_VERSION, mod_name);
  	tagModName.WriteTagToFile(data);
-@@ -2303,7 +2342,12 @@
+@@ -1299,8 +1337,8 @@ bool CUpDownClient::Disconnected(const w
+ 		CAICHHashSet::ClientAICHRequestFailed(this);
+ 	}
+ 
+-	// The remote client does not have to answer with OP_HASHSETANSWER *immediatly*
+-	// after we've sent OP_HASHSETREQUEST. It may occure that a (buggy) remote client
++	// The remote client does not have to answer with OP_HASHSETANSWER *immediately*
++	// after we've sent OP_HASHSETREQUEST. It may occur that a (buggy) remote client
+ 	// is sending use another OP_FILESTATUS which would let us change to DL-state to DS_ONQUEUE.
+ 	if (((GetDownloadState() == DS_REQHASHSET) || m_fHashsetRequesting) && (m_reqfile)) {
+ 		m_reqfile->SetHashSetNeeded(true);
+@@ -1422,7 +1460,7 @@ bool CUpDownClient::TryToConnect(bool bI
+ 	}
+ 
+ 	if (uClientIP) {
+-		// Although we filter all received IPs (server sources, source exchange) and all incomming connection attempts,
++		// Although we filter all received IPs (server sources, source exchange) and all incoming connection attempts,
+ 		// we do have to filter outgoing connection attempts here too, because we may have updated the ip filter list
+ 		if (theApp->ipfilter->IsFiltered(uClientIP)) {
+ 			AddDebugLogLineN(logIPFilter, CFormat(wxT("Filtered ip %u (%s) on TryToConnect\n")) % uClientIP % Uint32toStringIP(uClientIP));
+@@ -2145,7 +2183,7 @@ void CUpDownClient::ProcessPublicKeyPack
+ 	}
+ 	if (!theApp->CryptoAvailable())
+ 		return;
+-	// the function will handle everything (mulitple key etc)
++	// the function will handle everything (multiple key etc)
+ 	if (credits->SetSecureIdent(pachPacket+1, pachPacket[0])){
+ 		// if this client wants a signature, now we can send him one
+ 		if (m_SecureIdentState == IS_SIGNATURENEEDED){
+@@ -2200,7 +2238,7 @@ void CUpDownClient::ProcessSignaturePack
+ 		AddDebugLogLineN( logClient, wxT("received signature for client without public key") );
+ 		return;
+ 	}
+-	// and one more check: did we ask for a signature and sent a challange packet?
++	// and one more check: did we ask for a signature and sent a challenge packet?
+ 	if (credits->m_dwCryptRndChallengeFor == 0){
+ 		AddDebugLogLineN( logClient, wxT("received signature for client with invalid challenge value - User ") + GetUserName() );
+ 		return;
+@@ -2303,7 +2341,12 @@ bool CUpDownClient::CheckHandshakeFinish
  }
  
  
@@ -604,8 +841,17 @@
  wxString CUpDownClient::GetClientFullInfo()
  {
  	if (m_clientVerString.IsEmpty()) {
---- a/src/CString_wx.h	1970-01-01 08:00:00.000000000 +0800
-+++ b/src/CString_wx.h	2020-05-31 20:19:13.000000000 +0800
+@@ -2487,7 +2530,7 @@ bool CUpDownClient::SendChatMessage(cons
+ 	if (GetChatCaptchaState() == CA_CAPTCHARECV) {
+ 		m_nChatCaptchaState = CA_SOLUTIONSENT;
+ 	} else if (GetChatCaptchaState() == CA_SOLUTIONSENT) {
+-		wxFAIL; // we responsed to a captcha but didn't heard from the client afterwards - hopefully its just lag and this message will get through
++		wxFAIL; // we responded to a captcha but didn't hear from the client afterwards - hopefully it's just lag and this message will get through
+ 	} else {
+ 		m_nChatCaptchaState = CA_ACCEPTING;
+ 	}
+--- /dev/null
++++ b/src/CString_wx.h
 @@ -0,0 +1,63 @@
 +/**
 + * Author:	Bill Lee<bill.lee.y@gmail.com>
@@ -670,9 +916,9 @@
 +		}
 +};
 +#endif
---- a/src/DLP.cpp	1970-01-01 08:00:00.000000000 +0800
-+++ b/src/DLP.cpp	2020-05-31 20:19:13.000000000 +0800
-@@ -0,0 +1,186 @@
+--- /dev/null
++++ b/src/DLP.cpp
+@@ -0,0 +1,193 @@
 +// Copyright (C) 2011 Bill Lee <bill.lee.y@gmail.com>, 2014 Persmule <persmule@gmail.com>
 +//
 +// This program is free software; you can redistribute it and/or modify
@@ -691,13 +937,14 @@
 +//
 +#include "Logger.h"
 +
-+#include "DLP.h"
-+#include "antiLeech.h"
 +#include <wx/dynlib.h>                          /* Needed for wxDynamicLibrary */
 +
-+#include "DLPPref.h"
 +#include "Preferences.h"	// Needed for CPreferences
 +#include "amule.h"		// Needed for theApp
++
++#include "DLP.h"
++#include "antiLeech.h"
++#include "DLPPref.h"
 +
 +#include <wx/stdpaths.h>                        /* Needed for wxStandardPaths */
 +
@@ -737,6 +984,7 @@
 +	CString clientver(c->GetClientVerString());
 +	CString uname(c->GetUserName());
 +	CString uhash(wxString(c->GetUserHash().EncodeSTL().c_str(), wxConvUTF8));
++	CString fullip(Uint32_16toStringIP_Port(c->GetConnectIP(),c->GetUserPort()));
 +	
 +	//CheckGhostMod
 +	if(prefs & PF_GHOSTMOD) {
@@ -772,11 +1020,16 @@
 +			tmp = ret.c_str();
 +		}
 +	}
-+	
++
++	if (c->HasLowID() && (tmp == NULL)) {
++		ret = _("Ban Low ID");
++		tmp = ret.c_str();
++	}
++
 +	if (tmp != NULL) {
 +		ret = tmp;
 +		wxString wxInfo;
-+		wxInfo.Printf(wxT("[%s] %s"), ret.c_str(), c->GetClientFullInfo().c_str());
++		wxInfo.Printf(wxT("_%s_%s_%s_%s_%s"), uhash.c_str(), ret.c_str(), fullip.c_str(), clientver.c_str(), uname.c_str());
 +		c->Ban();
 +		theApp->AddDLPMessageLine(wxInfo);
 +		return true;
@@ -859,8 +1112,8 @@
 +	antiLeechLib.Load(file);
 +	return antiLeechLib.IsLoaded();
 +}
---- a/src/DLP.h	1970-01-01 08:00:00.000000000 +0800
-+++ b/src/DLP.h	2020-05-31 20:19:13.000000000 +0800
+--- /dev/null
++++ b/src/DLP.h
 @@ -0,0 +1,48 @@
 +// Copyright (C) 2011 Bill Lee <bill.lee.y@gmail.com>, 2014 Persmule <persmule@gmail.com>
 +//
@@ -910,8 +1163,8 @@
 +
 +	bool LoadFrom(wxString& file);
 +};
---- a/src/DLPPref.h	1970-01-01 08:00:00.000000000 +0800
-+++ b/src/DLPPref.h	2020-05-31 20:19:13.000000000 +0800
+--- /dev/null
++++ b/src/DLPPref.h
 @@ -0,0 +1,15 @@
 +#ifndef ANTILEECH_AMULE_H
 +#define ANTILEECH_AMULE_H
@@ -928,9 +1181,36 @@
 +#define PF_GHOSTMOD	0x100
 +
 +#endif
---- a/src/DownloadQueue.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/DownloadQueue.cpp	2021-02-11 23:12:27.000000000 +0800
-@@ -623,6 +623,15 @@
+--- a/src/DownloadQueue.cpp
++++ b/src/DownloadQueue.cpp
+@@ -408,7 +408,7 @@ bool CDownloadQueue::IsFileExisting( con
+ 
+ #define RARITY_FACTOR 4 // < 25%
+ #define NORMALITY_FACTOR 2 // <50%
+-// x > NORMALITY_FACTOR -> High availablity.
++// x > NORMALITY_FACTOR -> High availability.
+ 
+ void CDownloadQueue::Process()
+ {
+@@ -448,7 +448,7 @@ void CDownloadQueue::Process()
+ 			if (status == PS_READY || status == PS_EMPTY ){
+ 				cur_datarate += file->Process( downspeed, cur_udcounter );
+ 			} else {
+-				//This will make sure we don't keep old sources to paused and stoped files..
++				//This will make sure we don't keep old sources to paused and stopped files..
+ 				file->StopPausedFile();
+ 			}
+ 
+@@ -496,7 +496,7 @@ void CDownloadQueue::Process()
+ 				}
+ 				m_rareFileThreshold = (m_sourcecountlist.front() > 0) ? (m_sourcecountlist.front() - 1) : 1;
+ 
+-				// 50% of the non-rare ones, with the curent #define values.
++				// 50% of the non-rare ones, with the current #define values.
+ 				int commoncutpoint = (nSourceGroups - rarecutpoint) / NORMALITY_FACTOR;
+ 				for (int i = 0; i < commoncutpoint; ++ i) {
+ 					m_sourcecountlist.pop_front();
+@@ -623,6 +623,15 @@ void CDownloadQueue::CheckAndAddSource(C
  		return;
  	}
  
@@ -946,8 +1226,17 @@
  	// Filter sources which are known to be dead/useless
  	if ( theApp->clientlist->IsDeadSource( source ) || sender->IsDeadSource(source) ) {
  		source->Safe_Delete();
---- a/src/ExternalConn.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/ExternalConn.cpp	2021-02-11 23:12:35.000000000 +0800
+@@ -975,7 +984,7 @@ void CDownloadQueue::DoStopUDPRequests()
+ }
+ 
+ 
+-// Comparison function needed by sort. Returns true if file1 preceeds file2
++// Comparison function needed by sort. Returns true if file1 precedes file2
+ static bool ComparePartFiles(const CPartFile* file1, const CPartFile* file2) {
+ 	if (file1->GetDownPriority() != file2->GetDownPriority()) {
+ 		// To place high-priority files before low priority files we have to
+--- a/src/ExternalConn.cpp
++++ b/src/ExternalConn.cpp
 @@ -55,6 +55,9 @@
  #include "kademlia/kademlia/UDPFirewallTester.h"
  #include "Statistics.h"
@@ -958,7 +1247,7 @@
  
  //-------------------- File_Encoder --------------------
  
-@@ -1388,6 +1391,15 @@
+@@ -1388,6 +1391,15 @@ CECPacket *CECServerSocket::ProcessReque
  				}
  			}
  			break;
@@ -974,9 +1263,18 @@
  		//
  		// Status requests
  		//
---- a/src/libs/ec/abstracts/ECCodes.abstract	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/libs/ec/abstracts/ECCodes.abstract	2021-02-11 23:10:18.000000000 +0800
-@@ -148,6 +148,8 @@
+@@ -1668,7 +1680,7 @@ CECPacket *CECServerSocket::ProcessReque
+ 		case EC_OP_DELETE_CATEGORY:
+ 			if ( request->GetTagCount() == 1 ) {
+ 				uint32 cat = request->GetFirstTagSafe()->GetInt();
+-				// this noes not only update the gui, but actually deletes the cat
++				// this does not only update the gui, but actually deletes the cat
+ 				Notify_CategoryDelete(cat);
+ 			}
+ 			response = new CECPacket(EC_OP_NOOP);
+--- a/src/libs/ec/abstracts/ECCodes.abstract
++++ b/src/libs/ec/abstracts/ECCodes.abstract
+@@ -148,6 +148,8 @@ EC_OP_SERVER_SET_STATIC_PRIO        0x56
  
  EC_OP_FRIEND                        0x57
  
@@ -985,9 +1283,9 @@
  [/Section]
  
  [Section Content]
---- a/src/libs/ec/cpp/ECCodes.h	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/libs/ec/cpp/ECCodes.h	2021-02-11 23:10:27.000000000 +0800
-@@ -121,7 +121,8 @@
+--- a/src/libs/ec/cpp/ECCodes.h
++++ b/src/libs/ec/cpp/ECCodes.h
+@@ -121,7 +121,8 @@ enum ECOpCodes {
  	EC_OP_CLIENT_SWAP_TO_ANOTHER_FILE   = 0x54,
  	EC_OP_SHARED_FILE_SET_COMMENT       = 0x55,
  	EC_OP_SERVER_SET_STATIC_PRIO        = 0x56,
@@ -997,7 +1295,7 @@
  };
  
  enum ECTagNames {
-@@ -556,6 +557,7 @@
+@@ -556,6 +557,7 @@ wxString GetDebugNameECOpCodes(uint8 arg
  		case 0x55: return wxT("EC_OP_SHARED_FILE_SET_COMMENT");
  		case 0x56: return wxT("EC_OP_SERVER_SET_STATIC_PRIO");
  		case 0x57: return wxT("EC_OP_FRIEND");
@@ -1005,9 +1303,9 @@
  		default: return CFormat(wxT("unknown %d 0x%x")) % arg % arg;
  	}
  }
---- a/src/libs/ec/java/ECCodes.java	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/libs/ec/java/ECCodes.java	2021-02-11 23:10:34.000000000 +0800
-@@ -112,6 +112,7 @@
+--- a/src/libs/ec/java/ECCodes.java
++++ b/src/libs/ec/java/ECCodes.java
+@@ -112,6 +112,7 @@ public final static byte EC_OP_CLIENT_SW
  public final static byte EC_OP_SHARED_FILE_SET_COMMENT       = 0x55;
  public final static byte EC_OP_SERVER_SET_STATIC_PRIO        = 0x56;
  public final static byte EC_OP_FRIEND                        = 0x57;
@@ -1015,9 +1313,9 @@
  
  public final static short EC_TAG_STRING                             = 0x0000;
  public final static short EC_TAG_PASSWD_HASH                        = 0x0001;
---- a/src/LoggerConsole.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/LoggerConsole.cpp	2021-02-11 23:12:40.000000000 +0800
-@@ -94,6 +94,8 @@
+--- a/src/LoggerConsole.cpp
++++ b/src/LoggerConsole.cpp
+@@ -94,6 +94,8 @@ void CLogger::AddLogLine(
  }
  
  CLogger theLogger;
@@ -1026,9 +1324,18 @@
  
  BEGIN_EVENT_TABLE(CLogger, wxEvtHandler)
  END_EVENT_TABLE()
---- a/src/Logger.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/Logger.cpp	2021-02-11 23:12:46.000000000 +0800
-@@ -297,6 +297,8 @@
+--- a/src/Logger.cpp
++++ b/src/Logger.cpp
+@@ -160,7 +160,7 @@ void CLogger::AddLogLine(
+ 		CLoggingEvent Event(critical, toStdout, toGUI, msg);
+ 		AddPendingEvent(Event);
+ 	} else {
+-		// Try to handle events immediatly when possible (to save to file).
++		// Try to handle events immediately when possible (to save to file).
+ 		DoLines(msg, critical, toStdout, toGUI);
+ 	}
+ }
+@@ -297,6 +297,8 @@ void CLogger::FlushApplog()
  }
  
  CLogger theLogger;
@@ -1037,9 +1344,27 @@
  
  BEGIN_EVENT_TABLE(CLogger, wxEvtHandler)
  	EVT_MULE_LOGGING(CLogger::OnLoggingEvent)
---- a/src/Logger.h	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/Logger.h	2021-02-11 23:12:53.000000000 +0800
-@@ -310,6 +310,8 @@
+--- a/src/Logger.h
++++ b/src/Logger.h
+@@ -54,7 +54,7 @@ enum DebugType
+ 	logZLib,
+ 	//! Warnings/Errors for the AICH-syncronization thread.
+ 	logAICHThread,
+-	//! Warnings/Errors for transfering AICH hash-sets.
++	//! Warnings/Errors for transferring AICH hash-sets.
+ 	logAICHTransfer,
+ 	//! Warnings/Errors when recovering with AICH.
+ 	logAICHRecovery,
+@@ -82,7 +82,7 @@ enum DebugType
+ 	logSearch,
+ 	//! Warnings/Errors related to the server UDP socket.
+ 	logServerUDP,
+-	//! Warning/Errors related to Kademlia UDP comunication on client
++	//! Warning/Errors related to Kademlia UDP communication on client
+ 	logClientKadUDP,
+ 	//! Warning/Errors related to Kademlia Search
+ 	logKadSearch,
+@@ -310,6 +310,8 @@ private:
  };
  
  extern CLogger theLogger;
@@ -1048,7 +1373,7 @@
  
  /**
   * This class forwards log-lines from wxWidgets to CLogger.
-@@ -456,5 +458,8 @@
+@@ -456,5 +458,8 @@ public:
  	#define AddLogLineF(string) theLogger.AddLogLine(__TFILE__, __LINE__, false, logStandard, string, false, false)
  #endif
  
@@ -1057,9 +1382,9 @@
 +
  #endif
  // File_checked_for_headers
---- a/src/Makefile.am	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/Makefile.am	2021-02-11 23:12:59.000000000 +0800
-@@ -178,6 +178,13 @@
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -178,6 +178,13 @@ core_sources = \
  	kademlia/routing/RoutingZone.cpp
  
  
@@ -1073,9 +1398,9 @@
  gui_sources = \
  	amule-gui.cpp \
  	amuleDlg.cpp \
---- a/src/muuli_wdr.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/muuli_wdr.cpp	2021-02-11 23:13:14.000000000 +0800
-@@ -1772,6 +1772,51 @@
+--- a/src/muuli_wdr.cpp
++++ b/src/muuli_wdr.cpp
+@@ -1772,6 +1772,51 @@ wxSizer *PreferencesServerTab( wxWindow
      return item0;
  }
  
@@ -1127,7 +1452,7 @@
  wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
  {
      wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
-@@ -2590,6 +2635,42 @@
+@@ -2590,6 +2635,42 @@ wxSizer *serverListDlgUp( wxWindow *pare
      return item0;
  }
  
@@ -1170,7 +1495,7 @@
  wxSizer *serverListDlgDown( wxWindow *parent, bool call_fit, bool set_sizer )
  {
      wxStaticBox *item1 = new wxStaticBox( parent, -1, wxT("") );
-@@ -2618,6 +2699,10 @@
+@@ -2618,6 +2699,10 @@ wxSizer *serverListDlgDown( wxWindow *pa
      Kad_Info( item7, FALSE );
      item3->AddPage( item7, _("Kad Info") );
  
@@ -1181,20 +1506,22 @@
      item0->Add( item2, 1, wxGROW|wxALIGN_CENTER_VERTICAL, 5 );
  
      if (set_sizer)
---- a/src/muuli_wdr.h	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/muuli_wdr.h	2021-02-11 23:13:22.000000000 +0800
-@@ -336,6 +336,10 @@
- #define ID_BTN_RESET_SERVER 10241
- wxSizer *ServerInfoLog( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+--- a/src/muuli_wdr.h
++++ b/src/muuli_wdr.h
+@@ -338,6 +338,12 @@ wxSizer *ServerInfoLog( wxWindow *parent
  
+ #define ID_LOGVIEW 10242
+ #define ID_BTN_RESET 10243
 +#define ID_DLPINFO 22001
 +#define ID_BTN_RESET_DLP 22002
 +wxSizer *DLPInfoLog( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
 +
- #define ID_LOGVIEW 10242
- #define ID_BTN_RESET 10243
++#define ID_LOGVIEW 10241
++#define ID_BTN_RESET 10242
  wxSizer *aMuleLog( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
-@@ -425,6 +429,21 @@
+ 
+ #define ID_UPDATELIST 10244
+@@ -425,6 +431,21 @@ wxSizer *CoreConnect( wxWindow *parent,
  #define ID_DEBUGCATS 10308
  wxSizer *PreferencesDebug( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
  
@@ -1216,8 +1543,8 @@
  extern wxSizer *IDC_CURJOB;
  #define IDC_CONV_PB_LABEL 10309
  #define IDC_CONV_PROZENT 10310
---- a/src/Preferences.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/Preferences.cpp	2021-02-11 23:13:42.000000000 +0800
+--- a/src/Preferences.cpp
++++ b/src/Preferences.cpp
 @@ -49,6 +49,11 @@
  
  #include "UserEvents.h"
@@ -1230,7 +1557,41 @@
  #ifndef AMULE_DAEMON
  #include <wx/valgen.h>
  #include "muuli_wdr.h"
-@@ -343,6 +348,19 @@
+@@ -232,13 +237,13 @@ wxString	CPreferences::s_StatsServerURL;
+ /**
+  * Template Cfg class for connecting with widgets.
+  *
+- * This template provides the base functionionality needed to syncronize a
++ * This template provides the base functionality needed to synchronize a
+  * variable with a widget. However, please note that wxGenericValidator only
+  * supports a few types (int, wxString, bool and wxArrayInt), so this template
+  * can't always be used directly.
+  *
+  * Cfg_Str and Cfg_Bool are able to use this template directly, whereas Cfg_Int
+- * makes use of serveral workaround to enable it to be used with integers other
++ * makes use of several workaround to enable it to be used with integers other
+  * than int.
+  */
+ template <typename TYPE>
+@@ -291,7 +296,7 @@ public:
+ 	}
+ 
+ 
+-	/** Updates the assosiated variable, returning true on success. */
++	/** Updates the associated variable, returning true on success. */
+ 	virtual bool TransferFromWindow()
+ 	{
+ 		if ( m_widget ) {
+@@ -311,7 +316,7 @@ public:
+ 		return false;
+ 	}
+ 
+-	/** Updates the assosiated widget, returning true on success. */
++	/** Updates the associated widget, returning true on success. */
+ 	virtual bool TransferToWindow()
+ 	{
+ 		if ( m_widget ) {
+@@ -343,6 +348,19 @@ protected:
  	wxWindow*	m_widget;
  };
  
@@ -1250,7 +1611,33 @@
  
  /** Cfg class for wxStrings. */
  class Cfg_Str : public Cfg_Tmpl<wxString>
-@@ -952,6 +970,11 @@
+@@ -541,14 +559,14 @@ protected:
+  * Helper function for creating new Cfg_Ints.
+  *
+  * @param keyname The cfg-key under which the item should be saved.
+- * @param value The variable to syncronize. The type of this variable defines the type used to create the Cfg_Int.
++ * @param value The variable to synchronize. The type of this variable defines the type used to create the Cfg_Int.
+  * @param defaultVal The default value if the key isn't found when loading the value.
+  * @return A pointer to the new Cfg_Int object. The caller is responsible for deleting it.
+  *
+  * This template-function returns a Cfg_Int of the appropriate type for the
+  * variable used as argument and should be used to avoid having to specify
+  * the integer type when adding a new Cfg_Int, since that's just increases
+- * the maintainence burden.
++ * the maintenance burden.
+  */
+ template <class TYPE>
+ Cfg_Base* MkCfg_Int( const wxString& keyname, TYPE& value, int defaultVal )
+@@ -741,7 +759,7 @@ public:
+ 			wxBusyCursor busyCursor;
+ 			aMuleLanguages[0].displayname = wxGetTranslation(aMuleLanguages[0].name);
+ 
+-			// This supresses error-messages about invalid locales
++			// This suppresses error-messages about invalid locales
+ 			for (unsigned int i = 1; i < itemsof(aMuleLanguages); ++i) {
+ 				if ((aMuleLanguages[i].id > wxLANGUAGE_USER_DEFINED) || wxLocale::IsAvailable(aMuleLanguages[i].id)) {
+ 					wxLogNull	logTarget;
+@@ -952,11 +970,16 @@ CPreferences::CPreferences()
  	s_userhash[5] = 14;
  	s_userhash[14] = 111;
  
@@ -1262,7 +1649,13 @@
  #ifndef CLIENT_GUI
  	LoadPreferences();
  	ReloadSharedFolders();
-@@ -1061,6 +1084,20 @@
+ 
+-	// serverlist adresses
++	// serverlist addresses
+ 	CTextFile slistfile;
+ 	if (slistfile.Open(s_configDir + wxT("addresses.dat"), CTextFile::read)) {
+ 		adresses_list = slistfile.ReadLines();
+@@ -1061,6 +1084,20 @@ void CPreferences::BuildItemList( const
  	NewCfgItem( IDC_NETWORKKAD, (new Cfg_Bool( wxT("/eMule/ConnectToKad"),	s_ConnectToKad, true )) );
  	NewCfgItem( IDC_NETWORKED2K, ( new Cfg_Bool( wxT("/eMule/ConnectToED2K"),	s_ConnectToED2K, true ) ));
  
@@ -1283,7 +1676,16 @@
  
  	/**
  	 * Files
-@@ -1472,6 +1509,11 @@
+@@ -1134,7 +1171,7 @@ void CPreferences::BuildItemList( const
+ 	NewCfgItem(IDC_STARTMIN,	(new Cfg_Bool( wxT("/eMule/StartupMinimized"), s_startMinimized, false )));
+ 
+ 	/**
+-	 * GUI appearence
++	 * GUI appearance
+ 	 **/
+ 	NewCfgItem(IDC_3DDEPTH,		(MkCfg_Int( wxT("/eMule/3DDepth"), s_depth3D, 10 )));
+ 	NewCfgItem(IDC_TOOLTIPDELAY,	(MkCfg_Int( wxT("/eMule/ToolTipDelay"), s_iToolDelayTime, 1 )));
+@@ -1472,6 +1509,11 @@ void CPreferences::Save()
  
  	SavePreferences();
  
@@ -1295,7 +1697,7 @@
  	#ifndef CLIENT_GUI
  	CTextFile sdirfile;
  	if (sdirfile.Open(s_configDir + wxT("shareddir.dat"), CTextFile::write)) {
-@@ -1483,6 +1525,21 @@
+@@ -1483,6 +1525,21 @@ void CPreferences::Save()
  	#endif
  }
  
@@ -1317,9 +1719,50 @@
  
  CPreferences::~CPreferences()
  {
---- a/src/Preferences.h	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/Preferences.h	2021-02-11 23:13:52.000000000 +0800
-@@ -580,6 +580,11 @@
+--- a/src/Preferences.h
++++ b/src/Preferences.h
+@@ -71,7 +71,7 @@ enum AllCategoryFilter {
+  *
+  * The purpose of this class is to perform two tasks:
+  * 1) To load and save a variable using wxConfig
+- * 2) If nescecarry, to syncronize it with a widget
++ * 2) If nescecarry, to synchronize it with a widget
+  *
+  * This pure-virtual class servers as the base of all the Cfg types
+  * defined below, and exposes the entire interface.
+@@ -81,7 +81,7 @@ enum AllCategoryFilter {
+  * for this.
+  *
+  * To create a sub-class you need only provide the Load/Save functionality,
+- * as it is given that not all variables have a widget assosiated.
++ * as it is given that not all variables have a widget associated.
+  */
+ class Cfg_Base
+ {
+@@ -102,11 +102,11 @@ public:
+ 	virtual ~Cfg_Base() {}
+ 
+ 	/**
+-	 * This function loads the assosiated variable from the provided config object.
++	 * This function loads the associated variable from the provided config object.
+ 	 */
+ 	virtual void LoadFromFile(wxConfigBase* cfg) = 0;
+ 	/**
+-	 * This function saves the assosiated variable to the provided config object.
++	 * This function saves the associated variable to the provided config object.
+ 	 */
+ 	virtual void SaveToFile(wxConfigBase* cfg) = 0;
+ 
+@@ -136,7 +136,7 @@ public:
+ 	virtual	bool ConnectToWidget( int WXUNUSED(id), wxWindow* WXUNUSED(parent) = NULL )	{ return false; }
+ 
+ 	/**
+-	 * Gets the key assosiated with Cfg object.
++	 * Gets the key associated with Cfg object.
+ 	 *
+ 	 * @return The config-key of this object.
+ 	 */
+@@ -580,6 +580,11 @@ public:
  	// Sleep
  	static bool		GetPreventSleepWhileDownloading() { return s_preventSleepWhileDownloading; }
  	static void		SetPreventSleepWhileDownloading(bool status) { s_preventSleepWhileDownloading = status; }
@@ -1331,7 +1774,7 @@
  protected:
  	static	int32 GetRecommendedMaxConnections();
  
-@@ -601,6 +606,11 @@
+@@ -601,6 +606,11 @@ private:
  	void LoadPreferences();
  	void SavePreferences();
  
@@ -1343,7 +1786,7 @@
  protected:
  	static wxString	s_configDir;
  
-@@ -815,6 +825,20 @@
+@@ -815,6 +825,20 @@ protected:
  	// Stats server
  	static wxString s_StatsServerName;
  	static wxString s_StatsServerURL;
@@ -1364,8 +1807,8 @@
  };
  
  
---- a/src/PrefsUnifiedDlg.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/PrefsUnifiedDlg.cpp	2021-02-11 23:14:04.000000000 +0800
+--- a/src/PrefsUnifiedDlg.cpp
++++ b/src/PrefsUnifiedDlg.cpp
 @@ -53,6 +53,11 @@
  #include "UserEvents.h"
  #include "PlatformSpecific.h"		// Needed for PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
@@ -1378,7 +1821,7 @@
  BEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDialog)
  	// Events
  #define USEREVENTS_EVENT(ID, NAME, VARS) \
-@@ -114,6 +119,11 @@
+@@ -114,6 +119,11 @@ BEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDial
  	EVT_CHOICE(IDC_COLORSELECTOR,		PrefsUnifiedDlg::OnColorCategorySelected)
  	EVT_LIST_ITEM_SELECTED(ID_PREFSLISTCTRL,PrefsUnifiedDlg::OnPrefsPageChange)
  
@@ -1390,7 +1833,16 @@
  	EVT_INIT_DIALOG(PrefsUnifiedDlg::OnInitDialog)
  
  	EVT_COMMAND_SCROLL(IDC_SLIDER,		PrefsUnifiedDlg::OnScrollBarChange)
-@@ -187,6 +197,9 @@
+@@ -139,7 +149,7 @@ END_EVENT_TABLE()
+  * Creates an command-event for the given checkbox.
+  *
+  * This can be used enforce logical constraints by passing by
+- * sending a check-box event for each checkbox, when transfering
++ * sending a check-box event for each checkbox, when transferring
+  * to the UI. However, it should also be used for checkboxes that
+  * have no side-effects other than enabling/disabling other
+  * widgets in the preferences dialogs.
+@@ -187,6 +197,9 @@ PrefsPage pages[] =
  	{ wxTRANSLATE("Online Signature"),	PreferencesOnlineSigTab,	21 },
  	{ wxTRANSLATE("Advanced"),			PreferencesaMuleTweaksTab,	12 },
  	{ wxTRANSLATE("Events"),			PreferencesEventsTab,		5 }
@@ -1400,7 +1852,34 @@
  #ifdef __DEBUG__
  	,{ wxTRANSLATE("Debugging"),		PreferencesDebug,			25 }
  #endif
-@@ -1096,6 +1109,21 @@
+@@ -865,7 +878,7 @@ void PrefsUnifiedDlg::OnCheckBoxChange(w
+ 			break;
+ 
+ 		case IDC_MSGFILTER:
+-			// Toogle All filter options
++			// Toggle All filter options
+ 			FindWindow(IDC_MSGFILTER_ALL)->Enable(value);
+ 			FindWindow(IDC_MSGFILTER_NONSECURE)->Enable(value);
+ 			FindWindow(IDC_MSGFILTER_NONFRIENDS)->Enable(value);
+@@ -879,7 +892,7 @@ void PrefsUnifiedDlg::OnCheckBoxChange(w
+ 			break;
+ 
+ 		case IDC_MSGFILTER_ALL:
+-			// Toogle filtering by data.
++			// Toggle filtering by data.
+ 			FindWindow(IDC_MSGFILTER_NONSECURE)->Enable(!value);
+ 			FindWindow(IDC_MSGFILTER_NONFRIENDS)->Enable(!value);
+ 			FindWindow(IDC_MSGFILTER_WORD)->Enable(!value);
+@@ -892,7 +905,7 @@ void PrefsUnifiedDlg::OnCheckBoxChange(w
+ 			break;
+ 
+ 		case IDC_MSGFILTER_WORD:
+-			// Toogle filter word list.
++			// Toggle filter word list.
+ 			FindWindow(IDC_MSGWORD)->Enable(value);
+ 			break;
+ 
+@@ -1096,6 +1109,21 @@ void PrefsUnifiedDlg::OnButtonIPFilterUp
  	theApp->ipfilter->Update( CastChild( IDC_IPFILTERURL, wxTextCtrl )->GetValue() );
  }
  
@@ -1422,9 +1901,18 @@
  
  void PrefsUnifiedDlg::OnPrefsPageChange(wxListEvent& event)
  {
---- a/src/PrefsUnifiedDlg.h	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/PrefsUnifiedDlg.h	2021-02-11 23:14:11.000000000 +0800
-@@ -124,6 +124,9 @@
+--- a/src/PrefsUnifiedDlg.h
++++ b/src/PrefsUnifiedDlg.h
+@@ -80,7 +80,7 @@ protected:
+ 	bool			CfgChanged(int id);
+ 
+ 	/**
+-	 * Helper functions which returns the Cfg assosiated with the specified id.
++	 * Helper functions which returns the Cfg associated with the specified id.
+ 	 */
+ 	Cfg_Base*		GetCfg(int id);
+ 
+@@ -124,6 +124,9 @@ protected:
  	void OnUserEventSelected(wxListEvent& event);
  	void OnLanguageChoice(wxCommandEvent &event);
  	void CreateEventPanels(const int idx, const wxString& vars, wxWindow* parent);
@@ -1434,9 +1922,9 @@
  
  	void OnInitDialog( wxInitDialogEvent& evt );
  
---- a/src/ServerWnd.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/ServerWnd.cpp	2021-02-11 23:14:22.000000000 +0800
-@@ -46,6 +46,7 @@
+--- a/src/ServerWnd.cpp
++++ b/src/ServerWnd.cpp
+@@ -46,6 +46,7 @@ BEGIN_EVENT_TABLE(CServerWnd,wxPanel)
  	EVT_BUTTON(ID_BTN_RESET, CServerWnd::OnBnClickedResetLog)
  	EVT_BUTTON(ID_BTN_RESET_SERVER, CServerWnd::OnBnClickedResetServerLog)
  	EVT_SPLITTER_SASH_POS_CHANGED(ID_SRV_SPLITTER,CServerWnd::OnSashPositionChanged)
@@ -1444,7 +1932,7 @@
  END_EVENT_TABLE()
  
  
-@@ -152,6 +153,11 @@
+@@ -152,6 +153,11 @@ void CServerWnd::OnBnClickedResetServerL
  	theApp->GetServerLog(true); // Reset it
  }
  
@@ -1456,9 +1944,9 @@
  
  void CServerWnd::UpdateED2KInfo()
  {
---- a/src/ServerWnd.h	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/ServerWnd.h	2021-02-11 23:14:27.000000000 +0800
-@@ -50,6 +50,7 @@
+--- a/src/ServerWnd.h
++++ b/src/ServerWnd.h
+@@ -50,6 +50,7 @@ private:
  	void OnBnClickedUpdateservermetfromurl(wxCommandEvent& evt);
  	void OnBnClickedResetLog(wxCommandEvent& evt);
  	void OnBnClickedResetServerLog(wxCommandEvent& evt);
@@ -1466,9 +1954,9 @@
  
  	DECLARE_EVENT_TABLE()
  };
---- a/src/TextClient.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/TextClient.cpp	2021-02-11 23:14:38.000000000 +0800
-@@ -67,6 +67,7 @@
+--- a/src/TextClient.cpp
++++ b/src/TextClient.cpp
+@@ -67,6 +67,7 @@ enum {
  	CMD_ID_RELOAD_SHARED,
  	CMD_ID_RELOAD_IPFILTER_LOCAL,
  	CMD_ID_RELOAD_IPFILTER_NET,
@@ -1476,7 +1964,7 @@
  	CMD_ID_SET_IPFILTER_ON,
  	CMD_ID_SET_IPFILTER_OFF,
  	CMD_ID_SET_IPFILTER_CLIENTS_ON,
-@@ -234,6 +235,12 @@
+@@ -234,6 +235,12 @@ int CamulecmdApp::ProcessCommand(int Cmd
  		case CMD_ID_DISCONNECT_KAD:
  			request_list.push_back(new CECPacket(EC_OP_KAD_STOP));
  			break;
@@ -1489,7 +1977,7 @@
  
  		case CMD_ID_RELOAD_SHARED:
  			request_list.push_back(new CECPacket(EC_OP_SHAREDFILES_RELOAD));
-@@ -904,6 +911,9 @@
+@@ -904,6 +911,9 @@ void CamulecmdApp::OnInitCommandSet()
  	tmp2->AddCommand(wxT("Net"), CMD_ID_RELOAD_IPFILTER_NET, wxTRANSLATE("Update IP filtering table from URL."),
  					wxTRANSLATE("If URL is omitted the URL from the preferences is used."), CMD_PARAM_OPTIONAL);
  
@@ -1499,9 +1987,18 @@
  	tmp = m_commands.AddCommand(wxT("Connect"), CMD_ID_CONNECT, wxTRANSLATE("Connect to the network."),
  				    wxTRANSLATE("This will connect to all networks that are enabled in Preferences.\nYou may also optionally specify a server address in IP:Port form, to connect to\nthat server only. The IP must be a dotted decimal IPv4 address,\nor a resolvable DNS name."), CMD_PARAM_OPTIONAL);
  	tmp->AddCommand(wxT("ED2K"), CMD_ID_CONNECT_ED2K, wxTRANSLATE("Connect to eD2k only."), wxEmptyString, CMD_PARAM_NEVER);
---- a/src/updownclient.h	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/updownclient.h	2021-02-11 23:14:49.000000000 +0800
-@@ -408,7 +408,13 @@
+--- a/src/updownclient.h
++++ b/src/updownclient.h
+@@ -109,7 +109,7 @@ private:
+ 	/**
+ 	 * Please note that only the ClientList is allowed to delete the clients.
+ 	 * To schedule a client for deletion, call the CClientList::AddToDeleteQueue
+-	 * funtion, which will safely remove dead clients once every second.
++	 * function, which will safely remove dead clients once every second.
+ 	 */
+ 	~CUpDownClient();
+ 
+@@ -408,7 +408,13 @@ public:
  	bool		GetSentCancelTransfer() const	{ return m_fSentCancelTransfer; }
  	void		SetSentCancelTransfer(bool bVal)	{ m_fSentCancelTransfer = bVal; }
  
@@ -1516,7 +2013,7 @@
  	wxString	GetClientShortInfo();
  
  	const wxString& GetClientOSInfo() const		{ return m_sClientOSInfo; }
-@@ -582,6 +588,10 @@
+@@ -582,6 +588,10 @@ public:
  
  	bool		HasDisabledSharedFiles() const { return m_fNoViewSharedFiles; }
  
@@ -1527,7 +2024,25 @@
  private:
  
  	CClientCredits	*credits;
-@@ -842,6 +852,10 @@
+@@ -705,7 +715,7 @@ private:
+ 	uint32		m_score;
+ 	uint16		m_waitingPosition;
+ 
+-	//! This vector contains the avilability of parts for the file that the user
++	//! This vector contains the availability of parts for the file that the user
+ 	//! is requesting. When changing it, be sure to call CKnownFile::UpdatePartsFrequency
+ 	//! so that the files know the actual availability of parts.
+ 	BitVector	m_upPartStatus;
+@@ -779,7 +789,7 @@ private:
+ 
+ 	bool		m_bHelloAnswerPending;
+ 
+-	//! This vector contains the avilability of parts for the file we requested
++	//! This vector contains the availability of parts for the file we requested
+ 	//! from this user. When changing it, be sure to call CPartFile::UpdatePartsFrequency
+ 	//! so that the files know the actual availability of parts.
+ 	BitVector	m_downPartStatus;
+@@ -842,6 +852,10 @@ private:
  #ifdef __DEBUG__
  	wxString	connection_reason;
  #endif
@@ -1538,9 +2053,18 @@
  };
  
  
---- a/src/UploadQueue.cpp	2021-02-08 06:25:11.000000000 +0800
-+++ b/src/UploadQueue.cpp	2021-02-11 23:14:56.000000000 +0800
-@@ -390,6 +390,11 @@
+--- a/src/UploadQueue.cpp
++++ b/src/UploadQueue.cpp
+@@ -239,7 +239,7 @@ void CUploadQueue::Process()
+ 	uint32 tick = GetTickCount();
+ 	// Nobody waiting or upload started recently
+ 	// (Actually instead of "empty" it should check for "no HighID clients queued",
+-	//  but the cost for that outweights the benefit. As it is, a slot will be freed
++	//  but the cost for that outweighs the benefit. As it is, a slot will be freed
+ 	//  even if it can't be taken because all of the queue is LowID. But just one,
+ 	//  and the kicked client will instantly get it back if he has HighID.)
+ 	// Also, if we are running out of sockets, don't add new clients, but also don't kick existing ones,
+@@ -390,6 +390,11 @@ void CUploadQueue::AddClientToQueue(CUpD
  		return;
  	}
  
@@ -1552,3 +2076,16 @@
  	client->AddAskedCount();
  	client->SetLastUpRequest();
  
+@@ -600,10 +605,10 @@ void CUploadQueue::ResumeUpload( const C
+ /*
+  * This function stops upload of a file indicated by filehash.
+  *
+- * a) teminate == false:
++ * a) terminate == false:
+  *    File is suspended while a download completes. Then it is resumed after completion,
+  *    so it makes sense to keep the client. Such files are kept in suspendedUploadsSet.
+- * b) teminate == true:
++ * b) terminate == true:
+  *    File is deleted. Then the client is not added to the waiting list.
+  *    Waiting clients are swept out with next run of AddUpNextClient,
+  *    because their file is not shared anymore.

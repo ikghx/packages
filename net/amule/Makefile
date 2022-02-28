@@ -5,15 +5,13 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=aMule
+PKG_NAME:=amule
 PKG_VERSION:=2.3.3
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=$(PKG_VERSION)
-PKG_SOURCE_URL:=https://github.com/amule-project/amule.git
-PKG_SOURCE_DATE:=2021-02-08
-PKG_MIRROR_HASH:=cbeb586e99f16eb4aec1123adcb5981f608ad0fbc39f00c03208c21324792067
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://codeload.github.com/amule-project/amule/tar.gz/$(PKG_VERSION)?
+PKG_HASH:=934f79d4dab41c2d1caea31d6c6e10337c409ba5bb8bd6fac6c63e924e82c9b8
 
 PKG_CONFIG_DEPENDS:= CONFIG_AMULE_CRYPTOPP_STATIC_LINKING
 
@@ -31,16 +29,16 @@ define Package/amule
   CATEGORY:=Network
   TITLE:=A multi-platform eMule-like ed2k client
   URL:=http://www.amule.org/
-  DEPENDS:=+libpng +libpthread +libncurses +libreadline +libwxbase +libupnp +libbfd \
+  DEPENDS:=+libpng +libpthread +libncurses +libreadline +libwxbase +libupnp +libbfd +libintl \
 	$(ICONV_DEPENDS) $(INTL_DEPENDS) +!AMULE_CRYPTOPP_STATIC_LINKING:libcryptopp \
 	+boost-system +antileech +ca-bundle
   USERID:=amule=4662:amule=4662
 endef
 
 define Package/amule/config
-	config AMULE_CRYPTOPP_STATIC_LINKING
-		bool "Link libcryptopp statically"
-		default n
+config AMULE_CRYPTOPP_STATIC_LINKING
+	bool "Link libcryptopp statically"
+	default n
 endef
 
 TARGET_LDFLAGS+= -liconv
@@ -63,6 +61,7 @@ CONFIGURE_ARGS+= \
 	--disable-alcc \
 	--disable-debug \
 	--disable-fileview \
+	--enable-mmap \
 	--disable-plasmamule \
 	--disable-geoip \
 	--disable-nls \
