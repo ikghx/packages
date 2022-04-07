@@ -8,12 +8,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=modemmanager
-PKG_VERSION:=1.18.6
+PKG_SOURCE_VERSION:=1.18.6
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://gitlab.freedesktop.org/mobile-broadband/ModemManager.git
-PKG_SOURCE_VERSION:=$(PKG_VERSION)
 PKG_MIRROR_HASH:=72f1a865153745d05c482ed3a77f2045d24387f1f9a37177fe7bc35ab7663765
 
 PKG_MAINTAINER:=Nicholas Smith <nicholas@nbembedded.com>
@@ -46,7 +45,7 @@ define Package/modemmanager
 	+ppp-multilink \
 	+MODEMMANAGER_WITH_MBIM:libmbim \
 	+MODEMMANAGER_WITH_QMI:libqmi \
-	+MODEMMANAGER_WITH_QRTR_GLIB:libqrtr-glib
+	+MODEMMANAGER_WITH_QRTR:libqrtr-glib
 endef
 
 define Package/modemmanager/description
@@ -65,31 +64,11 @@ MESON_ARGS += \
 	-Dintrospection=false \
 	-Dman=false \
 	-Dbash_completion=false \
-	-Db_lto=true
-
-ifeq ($(CONFIG_MODEMMANAGER_WITH_AT_COMMAND_VIA_DBUS),y)
-	MESON_ARGS += -Dat_command_via_dbus=true
-else
-	MESON_ARGS += -Dat_command_via_dbus=false
-endif
-
-ifeq ($(CONFIG_MODEMMANAGER_WITH_MBIM),y)
-	MESON_ARGS += -Dmbim=true
-else
-	MESON_ARGS += -Dmbim=false
-endif
-
-ifeq ($(CONFIG_MODEMMANAGER_WITH_QMI),y)
-	MESON_ARGS += -Dqmi=true
-else
-	MESON_ARGS += -Dqmi=false
-endif
-
-ifeq ($(CONFIG_MODEMMANAGER_WITH_QRTR_GLIB),y)
-	MESON_ARGS += -Dqrtr=true
-else
-	MESON_ARGS += -Dqrtr=false
-endif
+	-Db_lto=true \
+	-Dmbim=$(if $(CONFIG_MODEMMANAGER_WITH_MBIM),true,false) \
+	-Dqmi=$(if $(CONFIG_MODEMMANAGER_WITH_QMI),true,false) \
+	-Dqrtr=$(if $(CONFIG_MODEMMANAGER_WITH_QRTR),true,false) \
+	-Dat_command_via_dbus=$(if $(CONFIG_MODEMMANAGER_WITH_AT_COMMAND_VIA_DBUS),true,false)
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/ModemManager
