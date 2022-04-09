@@ -22,10 +22,6 @@ PKG_BUILD_DEPENDS:=golang/host node/host node-yarn/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
-PKG_CONFIG_DEPENDS:= \
-	CONFIG_ADGUARDHOME_COMPRESS_GOPROXY \
-	CONFIG_ADGUARDHOME_COMPRESS_UPX
-
 GO_PKG:=github.com/AdguardTeam/AdGuardHome
 GO_PKG_BUILD_PKG:=github.com/AdguardTeam/AdGuardHome
 
@@ -57,21 +53,6 @@ define Package/adguardhome/description
 Free and open source, powerful network-wide ads and trackers blocking DNS server.
 endef
 
-define Package/$(PKG_NAME)/config
-config ADGUARDHOME_COMPRESS_GOPROXY
-	bool "Compiling with GOPROXY proxy"
-	default n
-
-config ADGUARDHOME_COMPRESS_UPX
-	bool "Compress executable files with UPX"
-	default n
-endef
-
-ifeq ($(CONFIG_ADGUARDHOME_COMPRESS_GOPROXY),y)
-export GO111MODULE=on
-export GOPROXY=https://goproxy.cn
-endif
-
 define Build/Compile
 	( \
 		pushd $(PKG_BUILD_DIR) ; \
@@ -79,9 +60,6 @@ define Build/Compile
 		popd ; \
 		$(call GoPackage/Build/Compile) ; \
 	)
-ifeq ($(CONFIG_ADGUARDHOME_COMPRESS_UPX),y)
-	upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/AdGuardHome || true
-endif
 endef
 
 define Package/adguardhome/install

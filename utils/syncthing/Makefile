@@ -15,10 +15,6 @@ PKG_LICENSE:=MPL-2.0
 PKG_LICENSE_FILES:=LICENSE
 PKG_CPE_ID:=cpe:/a:syncthing:syncthing
 
-PKG_CONFIG_DEPENDS:= \
-	CONFIG_SYNCTHING_COMPRESS_GOPROXY \
-	CONFIG_SYNCTHING_COMPRESS_UPX
-
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
@@ -59,27 +55,9 @@ define Package/syncthing/description
 		third party and how it's transmitted over the Internet.
 endef
 
-define Package/$(PKG_NAME)/config
-config SYNCTHING_COMPRESS_GOPROXY
-	bool "Compiling with GOPROXY proxy"
-	default n
-
-config SYNCTHING_COMPRESS_UPX
-	bool "Compress executable files with UPX"
-	default n
-endef
-
-ifeq ($(CONFIG_SYNCTHING_COMPRESS_GOPROXY),y)
-export GO111MODULE=on
-export GOPROXY=https://goproxy.io
-#export GOPROXY=https://mirrors.aliyun.com/goproxy/
-endif
-
 define Package/syncthing/install
 	$(call GoPackage/Package/Install/Bin,$(1))
-ifeq ($(CONFIG_SYNCTHING_COMPRESS_UPX),y)
-	upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/syncthing || true
-endif
+
 	$(CP) ./files/* $(1)/
 endef
 

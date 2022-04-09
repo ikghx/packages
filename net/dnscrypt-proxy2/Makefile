@@ -24,9 +24,6 @@ PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
-PKG_CONFIG_DEPENDS:= \
-	CONFIG_DNSCRYPT_COMPRESS_UPX
-
 GO_PKG:=github.com/DNSCrypt/dnscrypt-proxy
 
 include $(INCLUDE_DIR)/package.mk
@@ -42,19 +39,6 @@ define Package/dnscrypt-proxy2
   URL:=https://github.com/DNSCrypt/dnscrypt-proxy
   DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle
   CONFLICTS:=dnscrypt-proxy
-endef
-
-define Package/dnscrypt-proxy2/config
-	config DNSCRYPT_COMPRESS_UPX
-		bool "Compress executable files with UPX"
-		default n
-endef
-
-define Build/Compile
-	$(call GoPackage/Build/Compile)
-  ifeq ($(CONFIG_DNSCRYPT_COMPRESS_UPX),y)
-	upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/dnscrypt-proxy
-  endif
 endef
 
 define Package/dnscrypt-proxy2/install

@@ -17,10 +17,6 @@ PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
-PKG_CONFIG_DEPENDS:= \
-	CONFIG_CLIENT_CORE_COMPRESS_UPX \
-	CONFIG_SERVER_CORE_COMPRESS_UPX
-
 GO_PKG:=github.com/xtaci/kcptun
 
 GO_PKG_LDFLAGS_X:=main.VERSION=$(PKG_VERSION)
@@ -45,28 +41,6 @@ define Package/kcptun/Default
   define Package/kcptun-$(1)/description
     kcptun is a Stable & Secure Tunnel Based On KCP with N:M Multiplexing.
 This package only contains kcptun $(1).
-  endef
-
-  define Package/kcptun-client/config
-	config CLIENT_CORE_COMPRESS_UPX
-		bool "Compress executable files with UPX"
-		default n
-  endef
-
-  define Package/kcptun-server/config
-	config SERVER_CORE_COMPRESS_UPX
-		bool "Compress executable files with UPX"
-		default n
-  endef
-
-  define Build/Compile
-	$(call GoPackage/Build/Compile)
-  ifeq ($(CONFIG_CLIENT_CORE_COMPRESS_UPX),y)
-	upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/client
-  endif
-  ifeq ($(CONFIG_SERVER_CORE_COMPRESS_UPX),y)
-	upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/server
-  endif
   endef
 
   define Package/kcptun-$(1)/install

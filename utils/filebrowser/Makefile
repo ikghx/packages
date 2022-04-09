@@ -22,10 +22,6 @@ PKG_BUILD_DEPENDS:=golang/host node/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
-PKG_CONFIG_DEPENDS:= \
-	CONFIG_FILEBROWSER_COMPRESS_GOPROXY \
-	CONFIG_FILEBROWSER_COMPRESS_UPX
-
 GO_PKG:=github.com/filebrowser/filebrowser
 GO_PKG_LDFLAGS_X:= \
 	github.com/filebrowser/filebrowser/v2/version.CommitSHA=$(PKG_SOURCE_VERSION) \
@@ -49,21 +45,6 @@ define Package/filebrowser/description
   It can be used as a standalone app or as a middleware.
 endef
 
-define Package/filebrowser/config
-config FILEBROWSER_COMPRESS_GOPROXY
-	bool "Compiling with GOPROXY proxy"
-	default n
-
-config FILEBROWSER_COMPRESS_UPX
-	bool "Compress executable files with UPX"
-	default n
-endef
-
-ifeq ($(CONFIG_FILEBROWSER_COMPRESS_GOPROXY),y)
-export GO111MODULE=on
-export GOPROXY=https://goproxy.io
-endif
-
 define Build/Compile
 ( \
   cd $(PKG_BUILD_DIR)/frontend ; \
@@ -72,9 +53,6 @@ define Build/Compile
   npm run build ; \
   $(call GoPackage/Build/Compile) ; \
 )
-ifeq ($(CONFIG_FILEBROWSER_COMPRESS_UPX),y)
-	upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/filebrowser
-endif
 endef
 
 define Package/filebrowser/install

@@ -24,9 +24,6 @@ PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
-PKG_CONFIG_DEPENDS:= \
-	CONFIG_NEXTDNS_COMPRESS_UPX
-
 GO_PKG:=github.com/nextdns/nextdns
 GO_PKG_LDFLAGS_X:=main.version=$(PKG_VERSION)
 
@@ -43,19 +40,6 @@ endef
 
 define Package/nextdns/conffiles
 /etc/config/nextdns
-endef
-
-define Package/nextdns/config
-	config NEXTDNS_COMPRESS_UPX
-		bool "Compress executable files with UPX"
-		default n
-endef
-
-define Build/Compile
-	$(call GoPackage/Build/Compile)
-  ifeq ($(CONFIG_NEXTDNS_COMPRESS_UPX),y)
-	upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/nextdns
-  endif
 endef
 
 define Package/nextdns/install

@@ -16,10 +16,6 @@ PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
-PKG_CONFIG_DEPENDS := \
-	CONFIG_FRPC_COMPRESS_UPX \
-	CONFIG_FRPS_COMPRESS_UPX
-
 GO_PKG:=github.com/fatedier/frp
 GO_PKG_BUILD_PKG:=github.com/fatedier/frp/cmd/...
 
@@ -46,28 +42,6 @@ define Package/frp/template
   define Package/$(1)/description
     $(1) is a fast reverse proxy $(2) to help you expose a local server behind
     a NAT or firewall to the internet.
-  endef
-
-  define Package/frpc/config
-	config FRPC_COMPRESS_UPX
-		bool "Compress executable files with UPX"
-		default n
-  endef
-
-  define Package/frps/config
-	config FRPS_COMPRESS_UPX
-		bool "Compress executable files with UPX"
-		default n
-  endef
-
-  define Build/Compile
-	$(call GoPackage/Build/Compile)
-  ifeq ($(CONFIG_FRPC_COMPRESS_UPX),y)
-	upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/frpc
-  endif
-  ifeq ($(CONFIG_FRPS_COMPRESS_UPX),y)
-	upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/frps
-  endif
   endef
 
   define Package/$(1)/conffiles
