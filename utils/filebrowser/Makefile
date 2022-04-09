@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020 Project OpenWrt
+# Copyright (C) 2021 ImmortalWrt
 # This is free software, licensed under the GNU General Public License v3.
 # See /LICENSE.txt for more information.
 #
@@ -16,7 +16,7 @@ PKG_HASH:=35a5fd694f41ddd606c98fef90557d7d2c5ade04a8add622a0f0a58f407b1afc
 
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=CN_SZTL <cnsztl@project-openwrt.eu.org>
+PKG_MAINTAINER:=CN_SZTL <cnsztl@immortalwrt.org>
 
 PKG_BUILD_DEPENDS:=golang/host node/host
 PKG_BUILD_PARALLEL:=1
@@ -24,8 +24,8 @@ PKG_USE_MIPS16:=0
 
 GO_PKG:=github.com/filebrowser/filebrowser
 GO_PKG_LDFLAGS_X:= \
-	github.com/filebrowser/filebrowser/v2/version.CommitSHA=$(PKG_SOURCE_VERSION) \
-	github.com/filebrowser/filebrowser/v2/version.Version=$(PKG_VERSION)
+	$(GO_PKG)/v2/version.CommitSHA=$(PKG_SOURCE_VERSION) \
+	$(GO_PKG)/v2/version.Version=$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
 include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
@@ -33,7 +33,7 @@ include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
 define Package/filebrowser
   SECTION:=utils
   CATEGORY:=Utilities
-  TITLE:=Web File Browser which can be used as a middleware or standalone app.
+  TITLE:=Web File Browser
   URL:=https://github.com/filebrowser/filebrowser
   DEPENDS:=$(GO_ARCH_DEPENDS)
 endef
@@ -46,13 +46,14 @@ define Package/filebrowser/description
 endef
 
 define Build/Compile
-( \
-  cd $(PKG_BUILD_DIR)/frontend ; \
-  npm ci; \
-  npm run lint ; \
-  npm run build ; \
-  $(call GoPackage/Build/Compile) ; \
-)
+	( \
+		pushd "$(PKG_BUILD_DIR)/frontend" ; \
+		npm ci; \
+		npm run lint ; \
+		npm run build ; \
+		popd ; \
+		$(call GoPackage/Build/Compile) ; \
+	)
 endef
 
 define Package/filebrowser/install
