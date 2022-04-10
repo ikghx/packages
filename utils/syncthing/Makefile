@@ -28,7 +28,7 @@ GO_PKG_LDFLAGS_X:=\
 	github.com/syncthing/syncthing/lib/build.Stamp=$(SOURCE_DATE_EPOCH) \
 	github.com/syncthing/syncthing/lib/build.User=openwrt \
 	github.com/syncthing/syncthing/lib/build.Host=openwrt \
-	github.com/syncthing/syncthing/lib/build.Program=syncthing
+	github.com/syncthing/syncthing/lib/build.Tags=noupgrade
 GO_PKG_TAGS:=noupgrade
 
 include $(INCLUDE_DIR)/package.mk
