@@ -51,7 +51,7 @@ CONFIGURE_ARGS += \
 	--disable-locale \
 	--disable-md2man \
 	--disable-openssl \
-	--disable-simd \
+	--disable-roll-simd \
 	--disable-xxhash \
 	--$(if $(CONFIG_BUILD_NLS),en,dis)able-iconv \
 	--$(if $(CONFIG_BUILD_NLS),en,dis)able-iconv-open \
