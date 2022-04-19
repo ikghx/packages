@@ -46,7 +46,8 @@ CONFIGURE_ARGS += \
 	--without-included-popt \
 	--without-included-zlib \
 	--disable-debug \
-	--disable-asm \
+	--disable-md5-asm \
+	--disable-roll-asm \
 	--disable-lz4 \
 	--disable-locale \
 	--disable-md2man \
