@@ -58,9 +58,9 @@ TARGET_LDFLAGS += $(if $(CONFIG_USE_GLIBC),-lc -lgcc_eh)
 define EnsureVendoredVersion
 	( \
 		DEP_VER=$$$$( grep --only-matching --perl-regexp '(?<=PKG_VERSION:=)(.*)' "$(1)" ); \
-		VEN_VER=$$$$( grep --only-matching --perl-regexp '(?<=_VERSION:=)(.*)(?=})' "$(PKG_BUILD_DIR)/hack/dockerfile/install/$(2)" ); \
-		if [ "$$$${VEN_VER}" != "v$$$${DEP_VER}" ]; then \
-			echo "ERROR: Expected 'PKG_VERSION:=$$$${VEN_VER}' in '$(1)', found 'PKG_VERSION:=v$$$${DEP_VER}'"; \
+		VEN_VER=$$$$( grep --only-matching --perl-regexp '(?<=_VERSION:=v)(.*)(?=})' "$(PKG_BUILD_DIR)/hack/dockerfile/install/$(2)" ); \
+		if [ "$$$${VEN_VER}" != "$$$${DEP_VER}" ]; then \
+			echo "ERROR: Expected 'PKG_VERSION:=$$$${VEN_VER}' in '$(1)', found 'PKG_VERSION:=$$$${DEP_VER}'"; \
 			exit 1; \
 		fi \
 	)
