@@ -23,7 +23,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/tgt
 	SECTION:=net
 	CATEGORY:=Network
-	URL:=http://stgt.sourceforge.net/
+	URL:=https://github.com/fujita/tgt
 	TITLE:=userspace iSCSI target
 	DEPENDS:=+libpthread +libaio
 endef

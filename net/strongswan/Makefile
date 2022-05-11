@@ -557,6 +557,8 @@ define Package/strongswan-ipsec/install
 	$(INSTALL_CONF) ./files/ipsec.secrets $(1)/etc/
 	echo -e "\ninclude /var/ipsec/ipsec.secrets" >> $(1)/etc/ipsec.secrets
 	$(INSTALL_CONF) ./files/ipsec.user $(1)/etc/
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) ./files/ipsec.init $(1)/etc/init.d/ipsec
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/ipsec $(1)/usr/sbin/
 endef
 
