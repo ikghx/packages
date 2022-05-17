@@ -9,7 +9,6 @@ PKG_LICENSE_FILES:=LICENSE
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/opencontainers/runc/tar.gz/v${PKG_VERSION}?
 PKG_HASH:=11a34535c108b36fd59de58e7bef3a130444c9ea41e4b8bb8f8d4654c8ad654c
-PKG_SOURCE_VERSION:=52de29d7e0f8c0899bd7efb8810dd07f0073fa87
 
 PKG_MAINTAINER:=Gerard Ryan <G.M0N3Y.2503@gmail.com>
 
