@@ -7,7 +7,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=webd
-PKG_VERSION:=20220327
+PKG_VERSION:=20220512
 PKG_RELEASE:=1
 
 ifeq ($(ARCH),x86_64)
@@ -30,6 +30,9 @@ ifeq ($(ARCH),mipsel)
 endif
 ifeq ($(BOARD),mvebu)
 	PKG_ARCH:=mvebu
+endif
+ifeq ($(ARCH),aarch64)
+	PKG_ARCH:=aarch64
 endif
 
 include $(INCLUDE_DIR)/package.mk
