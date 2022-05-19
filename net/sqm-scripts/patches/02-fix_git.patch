@@ -1,0 +1,59 @@
+--- a/platform/linux/sqm@.service
++++ b/platform/linux/sqm@.service
+@@ -15,4 +15,4 @@ ExecStop=/usr/lib/sqm/stop-sqm
+ RemainAfterExit=1
+ 
+ [Install]
+-WantedBy=multi-user.target
++WantedBy=sys-devices-virtual-net-%i.device
+--- a/src/defaults.sh
++++ b/src/defaults.sh
+@@ -28,18 +28,26 @@
+ 
+ # handling of specific important binaries
+ [ -z "$TC" ] && TC=tc_wrapper
+-[ -z "$TC_BINARY" ] && TC_BINARY=$(which tc)
++[ -z "$TC_BINARY" ] && TC_BINARY=$(command -v tc)
+ [ -z "$IP" ] && IP=ip_wrapper
+-[ -z "$IP_BINARY" ] && IP_BINARY=$(which ip)
++[ -z "$IP_BINARY" ] && IP_BINARY=$(command -v ip)
+ [ -z "$IPTABLES" ] && IPTABLES=iptables_wrapper
+-[ -z "$IPTABLES_BINARY" ] && IPTABLES_BINARY=$(which iptables)
++[ -z "$IPTABLES_BINARY" ] && IPTABLES_BINARY=$(command -v iptables)
+ [ -z "$IP6TABLES" ] && IP6TABLES=ip6tables_wrapper
+-[ -z "$IP6TABLES_BINARY" ] && IP6TABLES_BINARY=$(which ip6tables)
++[ -z "$IP6TABLES_BINARY" ] && IP6TABLES_BINARY=$(command -v ip6tables)
+ [ -z "$IPTABLES_ARGS" ] && IPTABLES_ARGS="-w 1"
+ 
+ 
+ # Try modprobe first, fall back to insmod
+-[ -z "$INSMOD" ] && { INSMOD=$(which modprobe) || INSMOD=$(which insmod); }
++if [ -z "$INSMOD" ]; then
++	INSMOD=$(command -v modprobe)
++	if [ -n "$INSMOD" ]; then
++		INSMOD="${INSMOD} -q"
++	else
++		INSMOD=$(command -v insmod)
++	fi
++fi
++
+ [ -z "$TARGET" ] && TARGET="5ms"
+ [ -z "$IPT_MASK" ] && IPT_MASK="0xff" # to disable: set mask to 0xffffffff
+ #sm: we need the functions above before trying to set the ingress IFB device
+@@ -98,4 +106,4 @@ SILENT=0
+ IPT_TRANS_LOG="${SQM_STATE_DIR}/${IFACE}.iptables.log"
+ 
+ # These are the modules that do_modules() will attempt to load
+-ALL_MODULES="act_ipt sch_$QDISC sch_ingress act_mirred cls_fw cls_flow cls_u32 sch_htb sch_hfsc"
++ALL_MODULES="sch_$QDISC sch_ingress act_mirred cls_fw cls_flow cls_u32 sch_htb"
+--- a/src/functions.sh
++++ b/src/functions.sh
+@@ -263,7 +263,7 @@ check_state_dir() {
+ 
+     # OpenWrt doesn't have stat; for now just skip the remaining tests if it's
+     # not available
+-    which stat >/dev/null 2>&1 || return 0
++    command -v stat >/dev/null 2>&1 || return 0
+ 
+     PERM="0$(stat -L -c '%a' "${SQM_STATE_DIR}")"
+     if [ "$((PERM & 0002))" -ne 0 ]; then
