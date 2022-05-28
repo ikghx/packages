@@ -6,7 +6,6 @@
 #
 
 include $(TOPDIR)/rules.mk
-include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=fullconenat
 PKG_RELEASE:=$(AUTORELEASE)
@@ -21,6 +20,7 @@ PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=Chion Tang <tech@chionlab.moe>
 
+include $(INCLUDE_DIR)/kernel.mk
 include $(INCLUDE_DIR)/package.mk
 
 define Package/iptables-mod-fullconenat
@@ -39,6 +39,16 @@ define Package/ip6tables-mod-fullconenat
   DEPENDS:=ip6tables +kmod-nf-nat6 +kmod-ipt-fullconenat +ip6tables-mod-nat
 endef
 
+define Package/iptables-mod-fullconenat/install
+	$(INSTALL_DIR) $(1)/usr/lib/iptables
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/libipt_FULLCONENAT.so $(1)/usr/lib/iptables
+endef
+
+define Package/ip6tables-mod-fullconenat/install
+	$(INSTALL_DIR) $(1)/usr/lib/iptables
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/libip6t_FULLCONENAT.so $(1)/usr/lib/iptables
+endef
+
 define KernelPackage/ipt-fullconenat
   SUBMENU:=Netfilter Extensions
   TITLE:=FULLCONENAT netfilter module
@@ -51,26 +61,16 @@ endef
 
 include $(INCLUDE_DIR)/kernel-defaults.mk
 
-define Build/Prepare
-	$(call Build/Prepare/Default)
-	$(CP) ./files/Makefile $(PKG_BUILD_DIR)/
-endef
-
 define Build/Compile
-	+$(KERNEL_MAKE) M="$(PKG_BUILD_DIR)" modules
+	+$(MAKE) $(PKG_JOBS) -C "$(LINUX_DIR)" \
+		CROSS_COMPILE="$(TARGET_CROSS)" \
+		ARCH="$(LINUX_KARCH)" \
+		M="$(PKG_BUILD_DIR)" \
+		EXTRA_CFLAGS="$(BUILDFLAGS)" \
+		modules
 	$(call Build/Compile/Default)
 endef
 
-define Package/iptables-mod-fullconenat/install
-	$(INSTALL_DIR) $(1)/usr/lib/iptables
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/libipt_FULLCONENAT.so $(1)/usr/lib/iptables
-endef
-
-define Package/ip6tables-mod-fullconenat/install
-	$(INSTALL_DIR) $(1)/usr/lib/iptables
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/libip6t_FULLCONENAT.so $(1)/usr/lib/iptables
-endef
-
+$(eval $(call KernelPackage,ipt-fullconenat))
 $(eval $(call BuildPackage,iptables-mod-fullconenat))
 $(eval $(call BuildPackage,ip6tables-mod-fullconenat))
-$(eval $(call KernelPackage,ipt-fullconenat))

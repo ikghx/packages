@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ipt2socks
 PKG_VERSION:=1.1.3
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/zfl9/ipt2socks.git
@@ -15,7 +15,7 @@ PKG_SOURCE_VERSION:=384dab4bae5ed9402e07ec1950e502c05812bc26
 PKG_MIRROR_HASH:=fc73ec16fd7e057d6639686e2252e42f1c1676753675b1406bbb1dfee8ee508b
 
 PKG_BUILD_PARALLEL:=1
-PKG_INSTALL:=1
+PKG_USE_MIPS16:=0
 
 PKG_LICENSE:=AGPL-3.0
 PKG_LICENSE_FILE:=LICENSE
@@ -27,7 +27,7 @@ define Package/ipt2socks
   CATEGORY:=Network
   TITLE:=Convert iptables to socks5
   URL:=https://github.com/zfl9/ipt2socks
-  DEPENDS:=+libpthread +libuv
+  DEPENDS:=+libpthread
 endef
 
 define Package/ipt2socks/description
@@ -35,11 +35,13 @@ define Package/ipt2socks/description
 endef
 
 TARGET_CFLAGS += $(FPIC) -flto
-TARGET_LDFLAGS += -flto
+MAKE_FLAGS += \
+	CFLAGS="-std=c99 -pthread $(TARGET_CFLAGS)" \
+	EVCFLAGS="$(TARGET_CFLAGS)"
 
 define Package/ipt2socks/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/ipt2socks $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipt2socks $(1)/usr/bin
 endef
 
 $(eval $(call BuildPackage,ipt2socks))
