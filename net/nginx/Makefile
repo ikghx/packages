@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nginx
-PKG_VERSION:=1.20.2
+PKG_VERSION:=1.22.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=nginx-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://nginx.org/download/
-PKG_HASH:=958876757782190a1653e14dc26dfc7ba263de310e04c113e11e97d1bef45a42
+PKG_HASH:=b33d569a6f11a01433a57ce17e83935e953ad4dc77cdd4d40f896c88ac26eb53
 
 PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de> \
 				Ansuel Smith <ansuelsmth@gmail.com>
@@ -410,11 +410,11 @@ define Prepare/nginx-headers-more
 endef
 
 define Download/nginx-brotli
-  VERSION:=9aec15e2aa6feea2113119ba06460af70ab3ea62
+  VERSION:=6e975bcb015f62e1f303054897783355e2a877dc
   SUBDIR:=nginx-brotli
   FILE:=ngx-brotli-module-$$(VERSION).tar.xz
   URL:=https://github.com/google/ngx_brotli.git
-  MIRROR_HASH:=422da7a52f58d202a7436ce88f684501eff19199f43a9e823d7ca6181f38aa72
+  MIRROR_HASH:=e4e262f87e48fe0ab6fdad395dba409182d05a3be88c9f2a892ca6f26158665e
   PROTO:=git
 endef
 
@@ -424,11 +424,11 @@ define Prepare/nginx-brotli
 endef
 
 define Download/nginx-rtmp
-  VERSION:=8e344d799483145666fa875344bddf67a324e561
+  VERSION:=f9217ba07545583a46821175c2f8c08db03e5e83
   SUBDIR:=nginx-rtmp
   FILE:=ngx-rtmp-module-$$(VERSION).tar.xz
   URL:=https://github.com/sergey-dryabzhinsky/nginx-rtmp-module.git
-  MIRROR_HASH:=48020151bb40a1edb207e89dfee9a72b95bac3d8b54b2d2307d3c54303b61a9a
+  MIRROR_HASH:=274122041cbe13111e00839d6d5c46c59c870990f3ba304e318c4557024ff940
   PROTO:=git
 endef
 
