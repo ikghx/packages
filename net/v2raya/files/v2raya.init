@@ -23,7 +23,10 @@ start_instance() {
 	config_get_bool enabled "$cfg" enabled 0
 	[ "$enabled" -gt 0 ] || return 1
 
+	local nofile=$(cat /proc/sys/fs/nr_open)
+
 	procd_open_instance "$CONF"
+	procd_set_param limits nofile="${nofile} ${nofile}"
 	procd_set_param command "$PROG"
 	procd_set_param env XDG_DATA_HOME="/usr/share"
 

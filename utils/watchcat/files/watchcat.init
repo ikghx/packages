@@ -41,8 +41,8 @@ config_watchcat() {
 	config_get interface "$1" interface
 	config_get mmifacename "$1" mmifacename
 	config_get_bool unlockbands "$1" unlockbands "0"
-	config_get script "$1" script
 	config_get addressfamily "$1" addressfamily "any"
+	config_get script "$1" script
 
 	# Fix potential typo in mode and provide backward compatibility.
 	[ "$mode" = "allways" ] && mode="periodic_reboot"

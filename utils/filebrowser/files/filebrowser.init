@@ -20,7 +20,10 @@ start_instance () {
 	config_get_bool enable "$cfg" enable 0
 	[ "$enable" -gt 0 ] || return 1
 
+	local nofile=$(cat /proc/sys/fs/nr_open)
+
 	procd_open_instance
+	procd_set_param limits nofile="${nofile} ${nofile}"
 	procd_set_param command "$PROG"
 	procd_append_param command -a $ipaddr
 	procd_append_param command -d $database
