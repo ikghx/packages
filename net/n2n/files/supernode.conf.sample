@@ -40,7 +40,8 @@
 #        subnet range for auto ip address service.
 #        defaults to '10.128.255.0-10.255.255.0/24'
 #        自动 IP 地址服务的子网范围。
-#-a=10.128.255.0-10.255.255.0/24
+#        由超级节点提供 DHCP 服务，为其指定一个网段范围。
+#-a=10.0.0.0-10.0.0.0/24
 #
 #       -f|--foreground
 #        do not fork and run as a daemon, rather run in foreground.
