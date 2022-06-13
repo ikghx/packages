@@ -441,6 +441,22 @@ $(call Package/strongswan/description/Default)
  eap-peap, tnc-tnccs
 endef
 
+define Package/strongswan-updown-iptables
+$(call Package/strongswan/Default)
+  TITLE+= updown iptables
+  DEPENDS:= strongswan \
+    +strongswan-mod-updown \
+    +iptables \
+    +IPV6:ip6tables \
+    +iptables-mod-ipsec \
+    +kmod-ipt-ipsec
+endef
+
+define Package/strongswan-updown-iptables/description
+$(call Package/strongswan/description/Default)
+ This package contains the hotplug script for updown to add iptables rules.
+endef
+
 define BuildPluginModSocketVirt
   define Package/strongswan-mod-$(1)
     $$(call Package/strongswan/Default)
@@ -617,6 +633,12 @@ define Package/strongswan-libtls/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/ipsec/libtls.so.* $(1)/usr/lib/ipsec/
 endef
 
+define Package/strongswan-updown-iptables/install
+	$(INSTALL_DIR) $(1)/etc/hotplug.d/ipsec
+	$(CP) ./files/etc/hotplug.d/ipsec/02-iptables \
+		$(1)/etc/hotplug.d/ipsec/02-iptables
+endef
+
 define Plugin/duplicheck/install
 	$(INSTALL_DIR) $(1)/usr/lib/ipsec/plugins
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/ipsec/duplicheck $(1)/usr/lib/ipsec/
@@ -646,6 +668,8 @@ define Plugin/updown/install
 	$(INSTALL_DIR) $(1)/usr/lib/ipsec/plugins
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/ipsec/_updown $(1)/usr/lib/ipsec/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/ipsec/plugins/libstrongswan-updown.so $(1)/usr/lib/ipsec/plugins/
+
+	$(CP) ./files/usr/lib/ipsec/_updown-owrt $(1)/usr/lib/ipsec
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/ipsec
 	$(CP) ./files/etc/hotplug.d/ipsec/01-user \
 		$(1)/etc/hotplug.d/ipsec/01-user
@@ -682,6 +706,7 @@ $(eval $(call BuildPackage,strongswan-scepclient))
 $(eval $(call BuildPackage,strongswan-swanctl))
 $(eval $(call BuildPackage,strongswan-gencerts))
 $(eval $(call BuildPackage,strongswan-libtls))
+$(eval $(call BuildPackage,strongswan-updown-iptables))
 $(eval $(call BuildPlugin,addrblock,RFC 3779 address block constraint support,))
 $(eval $(call BuildPlugin,aes,AES crypto,))
 $(eval $(call BuildPlugin,af-alg,AF_ALG crypto interface to Linux Crypto API,+kmod-crypto-user))
@@ -755,7 +780,7 @@ $(eval $(call BuildPlugin,stroke,Stroke,+strongswan-charon +strongswan-ipsec))
 $(eval $(call BuildPlugin,test-vectors,crypto test vectors,))
 $(eval $(call BuildPlugin,uci,UCI config interface,+PACKAGE_strongswan-mod-uci:libuci))
 $(eval $(call BuildPlugin,unity,Cisco Unity extension,))
-$(eval $(call BuildPlugin,updown,updown firewall,+iptables +IPV6:ip6tables +iptables-mod-ipsec +kmod-ipt-ipsec))
+$(eval $(call BuildPlugin,updown,script execution,))
 $(eval $(call BuildPlugin,vici,Versatile IKE Configuration Interface,))
 $(eval $(call BuildPlugin,whitelist,peer identity whitelisting,))
 $(eval $(call BuildPlugin,wolfssl,WolfSSL crypto,+PACKAGE_strongswan-mod-wolfssl:libwolfssl))
