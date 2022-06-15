@@ -22,14 +22,13 @@ PKG_USE_MIPS16:=0
 
 GO_PKG:=github.com/p4gefau1t/trojan-go
 GO_PKG_BUILD_PKG:=$(GO_PKG)
-
 GO_PKG_LDFLAGS_X:= \
 	$(GO_PKG)/constant.Version=$(PKG_VERSION) \
 	$(GO_PKG)/constant.Commit=v$(PKG_VERSION)
 GO_PKG_TAGS:=full
 
 include $(INCLUDE_DIR)/package.mk
-include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
+include ../../lang/golang/golang-package.mk
 
 define Package/trojan-go
   SECTION:=net

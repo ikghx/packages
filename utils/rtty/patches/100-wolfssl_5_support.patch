@@ -3,7 +3,7 @@ Author: Sergey V. Lobanov <sergey@lobanov.in>
 Date:   Mon Jan 3 19:25:45 2022 +0300
 
     add compatibility for wolfssl >= 5.0
-
+    
     NTRU support has been removed in wolfssl 5.0 so it is required to
     mask NTRU specific code if wolfssl >= 5.0
 

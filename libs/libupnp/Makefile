@@ -54,7 +54,6 @@ CONFIGURE_ARGS += \
 	--enable-device \
 	--enable-gena \
 	--enable-reuseaddr \
-	--enable-gena \
 	--enable-webserver \
 	--enable-ssdp \
 	--enable-soap \
