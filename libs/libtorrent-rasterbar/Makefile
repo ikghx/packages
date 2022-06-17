@@ -9,10 +9,10 @@ PKG_VERSION:=2.0.6
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_DATE:=2022-05-22
+PKG_SOURCE_DATE:=2022-06-15
 PKG_SOURCE_URL:=https://github.com/arvidn/libtorrent.git
-PKG_SOURCE_VERSION:=be8313e35e8036228d259b38f1d92cca11601934
-PKG_MIRROR_HASH:=24915620c9d68891f504ca4f234852e72bdbd65584f5f750a62c47931d528190
+PKG_SOURCE_VERSION:=e3a00498d4849ed1575a7633eadc457513d1790b
+PKG_MIRROR_HASH:=afa5bc7172053b65a5ced939ca0f6bb1566ac93639ceb87638e2c9cf8cf83c0e
 
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=COPYING
@@ -21,16 +21,25 @@ PKG_CPE_ID:=cpe:/a:libtorrent:libtorrent
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
+PYTHON3_PKG_BUILD:=0
+
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
+include $(TOPDIR)/feeds/packages/lang/python/python3-package.mk
 
 define Package/libtorrent-rasterbar
 	SECTION:=libs
 	CATEGORY:=Libraries
 	TITLE:=C++ bittorrent library by Rasterbar Software
 	URL:=https://www.libtorrent.org
-	DEPENDS:=+boost +boost-system +libatomic +libc +libgcc +libopenssl +libstdcpp +USE_GLIBC:libpthread
+	DEPENDS:=+boost +boost-system +libatomic +libgcc +libopenssl +libstdcpp
 	ABI_VERSION:=2.0
+endef
+
+define Package/python3-libtorrent
+  $(call Package/libtorrent-rasterbar)
+  TITLE:=Python bindings for libtorrent-rasterbar
+  DEPENDS+=+PACKAGE_python3-libtorrent:boost-python3 +libtorrent-rasterbar
 endef
 
 define Package/libtorrent-rasterbar/description
@@ -39,17 +48,22 @@ define Package/libtorrent-rasterbar/description
   It boasts a well documented library interface that is easy to use.
 endef
 
-TARGET_CFLAGS += $(FPIC) -ffunction-sections -fdata-sections -flto
-TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed -flto
+define Package/python3-libtorrent/description
+  Building the libtorrent python bindings will produce a shared library which
+  is a python module that can be imported in a python program.
+endef
+
+TARGET_CFLAGS += $(FPIC) -ffunction-sections -fdata-sections
+TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 
 CMAKE_OPTIONS += \
 	-DBUILD_SHARED_LIBS=ON \
 	-DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
 	-Ddeprecated-functions=OFF \
 	-Dlogging=OFF \
 	-DCMAKE_CXX_STANDARD=17 \
-	-Dpython-bindings=$(if $(CONFIG_PACKAGE_python3-libtorrent),ON,OFF) \
-	-Dpython-egg-info=$(if $(CONFIG_PACKAGE_python3-libtorrent),ON,OFF)
+	-Dpython-bindings=$(if $(CONFIG_PACKAGE_python3-libtorrent),ON,OFF)
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)
@@ -61,4 +75,10 @@ define Package/libtorrent-rasterbar/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libtorrent-rasterbar.so.* $(1)/usr/lib/
 endef
 
+define Package/python3-libtorrent/install
+	$(INSTALL_DIR) $(1)$(PYTHON3_PKG_DIR)
+	$(CP) $(PKG_INSTALL_DIR)$(PYTHON3_PKG_DIR)/* $(1)$(PYTHON3_PKG_DIR)
+endef
+
 $(eval $(call BuildPackage,libtorrent-rasterbar))
+$(eval $(call BuildPackage,python3-libtorrent))

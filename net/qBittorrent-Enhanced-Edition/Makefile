@@ -32,8 +32,8 @@ define Package/$(PKG_NAME)
 	SECTION:=net
 	CATEGORY:=Network
 	SUBMENU:=BitTorrent
-	DEPENDS:=+USE_GLIBC:librt +USE_GLIBC:libpthread \
-		+libc +libgcc +libstdcpp \
+	DEPENDS:= \
+		+libgcc +libstdcpp \
 		+libtorrent-rasterbar \
 		+libopenssl \
 		+libqt6core \
@@ -65,6 +65,11 @@ CMAKE_OPTIONS += \
 	-DVERBOSE_CONFIGURE=ON \
 	-DQT_ADDITIONAL_PACKAGES_PREFIX_PATH=$(STAGING_DIR_HOSTPKG)
 
+# The pentium-mmx with lto will build failed on qt6
+ifeq ($(findstring pentium-mmx,$(CONFIG_CPU_TYPE)),)
+  CMAKE_OPTIONS += -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
+endif
+
 # The pcre2 is compiled with support for mips16
 ifdef CONFIG_USE_MIPS16
   TARGET_CFLAGS += -minterlink-mips16
@@ -75,16 +80,8 @@ ifdef CONFIG_USE_GLIBC
   TARGET_LDFLAGS += -ldl -lrt -lpthread
 endif
 
-TARGET_CFLAGS += -ffunction-sections -fdata-sections -flto
-TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed -flto
-
-# The pentium-mmx with lto will build failed on qt6
-ifeq ($(ARCH),i386)
-  ifneq ($(findstring pentium-mmx,$(CONFIG_CPU_TYPE)),)
-    TARGET_CFLAGS := $(filter-out -flto,$(TARGET_CFLAGS))
-    TARGET_LDFLAGS := $(filter-out -flto,$(TARGET_LDFLAGS))
-  endif
-endif
+TARGET_CFLAGS += -ffunction-sections -fdata-sections
+TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 
 define Package/qbittorrent/conffiles
 /etc/config/qbittorrent

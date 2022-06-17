@@ -7,8 +7,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qtbase
-PKG_BASE:=6.2
-PKG_BUGFIX:=4
+PKG_BASE:=6.3
+PKG_BUGFIX:=1
 PKG_VERSION:=$(PKG_BASE).$(PKG_BUGFIX)
 PKG_RELEASE:=1
 
@@ -16,13 +16,14 @@ PKG_SOURCE:=$(PKG_NAME)-everywhere-src-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:= \
 		https://download.qt.io/official_releases/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules \
 		https://master.qt.io/archive/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules
-PKG_HASH:=d9924d6fd4fa5f8e24458c87f73ef3dfc1e7c9b877a5407c040d89e6736e2634
+PKG_HASH:=0a64421d9c2469c2c48490a032ab91d547017c9cc171f3f8070bc31888f24e03
 
 HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)
 
 PKG_BUILD_DEPENDS:=qtbase/host
 
+HOST_BUILD_PARALLEL:=1
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 PKG_CPE_ID:=cpe:/a:qt:qt
@@ -42,8 +43,7 @@ define Package/qtbase/Default
 	SUBMENU:=Qt6
 	TITLE:=qtbase
 	URL:=http://qt-project.org
-	DEPENDS:=+libc +libgcc +libstdcpp +USE_GLIBC:librt +USE_GLIBC:libpthread \
-	@!LINUX_2_6_36 @!(ARM&&CPU_32v4)
+	DEPENDS:=+libgcc +libstdcpp @!LINUX_2_6_36 @!(ARM&&CPU_32v4)
 endef
 
 define Package/qtbase/description
@@ -95,8 +95,8 @@ ifdef CONFIG_USE_GLIBC
   TARGET_LDFLAGS += -ldl -lrt -lpthread
 endif
 
-TARGET_CFLAGS += $(FPIC) -ffunction-sections -fdata-sections -flto
-TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed -flto
+TARGET_CFLAGS += $(FPIC) -ffunction-sections -fdata-sections
+TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 
 CMAKE_SHARED_LDFLAGS:=$(filter-out -Wl$(comma)-Bsymbolic-functions,$(CMAKE_SHARED_LDFLAGS))
 
@@ -104,61 +104,57 @@ CMAKE_HOST_OPTIONS += \
 	-DQT_FORCE_MIN_CMAKE_VERSION_FOR_BUILDING_QT=3.19 \
 	-DCMAKE_STAGING_PREFIX=$(STAGING_DIR_HOSTPKG) \
 	-DCMAKE_BUILD_TYPE=Release \
-	-DFEATURE_optimize_size=ON \
 	-DBUILD_SHARED_LIBS=OFF \
 	-DFEATURE_concurrent=OFF \
 	-DFEATURE_dbus=OFF \
 	-DFEATURE_gui=OFF \
+	-DFEATURE_optimize_size=ON \
 	-DFEATURE_sql=OFF \
 	-DFEATURE_testlib=OFF \
 	-DFEATURE_zstd=OFF \
-	-DINPUT_openssl=no
+	-DFEATURE_glib=OFF \
+	-DFEATURE_icu=OFF \
+	-DFEATURE_libb2=OFF \
+	-DFEATURE_brotli=OFF \
+	-DFEATURE_androiddeployqt=OFF \
+	-DFEATURE_macdeployqt=OFF \
+	-DFEATURE_windeployqt=OFF \
+	-DINPUT_openssl=no \
+	-DQT_BUILD_EXAMPLES=OFF \
+	-DQT_BUILD_TESTS=OFF
 
 CMAKE_OPTIONS += \
 	-DQT_FORCE_MIN_CMAKE_VERSION_FOR_BUILDING_QT=3.19 \
 	-DQT_FORCE_MIN_CMAKE_VERSION_FOR_USING_QT=3.19 \
-	-DCMAKE_SYSROOT=$(STAGING_DIR) \
-	-DCMAKE_INSTALL_PREFIX=/usr \
 	-DINSTALL_ARCHDATADIR=/usr/share/Qt6 \
 	-DINSTALL_DATADIR=/usr/share/Qt6 \
 	-DQT_HOST_PATH=$(STAGING_DIR_HOSTPKG) \
 	-DQT_QMAKE_TARGET_MKSPEC=devices/linux-generic-g++ \
 	-DQT_QMAKE_DEVICE_OPTIONS=CROSS_COMPILE="$(TARGET_CROSS);COMPILER_FLAGS=$(TARGET_CFLAGS) $(EXTRA_CFLAGS) $(TARGET_CPPFLAGS) $(EXTRA_CPPFLAGS);LINKER_FLAGS=$(TARGET_LDFLAGS) $(EXTRA_LDFLAGS)" \
-	-DCMAKE_BUILD_TYPE=Release \
 	-DBUILD_SHARED_LIBS=ON \
-	-DFEATURE_optimize_size=ON \
+	-DCMAKE_BUILD_TYPE=Release \
 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
 	-DCMAKE_SKIP_RPATH=TRUE \
-	-DFEATURE_system_zlib=ON \
-	-DFEATURE_cups=OFF \
+	\
+	-DFEATURE_concurrent=OFF \
 	-DFEATURE_dbus=OFF \
+	-DFEATURE_gui=OFF \
 	-DFEATURE_libudev=OFF \
+	-DFEATURE_optimize_size=ON \
+	-DFEATURE_printsupport=OFF \
+	-DFEATURE_testlib=OFF \
+	-DFEATURE_thread=ON \
 	-DFEATURE_widgets=OFF \
 	-DFEATURE_zstd=OFF \
-	-DFEATURE_concurrent=OFF \
-	-DFEATURE_testlib=OFF \
-	-DQT_BUILD_EXAMPLES=OFF \
-	-DQT_BUILD_TESTS=OFF \
+	-DFEATURE_system_zlib=ON \
 	\
 	-DFEATURE_system_doubleconversion=OFF \
 	-DFEATURE_system_pcre2=ON \
-	-DFEATURE_mimetype_database=ON \
 	-DFEATURE_glib=OFF \
 	-DFEATURE_icu=OFF \
+	-DFEATURE_mimetype=ON \
 	\
-	-DFEATURE_gui=OFF \
-	-DFEATURE_freetype=OFF \
-	-DFEATURE_gbm=OFF \
-	-DFEATURE_harfbuzz=OFF \
-	-DFEATURE_jpeg=OFF \
-	-DFEATURE_png=OFF \
-	-DFEATURE_mtdev=OFF \
-	-DINPUT_opengl=no \
-	-DFEATURE_tslib=OFF \
-	-DFEATURE_xcb=OFF \
-	-DFEATURE_xcb_xlib=OFF \
-	-DFEATURE_xkbcommon=OFF \
-	\
+	-DFEATURE_network=ON \
 	-DINPUT_openssl=linked \
 	-DFEATURE_libproxy=OFF \
 	-DFEATURE_gssapi=OFF \
@@ -172,8 +168,11 @@ CMAKE_OPTIONS += \
 	-DFEATURE_sql_odbc=OFF \
 	-DFEATURE_sql_psql=OFF \
 	\
-	-DQT_BUILD_TOOLS_WHEN_CROSSCOMPILING=OFF \
-	-DLIBATOMIC_LIBS="-latomic"
+	-DFEATURE_xml=ON \
+	\
+	-DQT_BUILD_EXAMPLES=OFF \
+	-DQT_BUILD_TESTS=OFF \
+	-DQT_BUILD_TOOLS_WHEN_CROSSCOMPILING=OFF
 
 define Package/qtbase/Default/install
 	$(INSTALL_DIR) $(1)/usr/lib
@@ -205,7 +204,7 @@ define DefineQtbaseLibrary
 endef
 
 $(eval $(call DefineQtbaseLibrary,core,,+libatomic +libpcre2-16 +zlib))
-$(eval $(call DefineQtbaseLibrary,network,core,+libopenssl +zlib))
+$(eval $(call DefineQtbaseLibrary,network,core,+zlib))
 $(eval $(call DefineQtbaseLibrary,xml,core,))
 $(eval $(call DefineQtbaseLibrary,sql,core,))
 

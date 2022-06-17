@@ -7,8 +7,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qttools
-PKG_BASE:=6.2
-PKG_BUGFIX:=4
+PKG_BASE:=6.3
+PKG_BUGFIX:=1
 PKG_VERSION:=$(PKG_BASE).$(PKG_BUGFIX)
 PKG_RELEASE:=1
 
@@ -16,7 +16,7 @@ PKG_SOURCE:=$(PKG_NAME)-everywhere-src-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:= \
 		https://download.qt.io/official_releases/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules \
 		https://master.qt.io/archive/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules
-PKG_HASH:=17f40689c4a1706a1b7db22fa92f6ab79f7b698a89e100cab4d10e19335f8267
+PKG_HASH:=c412750f2aa3beb93fce5f30517c607f55daaeb7d0407af206a8adf917e126c1
 
 HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)
 
@@ -44,14 +44,12 @@ HOST_CONFIGURE_ARGS = \
 	-no-feature-designer \
 	-no-feature-distancefieldgenerator \
 	-no-feature-kmap2qmap \
-	-no-feature-macdeployqt \
 	-no-feature-pixeltool \
 	-no-feature-qdbus \
 	-no-feature-qev \
 	-no-feature-qtattributionsscanner \
 	-no-feature-qtdiag \
 	-no-feature-qtplugininfo \
-	-no-feature-windeployqt \
 	-- \
 	-DCMAKE_DISABLE_FIND_PACKAGE_Clang=TRUE \
 	-DCMAKE_DISABLE_FIND_PACKAGE_WrapLibClang=TRUE
