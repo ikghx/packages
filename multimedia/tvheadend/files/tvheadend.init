@@ -84,7 +84,13 @@ load_uci_config() {
 	[ "$noacl" -eq 1 ] && procd_append_param command --noacl
 }
 
-start_service() {
+start_instance() {
+	local cfg="$1"
+	local enabled
+
+	config_get_bool enabled "$cfg" 'enabled' 0
+	[ $enabled -gt 0 ] || return 1
+
 	ensure_config_exists
 	procd_open_instance
 	procd_set_param file /etc/config/tvheadend
@@ -93,6 +99,11 @@ start_service() {
 	procd_set_param command "$PROG" -B -u $TVH_USER -g $TVH_GROUP
 	load_uci_config
 	procd_close_instance
+}
+
+start_service() {
+	config_load 'tvheadend'
+	config_foreach start_instance 'tvheadend'
 }
 
 service_triggers() {

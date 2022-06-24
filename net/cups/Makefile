@@ -129,8 +129,7 @@ define Package/cups/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/cups/monitor $(1)/usr/lib/cups
 
 	$(INSTALL_DIR) $(1)/usr/lib/cups/filter
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/cups/filter/{commandtops,pstops} \
-		$(PKG_INSTALL_DIR)/usr/lib/cups/filter/gziptoany \
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/cups/filter/{commandtops,pstops,gziptoany} \
 		$(1)/usr/lib/cups/filter
 
 	$(INSTALL_DIR) $(1)/usr/share/cups/templates
@@ -193,7 +192,7 @@ endef
 
 define Package/cups-filters/install
 	$(INSTALL_DIR) $(1)/usr/lib/cups/filter
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/cups/filter/{commandtops,gziptoany,pstops,rastertoepson,rastertohp,rastertolabel,rastertopwg} \
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/cups/filter/{rastertoepson,rastertohp,rastertolabel,rastertopwg} \
 		$(1)/usr/lib/cups/filter
 	$(LN) rastertolabel $(1)/usr/lib/cups/filter/rastertodymo
 endef
