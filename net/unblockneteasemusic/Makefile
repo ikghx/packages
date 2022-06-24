@@ -45,8 +45,8 @@ define Build/Compile
 endef
 
 define Package/$(PKG_NAME)/install
-	$(INSTALL_DIR) $(1)/usr/share/$(PKG_NAME)
-	$(CP) $(PKG_BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)/* $(1)/usr/share/$(PKG_NAME)
+	$(INSTALL_DIR) $(1)/usr/share/unblockneteasemusic/core
+	$(CP) $(PKG_BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)/* $(1)/usr/share/unblockneteasemusic/core
 endef
 
 $(eval $(call BuildPackage,$(PKG_NAME)))
