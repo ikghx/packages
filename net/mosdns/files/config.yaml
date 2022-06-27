@@ -35,10 +35,6 @@ data_providers:
     file:                  "./rule/redirect.txt"
     auto_reload:           true
 
-  - tag:                   adlist
-    file:                  "./rule/adlist.txt"
-    auto_reload:           true
-
 # 插件设置
 plugins:
 
@@ -89,7 +85,7 @@ plugins:
     type:                  query_matcher
     args:
       domain:
-        - "provider:adlist,geosite:category-ads-all" # 匹配多个标签时使用英文逗号分隔。
+        - "provider:geosite:category-ads-all"
 
 # 匹配本地 IP 的插件
   - tag:                   "response_has_local_ip"
@@ -144,7 +140,6 @@ plugins:
     args:
       exec:
         - _misc_optm # 多种自动优化规则集合。
-        - _single_flight
         - lazy_cache # 启用缓存规则（匹配插件标签）。
         - query_is_hosts_domain # 启用 hosts 规则（匹配插件标签）。
         - query_is_redirect_domain # 启用重定向规则（匹配插件标签）。
@@ -183,6 +178,6 @@ servers:
     timeout: 5 # 请求处理超时时间。单位: 秒。默认值: 5。
     listeners:
       - protocol:          udp # 协议，支持 "udp", "tcp", "tls", "https" 和 "http"
-        addr:              :5335 # 监听地址和端口，只写端口号表示监听任意地址。
+        addr:              0.0.0.0:5335 # 监听地址和端口。
       - protocol:          tcp
-        addr:              :5335
+        addr:              0.0.0.0:5335
