@@ -201,6 +201,7 @@ CONFIGURE_ARGS += \
 	--arch=$(ARCH) \
 	--disable-libsystemd_daemon \
 	--disable-dbus_1 \
+	--disable-execinfo \
 	--disable-libav \
 	--disable-ffmpeg_static \
 	--disable-libx264 \
