@@ -153,8 +153,15 @@ ss_rules_flush() {
 	local setname
 
 	iptables-save --counters | grep -v ss_rules_ | iptables-restore --counters
-	while ip rule del fwmark 1 lookup 100 2>/dev/null; do true; done
-	ip route flush table 100 2>/dev/null || true
+	while ip -4 rule del fwmark 1 lookup 100 2>/dev/null; do true; done
+		ip -4 rule add fwmark 1 lookup 100
+	ip -4 route flush table 100 2>/dev/null || true
+	ip -4 route add local default dev lo table 100
+
+	while ip -6 rule del fwmark 1 lookup 100 2>/dev/null; do true; done
+		ip -6 rule add fwmark 1 lookup 100
+	ip -6 route flush table 100 2>/dev/null || true
+	ip -6 route add local default dev lo table 100
 	for setname in $(ipset -n list | grep "ss_rules${o_af}_"); do
 		ipset destroy "$setname" 2>/dev/null || true
 	done

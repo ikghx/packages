@@ -14,7 +14,6 @@ PKG_SOURCE_URL:=https://github.com/openwisp/openwisp-config.git
 PKG_MIRROR_HASH:=7daa10a9d170e665f33a5555a246b4da2223c2d8d0e8a047edb01701c8886986
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_VERSION:=1.0.1
-PKGARCH:=all
 
 include $(INCLUDE_DIR)/package.mk
 

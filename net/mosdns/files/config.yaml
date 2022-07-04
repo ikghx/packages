@@ -120,7 +120,7 @@ plugins:
     type:                  fast_forward # 表示转发请求至上游。
     args:
       upstream:
-        - addr:            119.29.29.29
+        - addr:            119.29.29.29 # 建议优先使用网络运营商提供的默认 DNS 服务器。
         - addr:            223.5.5.5
         - addr:            114.114.114.114
 
@@ -139,7 +139,7 @@ plugins:
     type:                  sequence # 表示按顺序运行多个插件规则。
     args:
       exec:
-        - _misc_optm # 多种自动优化规则集合。
+        #- _misc_optm # 多种自动优化规则集合。
         - lazy_cache # 启用缓存规则（匹配插件标签）。
         - query_is_hosts_domain # 启用 hosts 规则（匹配插件标签）。
         - query_is_redirect_domain # 启用重定向规则（匹配插件标签）。
