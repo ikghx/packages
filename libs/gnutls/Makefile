@@ -19,6 +19,7 @@ PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=LICENSE
 PKG_CPE_ID:=cpe:/a:gnu:gnutls
 
+PKG_BUILD_DEPENDS:=gettext-full/host
 PKG_BUILD_PARALLEL:=1
 PKG_FIXUP:=autoreconf gettext-version
 PKG_INSTALL:=1
@@ -134,7 +135,7 @@ CONFIGURE_ARGS+= \
 	--with-librt-prefix="$(LIBRT_ROOT_DIR)/" \
 	--with-pic \
 	--with-system-priority-file="" \
-	--without-libzstd \
+	--without-zstd \
 	--without-zlib
 
 ifneq ($(CONFIG_GNUTLS_EXT_LIBTASN1),y)
