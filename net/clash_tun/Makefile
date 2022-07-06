@@ -7,7 +7,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=clash_tun
-PKG_VERSION:=2022.06.19
+PKG_VERSION:=2022.06.19-13-ga45638d
 PKG_RELEASE:=1
 
 ifeq ($(ARCH),i386)
