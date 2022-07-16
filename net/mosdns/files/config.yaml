@@ -95,6 +95,8 @@ plugins:
     args:
       ip:
         - 'provider:geoip:cn'
+      cname:
+        - 'provider:geosite:cn'
 
 # 匹配 HOSTS 规则的插件
   - tag:                   "query_is_hosts_domain"
@@ -116,6 +118,8 @@ plugins:
     args:
       size:                100000 # DNS 缓存大小。单位: 条。
       lazy_cache_ttl:      259200 # 惰性缓存生存时间。单位: 秒。
+      lazy_cache_reply_ttl: 30
+      cache_everything: false
 
 # 修改应答 TTL （单位: 秒。）
   - tag: "modify_ttl"
@@ -138,9 +142,13 @@ plugins:
     type:                  fast_forward
     args:
       upstream:
-        - addr:            https://1.1.1.1/dns-query
+        - addr:            https://cloudflare-dns.com/dns-query
+          dial_addr:       1.1.1.1
+          enable_pipeline: true # TCP/DoT 使用 RFC 7766 新的 query pipelining 连接复用模式。
           trusted: true # 是否是可信服务器，可信服务器的任何应答都会被接受。
-        - addr:            https://8.8.8.8/dns-query
+        - addr:            https://dns.google/dns-query
+          dial_addr:       8.8.8.8
+          enable_pipeline: true
           trusted: true
 
 # 主要的运行逻辑插件
@@ -191,7 +199,7 @@ plugins:
             - _prefer_ipv4 # 优先应答 IPv4 地址。
             - forward_remote # 使用远程 DNS 服务器解析。
             - modify_ttl # 修改应答 TTL
-          fast_fallback: 200 # 快速 fallback 触发阈值。单位：毫秒。
+          fast_fallback: 500 # 快速 fallback 触发阈值。单位：毫秒。
           always_standby: true
 
 # 服务器设置

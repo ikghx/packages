@@ -248,19 +248,19 @@ mode="$1"
 
 case "$mode" in
 periodic_reboot)
-	# args: period forcedelay
+	# args from init script: period forcedelay
 	watchcat_periodic "$2" "$3"
 	;;
 ping_reboot)
-	# args: period forcedelay pinghosts pingperiod pingsize addressfamily
+	# args from init script: period forcedelay pinghosts pingperiod pingsize addressfamily
 	watchcat_ping "$2" "$3" "$4" "$5" "$6" "$7"
 	;;
 restart_iface)
-	# args: period pinghosts pingperiod pingsize interface mmifacename unlockbands addressfamily
+	# args from init script: period pinghosts pingperiod pingsize interface mmifacename unlockbands addressfamily
 	watchcat_monitor_network "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" ""
 	;;
 run_script)
-	# args: period pinghosts pingperiod pingsize interface addressfamily script
+	# args from init script: period pinghosts pingperiod pingsize interface addressfamily script
 	watchcat_monitor_network "$2" "$3" "$4" "$5" "$6" "" "" "$7" "$8"
 	;;
 *)

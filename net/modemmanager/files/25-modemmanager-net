@@ -12,7 +12,7 @@
 mkdir -m 0755 -p "${MODEMMANAGER_RUNDIR}"
 
 # Report network interface
-mm_log "${ACTION} network interface ${INTERFACE}: event processed"
+mm_log "info" "${ACTION} network interface ${INTERFACE}: event processed"
 mm_report_event "${ACTION}" "${INTERFACE}" "net" "/sys${DEVPATH}"
 
 # Look for an associated cdc-wdm interface
