@@ -29,7 +29,7 @@ define Package/amule
   CATEGORY:=Network
   TITLE:=A multi-platform eMule-like ed2k client
   URL:=http://www.amule.org/
-  DEPENDS:=+libpng +libpthread +libncurses +libreadline +libwxbase +libupnp +libbfd +libintl \
+  DEPENDS:=+libpng +libpthread +libncurses +libreadline +libwxbase +libupnp +libbfd +libintl-full \
 	$(ICONV_DEPENDS) $(INTL_DEPENDS) +!AMULE_CRYPTOPP_STATIC_LINKING:libcryptopp \
 	+boost-system +antileech +ca-bundle
   USERID:=amule=4662:amule=4662
