@@ -9,22 +9,32 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=lxc
-PKG_VERSION:=4.0.12
+PKG_VERSION:=5.0.0
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://linuxcontainers.org/downloads/lxc/
-PKG_HASH:=db242f8366fc63e8c7588bb2017b354173cf3c4b20abc18780debdc48b14d3ef
+PKG_HASH:=72a1a5feb05dba2ef04e696304aeefd7cc314477f1fff890f7a2b4cec63b6cbe
 
-PKG_MAINTAINER:=Marko Ratkaj <marko.ratkaj@sartura.hr>
+PKG_MAINTAINER:=Marko Ratkaj <markoratkaj@gmail.com>
 PKG_LICENSE:=LGPL-2.1-or-later BSD-2-Clause GPL-2.0
-
-PKG_FIXUP:=autoreconf
-PKG_INSTALL:=1
-PKG_BUILD_PARALLEL:=1
+PKG_LICENSE_FILES:=COPYING LICENSE.GPL2 LICENSE.LGPL2.1
 PKG_USE_MIPS16:=0
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/meson.mk
+
+TARGET_CFLAGS += -fPIC
+TARGET_LDFLAGS += -fPIC
+
+MESON_ARGS += \
+	-Dwerror=false \
+	-Dinit-script=sysvinit \
+	-Dman=false \
+	-Dapparmor=false \
+	-Dselinux=false \
+	-Dseccomp=$(if $(CONFIG_LXC_SECCOMP),true,false) \
+	-Dexamples=false
 
 LXC_APPLETS_BIN += \
 	attach autostart cgroup copy config console create destroy device \
@@ -59,6 +69,10 @@ define Package/lxc-auto
   $(call Package/lxc/Default)
   TITLE:= (initscript)
   DEPENDS+=+lxc-start +lxc-stop
+endef
+
+define Package/lxc-auto/postinst
+[ -n "$${IPKG_INSTROOT}" ] || [ "$${PKG_UPGRADE}" = 1 ] || /etc/init.d/lxc-auto boot
 endef
 
 define Package/lxc-auto/description
@@ -130,17 +144,6 @@ define Package/lxc-init
   TITLE:=LXC Lua bindings
   DEPENDS+= +liblxc
 endef
-
-CONFIGURE_ARGS += \
-	--disable-werror \
-	--disable-rpath \
-	--disable-doc \
-	--disable-api-docs \
-	--disable-apparmor \
-	--disable-selinux \
-	--$(if $(CONFIG_LXC_SECCOMP),en,dis)able-seccomp \
-	--enable-capabilities \
-	--disable-examples
 
 ifdef CONFIG_USE_MIPS16
   TARGET_CFLAGS += -minterlink-mips16
@@ -258,7 +261,6 @@ define GenPlugin
   $$(eval $$(call BuildPackage,lxc-$(1)))
 endef
 
-
 $(eval $(call BuildPackage,lxc))
 $(eval $(call BuildPackage,lxc-common))
 $(eval $(call BuildPackage,lxc-hooks))
@@ -269,5 +271,5 @@ $(eval $(call BuildPackage,lxc-init))
 $(eval $(call BuildPackage,lxc-auto))
 $(eval $(call BuildPackage,lxc-unprivileged))
 $(foreach u,$(LXC_APPLETS_BIN),$(eval $(call GenPlugin,$(u),$(DEPENDS_APPLETS),"/usr/bin")))
-$(foreach u,$(LXC_APPLETS_LIB),$(eval $(call GenPlugin,$(u),$(DEPENDS_APPLETS),"/usr/lib/lxc")))
+$(foreach u,$(LXC_APPLETS_LIB),$(eval $(call GenPlugin,$(u),$(DEPENDS_APPLETS),"/usr/libexec/lxc")))
 $(foreach u,$(LXC_SCRIPTS),$(eval $(call GenPlugin,$(u),,"/usr/bin")))

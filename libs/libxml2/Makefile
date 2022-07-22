@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libxml2
 PKG_VERSION:=2.9.14
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@GNOME/libxml2/$(basename $(PKG_VERSION))
@@ -24,6 +24,7 @@ PKG_MAINTAINER:=Michael Heimpold <mhei@heimpold.de>
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=0
+PKG_CONFIG_DEPENDS:=CONFIG_BUILD_NLS
 
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
@@ -100,7 +101,7 @@ CONFIGURE_ARGS += \
 	--with-xpath \
 	--with-xptr \
 	--with-zlib=$(STAGING_DIR)/usr \
-	--with-iconv="$(ICONV_PREFIX)" \
+	$(if $(CONFIG_BUILD_NLS),--with-iconv=$(ICONV_PREFIX)) \
 	--without-lzma
 
 HOST_CONFIGURE_ARGS += \

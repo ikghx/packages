@@ -45,7 +45,7 @@ define Package/acme-common/install
 	$(INSTALL_BIN) ./files/acme.init $(1)/etc/init.d/acme
 endef
 
-define Package/acme/postinst
+define Package/acme-common/postinst
 #!/bin/sh
 grep -q '/usr/bin/acme' /etc/crontabs/root 2>/dev/null && exit 0
 echo "0 0 * * * /usr/bin/acme get" >> /etc/crontabs/root

@@ -78,7 +78,7 @@ CONFIGURE_ARGS+= \
 	--without-xerces \
 	--enable-resolutionkms=no
 
-TARGET_LDFLAGS += -liconv
+TARGET_LDFLAGS+=$(if $(ICONV_FULL),-liconv)
 
 define Build/Prepare
 	$(call Build/Prepare/Default)
