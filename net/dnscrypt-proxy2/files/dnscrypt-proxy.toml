@@ -38,12 +38,12 @@
 ##
 ## To listen to all IPv4 addresses, use `listen_addresses = ['0.0.0.0:53']`
 ## To listen to all IPv4+IPv6 addresses, use `listen_addresses = ['[::]:53']`
-## 要监听的本地地址和端口列表，可以指定IPv4或IPv6。
+## 要监听的本地地址和端口列表，可以指定 IPv4 或 IPv6。
 listen_addresses = ['[::]:5334']
 
 
 ## Maximum number of simultaneous client connections to accept
-## 接受的最大并发客户端连接数
+## 接受的最大并发客户端连接数。
 max_clients = 10000
 
 
@@ -51,30 +51,30 @@ max_clients = 10000
 ## Note (1): this feature is currently unsupported on Windows.
 ## Note (2): this feature is not compatible with systemd socket activation.
 ## Note (3): when using -pidfile, the PID file directory must be writable by the new user
-## 程序以此用户身份运行
+## 程序以此用户身份运行。
 #user_name = 'nobody'
 
 
 ## Require servers (from remote sources) to satisfy specific properties
 
 # Use servers reachable over IPv4
-# 使用可通过IPv4访问的服务器
+# 使用可通过 IPv4 访问的服务器。
 ipv4_servers = true
 
 # Use servers reachable over IPv6 -- Do not enable if you don't have IPv6 connectivity
-# 使用可通过IPv6访问的服务器 - 如果没有IPv6连接则不要启用
+# 使用可通过 IPv6 访问的服务器 - 如果没有 IPv6 连接则不要启用。
 ipv6_servers = false
 
 # Use servers implementing the DNSCrypt protocol
-# 使用 DNSCrypt 协议的服务器
+# 使用 DNSCrypt 协议的服务器。
 dnscrypt_servers = true
 
 # Use servers implementing the DNS-over-HTTPS protocol
-# 使用 DNS-over-HTTPS 协议的服务器
+# 使用 DNS-over-HTTPS 协议的服务器。
 doh_servers = true
 
 # Use servers implementing the Oblivious DoH protocol
-# 使用 Oblivious DoH 协议的服务器
+# 使用 Oblivious DoH 协议的服务器。
 odoh_servers = false
 
 
@@ -102,20 +102,28 @@ disabled_server_names = []
 ## Otherwise, leave this to `false`, as it doesn't improve security
 ## (dnscrypt-proxy will always encrypt everything even using UDP), and can
 ## only increase latency.
-## 始终使用TCP连接到上游服务器。如果要使用Tor网络，则需要启用此选项。
+## 始终使用 TCP 连接到上游服务器。如果要使用 Tor 网络，则需要启用此选项。
 force_tcp = false
+
+
+## Enable support for HTTP/3 (DoH3, HTTP over QUIC)
+## Note that, like DNSCrypt but unlike other HTTP versions, this uses
+## UDP and (usually) port 443 instead of TCP.
+## 是否启用 http3 支持。
+
+http3 = false
 
 
 ## SOCKS proxy
 ## Uncomment the following line to route all TCP connections to a local Tor node
 ## Tor doesn't support UDP, so set `force_tcp` to `true` as well.
-## 使用SOCKS5代理，将所有TCP连接路由到本地Tor节点，还需要启用上面的force_tcp选项。
+## 使用 SOCKS5 代理，将所有 TCP 连接路由到本地 Tor 节点，还需要启用上面的 force_tcp 选项。
 #proxy = 'socks5://127.0.0.1:1080'
 
 
 ## HTTP/HTTPS proxy
 ## Only for DoH servers
-## HTTP/HTTPS代理，仅适用于DoH服务器
+## HTTP/HTTPS 代理，仅适用于 DoH 服务器。
 #http_proxy = 'http://127.0.0.1:8888'
 
 
@@ -123,12 +131,12 @@ force_tcp = false
 ## If you have a network with *a lot* of latency, you may need to
 ## increase this. Startup may be slower if you do so.
 ## Don't increase it too much. 10000 is the highest reasonable value.
-## DNS查询响应超时限制，以毫秒为单位，10000是上限。
+## DNS 查询响应超时限制，以毫秒为单位，10000 是上限。
 timeout = 5000
 
 
 ## Keepalive for HTTP (HTTPS, HTTP/2) queries, in seconds
-## 在多少秒内保持HTTP（HTTPS，HTTP/2）查询的活动状态
+## 在多少秒内保持 HTTP（HTTPS，HTTP/2）查询的活动状态。
 keepalive = 30
 
 
@@ -136,10 +144,10 @@ keepalive = 30
 ##
 ## Multiple networks can be listed; they will be randomly chosen.
 ## These networks don't have to match your actual networks.
-## 将EDNS-客户端-子网信息添加到传出查询中
+## 将 EDNS-客户端-子网信息添加到传出查询中。
 ## 可以列出多个网络，他们将被随机选择。
 ## 这些网络不必匹配您的实际网络。
-# edns_client_subnet = ["0.0.0.0/0", "2001:db8::/32"]
+# edns_client_subnet = ['0.0.0.0/0', '2001:db8::/32']
 
 
 ## Response for blocked queries. Options are `refused`, `hinfo` (default) or
@@ -147,7 +155,7 @@ keepalive = 30
 ## Using the `hinfo` option means that some responses will be lies.
 ## Unfortunately, the `hinfo` option appears to be required for Android 8+
 ## 阻止查询的响应。选项为 `refused`，`hinfo`（默认）或IP响应。
-## 要给出IP响应，请使用格式 `a:<IPv4>,aaaa:<IPv6>`。
+## 要给出 IP 响应，请使用格式 `a:<IPv4>,aaaa:<IPv6>`。
 ## 使用`hinfo`选项意味着某些响应将是虚假的。不幸的是，Android 8+ 似乎需要`hinfo`选项。
 # blocked_query_response = 'refused'
 
@@ -181,7 +189,7 @@ log_level = 6
 ##
 ## This file is different from other log files, and will not be
 ## automatically rotated by the application.
-## 日志文件名称
+## 日志文件名称。
 #log_file = 'dnscrypt-proxy.log'
 
 
@@ -196,21 +204,21 @@ log_level = 6
 
 
 ## Delay, in minutes, after which certificates are reloaded
-## 延迟，以分钟为单位，在此之后重新加载证书
+## 延迟，以分钟为单位，在此之后重新加载证书。
 cert_refresh_delay = 240
 
 
 ## DNSCrypt: Create a new, unique key for every single DNS query
 ## This may improve privacy but can also have a significant impact on CPU usage
 ## Only enable if you don't have a lot of network load
-## DNSCrypt：为每个DNS查询创建一个新的唯一密钥
-## 这可以加强隐私，但也会对CPU使用产生较大影响
-## 仅在您没有大量网络负载时启用
+## DNSCrypt：为每个 DNS 查询创建一个新的唯一密钥。
+## 这可以加强隐私，但也会对 CPU 使用产生较大影响。
+## 仅在您没有大量网络负载时启用。
 #dnscrypt_ephemeral_keys = false
 
 
 ## DoH: Disable TLS session tickets - increases privacy but also latency
-## DoH：禁用TLS会话票证 - 增加隐私，但也增加了延迟
+## DoH：禁用TLS会话票证 - 增加隐私，但也增加了延迟。
 #tls_disable_session_tickets = false
 
 
@@ -266,7 +274,7 @@ bootstrap_resolvers = ['119.29.29.29:53', '223.5.5.5:53', '114.114.114.114:53']
 
 
 ## Always use the bootstrap resolver before the system DNS settings.
-## 始终在系统DNS设置之前使用引导解析器
+## 始终在系统 DNS 设置之前使用引导解析器。
 ignore_system_dns = true
 
 
@@ -340,12 +348,12 @@ log_files_max_backups = 1
 ## Immediately respond to IPv6-related queries with an empty response
 ## This makes things faster when there is no IPv6 connectivity, but can
 ## also cause reliability issues with some stub resolvers.
-## 立即响应与IPv6相关的查询，并返回空响应，如配合dnsmasq，请不要启用此选项。
+## 立即响应与 IPv6 相关的查询，并返回空响应，如配合 dnsmasq，请不要启用此选项。
 block_ipv6 = false
 
 
 ## Immediately respond to A and AAAA queries for host names without a domain name
-## 立即响应A和AAAA查询没有域名的主机名
+## 立即响应A和AAAA查询没有域名的主机名。
 block_unqualified = true
 
 
@@ -380,16 +388,19 @@ reject_ttl = 10
 ## Cloaking returns a predefined address for a specific name.
 ## In addition to acting as a HOSTS file, it can also return the IP address
 ## of a different name. It will also do CNAME flattening.
+## If 'cloak_ptr' is set, then PTR (reverse lookups) are enabled
+## for cloaking rules that do not contain wild cards.
 ##
 ## See the `example-cloaking-rules.txt` file for an example
 
-## Cloaking返回特定域名的预定义地址，功能同HOSTS文件。
+## Cloaking返回特定域名的预定义地址，功能同 HOSTS 文件。
 ## 也可以用于将域名映射到其它域名，参照示例填写。
 #cloaking_rules = 'cloaking-rules.txt'
 
 ## TTL used when serving entries in cloaking-rules.txt
-## 在为cloaking-rules.txt提供条目时使用的TTL
-#cloak_ttl = 600
+## 在为 cloaking-rules.txt 提供条目时使用的 TTL
+# cloak_ttl = 600
+# cloak_ptr = false
 
 
 
@@ -398,7 +409,7 @@ reject_ttl = 10
 ###########################
 
 ## Enable a DNS cache to reduce latency and outgoing traffic
-## 启用DNS缓存以减少延迟和传出流量
+## 启用 DNS 缓存以减少延迟和传出流量
 cache = false
 
 
@@ -408,22 +419,22 @@ cache_size = 4096
 
 
 ## Minimum TTL for cached entries
-## 缓存条目的最小TTL值
+## 缓存条目的最小 TTL 值。
 cache_min_ttl = 2400
 
 
 ## Maximum TTL for cached entries
-## 缓存条目的最大TTL值
+## 缓存条目的最大 TTL 值。
 cache_max_ttl = 86400
 
 
 ## Minimum TTL for negatively cached entries
-## 负缓存条目的最小TTL值
+## 负缓存条目的最小 TTL 值。
 cache_neg_min_ttl = 60
 
 
 ## Maximum TTL for negatively cached entries
-## 负缓存条目的最大TTL值
+## 负缓存条目的最大 TTL 值。
 cache_neg_max_ttl = 600
 
 
@@ -437,7 +448,7 @@ cache_neg_max_ttl = 600
 ## A file that contains a set of names used by operating systems to
 ## check for connectivity and captive portals, along with hard-coded
 ## IP addresses to return.
-## 该文件包含操作系统用来检查连接性和强制门户的一组名称，以及要返回的硬编码IP地址。
+## 该文件包含操作系统用来检查连接性和强制门户的一组名称，以及要返回的硬编码 IP 地址。
 
 # map_file = 'example-captive-portals.txt'
 
@@ -454,7 +465,7 @@ cache_neg_max_ttl = 600
 ## features will enable these, without bypassing your DNS proxy.
 
 ## Addresses that the local DoH server should listen to
-## 本地DoH服务器监听的地址
+## 本地 DoH 服务器监听的地址。
 # listen_addresses = ['127.0.0.1:3000']
 
 
@@ -487,20 +498,20 @@ cache_neg_max_ttl = 600
 
 [query_log]
 
-  ## Path to the query log file (absolute, or relative to the same directory as the config file)
-  ## Can be set to /dev/stdout in order to log to the standard output.
-  ## DNS查询记录日志文件
-  # file = 'query.log'
+## Path to the query log file (absolute, or relative to the same directory as the config file)
+## Can be set to /dev/stdout in order to log to the standard output.
+## DNS查询记录日志文件。
+# file = 'query.log'
 
 
-  ## Query log format (currently supported: tsv and ltsv)
-  ## 日志格式（目前支持：tsv和ltsv）
-  # format = 'tsv'
+## Query log format (currently supported: tsv and ltsv)
+## 日志格式（目前支持：tsv和ltsv）
+# format = 'tsv'
 
 
-  ## Do not log these query types, to reduce verbosity. Keep empty to log everything.
-  ## 不要记录这些查询类型，以减少冗长。
-  # ignored_qtypes = ['DNSKEY', 'NS']
+## Do not log these query types, to reduce verbosity. Keep empty to log everything.
+## 不要记录这些查询类型，以减少冗长。
+# ignored_qtypes = ['DNSKEY', 'NS']
 
 
 
@@ -514,19 +525,19 @@ cache_neg_max_ttl = 600
 
 [nx_log]
 
-  ## Path to the query log file (absolute, or relative to the same directory as the config file)
-  ## 查询不存在域名的日志文件
-  # file = 'nx.log'
+## Path to the query log file (absolute, or relative to the same directory as the config file)
+## 查询不存在域名的日志文件。
+# file = 'nx.log'
 
 
-  ## Query log format (currently supported: tsv and ltsv)
-  ## 日志格式（目前支持：tsv和ltsv）
-  # format = 'tsv'
+## Query log format (currently supported: tsv and ltsv)
+## 日志格式（目前支持：tsv和ltsv）
+# format = 'tsv'
 
 
 
 ######################################################
-#        Pattern-based blocking (blocklists)        #
+#        Pattern-based blocking (blocklists)         #
 ######################################################
 
 ## Blocklists are made of one pattern per line. Example of valid patterns:
@@ -544,19 +555,19 @@ cache_neg_max_ttl = 600
 
 [blocked_names]
 
-  ## Path to the file of blocking rules (absolute, or relative to the same directory as the config file)
-  ## 域名黑名单规则文件，这些域名将被阻止解析。
+## Path to the file of blocking rules (absolute, or relative to the same directory as the config file)
+## 域名黑名单规则文件，这些域名将被阻止解析。
 blocked_names_file = 'blocked-names.txt'
 
 
-  ## Optional path to a file logging blocked queries
-  ## 黑名单域名的查询日志记录
-  # log_file = 'blocked-names.log'
+## Optional path to a file logging blocked queries
+## 黑名单域名的查询日志记录。
+# log_file = 'blocked-names.log'
 
 
-  ## Optional log format: tsv or ltsv (default: tsv)
-  ## 日志格式（目前支持：tsv和ltsv）
-  # log_format = 'tsv'
+## Optional log format: tsv or ltsv (default: tsv)
+## 日志格式（目前支持：tsv和ltsv）
+# log_format = 'tsv'
 
 
 
@@ -572,24 +583,24 @@ blocked_names_file = 'blocked-names.txt'
 
 [blocked_ips]
 
-  ## Path to the file of blocking rules (absolute, or relative to the same directory as the config file)
-  ## IP黑名单规则文件的路径，这些IP将被阻止解析。
-  # blocked_ips_file = 'blocked-ips.txt'
+## Path to the file of blocking rules (absolute, or relative to the same directory as the config file)
+## IP 黑名单规则文件的路径，这些 IP 将被阻止解析。
+# blocked_ips_file = 'blocked-ips.txt'
 
 
-  ## Optional path to a file logging blocked queries
-  ## 黑名单IP的查询日志记录
-  # log_file = 'blocked-ips.log'
+## Optional path to a file logging blocked queries
+## 黑名单IP的查询日志记录
+# log_file = 'blocked-ips.log'
 
 
-  ## Optional log format: tsv or ltsv (default: tsv)
-  ## 日志格式（目前支持：tsv和ltsv）
-  # log_format = 'tsv'
+## Optional log format: tsv or ltsv (default: tsv)
+## 日志格式（目前支持：tsv和ltsv）
+# log_format = 'tsv'
 
 
 
 ######################################################
-#   Pattern-based allow lists (blocklists bypass)   #
+#   Pattern-based allow lists (blocklists bypass)    #
 ######################################################
 
 ## Allowlists support the same patterns as blocklists
@@ -600,19 +611,19 @@ blocked_names_file = 'blocked-names.txt'
 
 [allowed_names]
 
-  ## Path to the file of allow list rules (absolute, or relative to the same directory as the config file)
-  ## 白名单列表，让指定域名能绕过dnscrypt-proxy的阻止规则。
-  # allowed_names_file = 'allowed-names.txt'
+## Path to the file of allow list rules (absolute, or relative to the same directory as the config file)
+## 白名单列表，让指定域名能绕过 dnscrypt-proxy 的阻止规则。
+# allowed_names_file = 'allowed-names.txt'
 
 
-  ## Optional path to a file logging allowed queries
-  ## 白名单列表的查询日志记录
-  # log_file = 'allowed-names.log'
+## Optional path to a file logging allowed queries
+## 白名单列表的查询日志记录
+# log_file = 'allowed-names.log'
 
 
-  ## Optional log format: tsv or ltsv (default: tsv)
-  ## 日志格式（目前支持：tsv和ltsv）
-  # log_format = 'tsv'
+## Optional log format: tsv or ltsv (default: tsv)
+## 日志格式（目前支持：tsv和ltsv）
+# log_format = 'tsv'
 
 
 
@@ -621,25 +632,25 @@ blocked_names_file = 'blocked-names.txt'
 #########################################################
 
 ## Allowed IP lists support the same patterns as IP blocklists
-## If an IP response matches an allow ip entry, the corresponding session
+## If an IP response matches an allowed entry, the corresponding session
 ## will bypass IP filters.
 ##
 ## Time-based rules are also supported to make some websites only accessible at specific times of the day.
 
 [allowed_ips]
 
-  ## Path to the file of allowed ip rules (absolute, or relative to the same directory as the config file)
-  ## 白名单列表，让指定IP能绕过dnscrypt-proxy的阻止规则。
-  # allowed_ips_file = 'allowed-ips.txt'
+## Path to the file of allowed ip rules (absolute, or relative to the same directory as the config file)
+## 白名单列表，让指定IP能绕过dnscrypt-proxy的阻止规则。
+# allowed_ips_file = 'allowed-ips.txt'
 
 
-  ## Optional path to a file logging allowed queries
-  ## 白名单列表的查询日志记录
-  # log_file = 'allowed-ips.log'
+## Optional path to a file logging allowed queries
+## 白名单列表的查询日志记录
+# log_file = 'allowed-ips.log'
 
-  ## Optional log format: tsv or ltsv (default: tsv)
-  ## 日志格式（目前支持：tsv和ltsv）
-  # log_format = 'tsv'
+## Optional log format: tsv or ltsv (default: tsv)
+## 日志格式（目前支持：tsv和ltsv）
+# log_format = 'tsv'
 
 
 
@@ -661,21 +672,21 @@ blocked_names_file = 'blocked-names.txt'
 ## 搭配各类规则以实现某个时间段生效特定规则。
 [schedules]
 
-  # [schedules.'time-to-sleep']
-  # mon = [{after='21:00', before='7:00'}]
-  # tue = [{after='21:00', before='7:00'}]
-  # wed = [{after='21:00', before='7:00'}]
-  # thu = [{after='21:00', before='7:00'}]
-  # fri = [{after='23:00', before='7:00'}]
-  # sat = [{after='23:00', before='7:00'}]
-  # sun = [{after='21:00', before='7:00'}]
+  # [schedules.time-to-sleep]
+  #   mon = [{after='21:00', before='7:00'}]
+  #   tue = [{after='21:00', before='7:00'}]
+  #   wed = [{after='21:00', before='7:00'}]
+  #   thu = [{after='21:00', before='7:00'}]
+  #   fri = [{after='23:00', before='7:00'}]
+  #   sat = [{after='23:00', before='7:00'}]
+  #   sun = [{after='21:00', before='7:00'}]
 
-  # [schedules.'work']
-  # mon = [{after='9:00', before='18:00'}]
-  # tue = [{after='9:00', before='18:00'}]
-  # wed = [{after='9:00', before='18:00'}]
-  # thu = [{after='9:00', before='18:00'}]
-  # fri = [{after='9:00', before='17:00'}]
+  # [schedules.work]
+  #   mon = [{after='9:00', before='18:00'}]
+  #   tue = [{after='9:00', before='18:00'}]
+  #   wed = [{after='9:00', before='18:00'}]
+  #   thu = [{after='9:00', before='18:00'}]
+  #   fri = [{after='9:00', before='17:00'}]
 
 
 
@@ -703,40 +714,40 @@ blocked_names_file = 'blocked-names.txt'
 
 [sources]
 
-  ## An example of a remote source from https://github.com/DNSCrypt/dnscrypt-resolvers
-  ## 可用的远程DNS服务器列表
-  [sources.'public-resolvers']
-    urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md', 'https://download.dnscrypt.info/resolvers-list/v3/public-resolvers.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/public-resolvers.md', 'https://download.dnscrypt.net/resolvers-list/v3/public-resolvers.md']
+  ### An example of a remote source from https://github.com/DNSCrypt/dnscrypt-resolvers
+  ### 可用的远程 DNS 服务器列表。
+  [sources.public-resolvers]
+    urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md', 'https://download.dnscrypt.info/resolvers-list/v3/public-resolvers.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/public-resolvers.md']
     cache_file = 'public-resolvers.md'
     minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
     refresh_delay = 72
     prefix = ''
 
-  ## Anonymized DNS relays
+  ### Anonymized DNS relays
 
-  [sources.'relays']
-    urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/relays.md', 'https://download.dnscrypt.info/resolvers-list/v3/relays.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/relays.md', 'https://download.dnscrypt.net/resolvers-list/v3/relays.md']
+  [sources.relays]
+    urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/relays.md', 'https://download.dnscrypt.info/resolvers-list/v3/relays.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/relays.md']
     cache_file = 'relays.md'
     minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
     refresh_delay = 72
     prefix = ''
 
-  ## ODoH (Oblivious DoH) servers and relays
+  ### ODoH (Oblivious DoH) servers and relays
 
-  # [sources.'odoh-servers']
-  #   urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/odoh-servers.md', 'https://download.dnscrypt.info/resolvers-list/v3/odoh-servers.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/odoh-servers.md', 'https://download.dnscrypt.net/resolvers-list/v3/odoh-servers.md']
+  # [sources.odoh-servers]
+  #   urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/odoh-servers.md', 'https://download.dnscrypt.info/resolvers-list/v3/odoh-servers.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/odoh-servers.md']
   #   cache_file = 'odoh-servers.md'
   #   minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
   #   refresh_delay = 24
   #   prefix = ''
-  # [sources.'odoh-relays']
-  #   urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/odoh-relays.md', 'https://download.dnscrypt.info/resolvers-list/v3/odoh-relays.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/odoh-relays.md', 'https://download.dnscrypt.net/resolvers-list/v3/odoh-relays.md']
+  # [sources.odoh-relays]
+  #   urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/odoh-relays.md', 'https://download.dnscrypt.info/resolvers-list/v3/odoh-relays.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/odoh-relays.md']
   #   cache_file = 'odoh-relays.md'
   #   minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
   #   refresh_delay = 24
   #   prefix = ''
 
-  ## Quad9
+  ### Quad9
 
   # [sources.quad9-resolvers]
   #   urls = ['https://www.quad9.net/quad9-resolvers.md']
@@ -744,13 +755,13 @@ blocked_names_file = 'blocked-names.txt'
   #   cache_file = 'quad9-resolvers.md'
   #   prefix = 'quad9-'
 
-  ## Another example source, with resolvers censoring some websites not appropriate for children
-  ## This is a subset of the `public-resolvers` list, so enabling both is useless
+  ### Another example source, with resolvers censoring some websites not appropriate for children
+  ### This is a subset of the `public-resolvers` list, so enabling both is useless.
 
-  #  [sources.'parental-control']
-  #    urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/parental-control.md', 'https://download.dnscrypt.info/resolvers-list/v3/parental-control.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/parental-control.md', 'https://download.dnscrypt.net/resolvers-list/v3/parental-control.md']
-  #    cache_file = 'parental-control.md'
-  #    minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+  # [sources.parental-control]
+  #   urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/parental-control.md', 'https://download.dnscrypt.info/resolvers-list/v3/parental-control.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/parental-control.md']
+  #   cache_file = 'parental-control.md'
+  #   minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
 
 
 
@@ -760,17 +771,17 @@ blocked_names_file = 'blocked-names.txt'
 
 [broken_implementations]
 
-# Cisco servers currently cannot handle queries larger than 1472 bytes, and don't
-# truncate reponses larger than questions as expected by the DNSCrypt protocol.
-# This prevents large responses from being received over UDP and over relays.
-#
-# Older versions of the `dnsdist` server software had a bug with queries larger
-# than 1500 bytes. This is fixed since `dnsdist` version 1.5.0, but
-# some server may still run an outdated version.
-#
-# The list below enables workarounds to make non-relayed usage more reliable
-# until the servers are fixed.
-# 下面的列表可以让非中继的使用变得更加可靠，直到服务器被修复。
+## Cisco servers currently cannot handle queries larger than 1472 bytes, and don't
+## truncate responses larger than questions as expected by the DNSCrypt protocol.
+## This prevents large responses from being received over UDP and over relays.
+##
+## Older versions of the `dnsdist` server software had a bug with queries larger
+## than 1500 bytes. This is fixed since `dnsdist` version 1.5.0, but
+## some server may still run an outdated version.
+##
+## The list below enables workarounds to make non-relayed usage more reliable
+## until the servers are fixed.
+## 下面的列表可以让非中继的使用变得更加可靠，直到服务器被修复。
 fragments_blocked = ['cisco', 'cisco-ipv6', 'cisco-familyshield', 'cisco-familyshield-ipv6', 'cleanbrowsing-adult', 'cleanbrowsing-adult-ipv6', 'cleanbrowsing-family', 'cleanbrowsing-family-ipv6', 'cleanbrowsing-security', 'cleanbrowsing-security-ipv6']
 
 
@@ -779,15 +790,14 @@ fragments_blocked = ['cisco', 'cisco-ipv6', 'cisco-familyshield', 'cisco-familys
 #        Certificate-based client authentication for DoH        #
 #################################################################
 
-# Use a X509 certificate to authenticate yourself when connecting to DoH servers.
-# This is only useful if you are operating your own, private DoH server(s).
-# 'creds' maps servers to certificates, and supports multiple entries.
-# If you are not using the standard root CA, an optional "root_ca"
-# property set to the path to a root CRT file can be added to a server entry.
-# 仅在运行自己的私人DoH服务器时，此功能才有用。
+## Use a X509 certificate to authenticate yourself when connecting to DoH servers.
+## This is only useful if you are operating your own, private DoH server(s).
+## 'creds' maps servers to certificates, and supports multiple entries.
+## If you are not using the standard root CA, an optional "root_ca"
+## property set to the path to a root CRT file can be added to a server entry.
+## 仅在运行自己的私人 DoH 服务器时，此功能才有用。
 [doh_client_x509_auth]
 
-#
 # creds = [
 #    { server_name='*', client_cert='client.crt', client_key='client.key' }
 # ]
@@ -828,23 +838,23 @@ fragments_blocked = ['cisco', 'cisco-ipv6', 'cisco-familyshield', 'cisco-familys
 ## Manual selection is always recommended over automatic selection, so that you can
 ## select (relay,server) pairs that work well and fit your own criteria (close by or
 ## in different countries, operated by different entities, on distinct ISPs...)
-## 使用匿名DNS服务器中继
+## 使用匿名 DNS 服务器中继。
 # routes = [
 #    { server_name='example-server-1', via=['anon-example-1', 'anon-example-2'] },
 #    { server_name='example-server-2', via=['sdns://gRIxMzcuNzQuMjIzLjIzNDo0NDM'] }
 # ]
 
 
-# Skip resolvers incompatible with anonymization instead of using them directly
-# 跳过与匿名化不兼容的解析器，而不是直接使用它们
+## Skip resolvers incompatible with anonymization instead of using them directly
+## 跳过与匿名化不兼容的解析器，而不是直接使用它们
 skip_incompatible = false
 
 
-# If public server certificates for a non-conformant server cannot be
-# retrieved via a relay, try getting them directly. Actual queries
-# will then always go through relays.
-# 如果不合格服务器的公共服务器证书无法通过中继检索，请尝试直接获取它们。
-# 然后，实际查询将始终通过中继进行。
+## If public server certificates for a non-conformant server cannot be
+## retrieved via a relay, try getting them directly. Actual queries
+## will then always go through relays.
+## 如果不合格服务器的公共服务器证书无法通过中继检索，请尝试直接获取它们。
+## 然后，实际查询将始终通过中继进行。
 
 # direct_cert_fallback = false
 
@@ -869,16 +879,18 @@ skip_incompatible = false
 ##
 ## Do not enable unless you know what DNS64 is and why you need it, or else
 ## you won't be able to connect to anything at all.
-## 除非您知道什么是DNS64以及为什么需要它，否则不要启用它，否则您将根本无法连接任何东西。
+## 除非您知道什么是 DNS64 以及为什么需要它，否则不要启用它，否则您将根本无法连接任何东西。
 [dns64]
 
-## (Option 1) Static prefix(es) as Pref64::/n CIDRs.
+## Static prefix(es) as Pref64::/n CIDRs
+
 # prefix = ['64:ff9b::/96']
 
-## (Option 2) DNS64-enabled resolver(s) to discover Pref64::/n CIDRs.
+## DNS64-enabled resolver(s) to discover Pref64::/n CIDRs
 ## These resolvers are used to query for Well-Known IPv4-only Name (WKN) "ipv4only.arpa." to discover only.
 ## Set with your ISP's resolvers in case of custom prefixes (other than Well-Known Prefix 64:ff9b::/96).
 ## IMPORTANT: Default resolvers listed below support Well-Known Prefix 64:ff9b::/96 only.
+
 # resolver = ['[2606:4700:4700::64]:53', '[2001:4860:4860::64]:53']
 
 
@@ -892,5 +904,5 @@ skip_incompatible = false
 ## 可选的本地静态附加服务器列表，对于测试自己搭建的服务器非常有用。
 [static]
 
-  # [static.'myserver']
-  # stamp = 'sdns://AQcAAAAAAAAAAAAQMi5kbnNjcnlwdC1jZXJ0Lg'
+  # [static.myserver]
+  #   stamp = 'sdns://AQcAAAAAAAAAAAAQMi5kbnNjcnlwdC1jZXJ0Lg'

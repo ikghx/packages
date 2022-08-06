@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=open-vm-tools
-PKG_VERSION:=11.3.5
-PKG_RELEASE:=1
+PKG_VERSION:=12.0.0
+PKG_RELEASE:=$(AUTORELEASE)
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-18557794.tar.gz
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-19345655.tar.gz
 PKG_SOURCE_URL:=https://github.com/vmware/open-vm-tools/releases/download/stable-$(PKG_VERSION)
-PKG_HASH:=2053daf7b224ab7ae1a9cfcd6ae12494c646e2bf9aaca998225bd082a4a43fb7
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)-18557794
+PKG_HASH:=ea370217a213802f91b01231e28298bbe54134822351fb5cc70255d80ba0e775
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)-19345655
 
 PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=LICENSE
@@ -47,7 +47,7 @@ endef
 
 define Package/open-vm-tools-fuse
 $(call Package/open-vm-tools/Default)
-  DEPENDS:=+open-vm-tools +libfuse
+  DEPENDS:=+open-vm-tools +libfuse3
   TITLE:=open-vm-tools-fuse
   MAINTAINER:=Kagurazaka Kotori <kagurazakakotori@gmail.com>
 endef
@@ -58,6 +58,7 @@ endef
 
 CONFIGURE_ARGS+= \
 	--without-icu \
+	--disable-containerinfo \
 	--disable-multimon \
 	--disable-docs \
 	--disable-tests \

@@ -190,7 +190,7 @@ define Package/ddns-scripts-gandi/description
   Dynamic DNS Client scripts extension for "gandi.net".
   It requires:
   "option username" to be a valid subdomain for gandi.net
-  "option password" to be a valid API key for ganid.net
+  "option password" to be a valid API key for gandi.net
 endef
 
 

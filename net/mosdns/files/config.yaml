@@ -57,9 +57,14 @@ plugins:
     type:                  query_matcher
     args:
       domain:
-        - 'provider:geosite:cn'
-        - 'provider:geosite:apple-cn'
-        - 'provider:geosite:google-cn'
+        - 'provider:geosite:icloud,apple-cn,google-cn,cn'
+
+# 匹配 GFW 域名的插件
+  - tag:                   "query_is_gfw"
+    type:                  query_matcher
+    args:
+      domain:
+        - 'provider:geosite:greatfire,gfw'
 
 # 匹配非本地域名的插件
   - tag:                   "query_is_non_local_domain"
@@ -174,6 +179,7 @@ plugins:
 
         - if: "query_is_local_domain"
           exec:
+            - _prefer_ipv4 # 优先应答 IPv4 地址。
             - forward_local # 使用本地 DNS 服务器解析。
             - modify_ttl # 修改应答 TTL
             - if: response_has_local_ip
@@ -182,9 +188,9 @@ plugins:
 
         - if: "query_is_non_local_domain"
           exec:
-            - _prefer_ipv4 # 优先应答 IPv4 地址。
+            - _prefer_ipv4
             - forward_remote # 使用远程 DNS 服务器解析。
-            - modify_ttl # 修改应答 TTL
+            - modify_ttl
             - if: "! response_has_local_ip"
               exec:
                 - _return

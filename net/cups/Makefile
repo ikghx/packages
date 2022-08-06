@@ -110,7 +110,6 @@ CONFIGURE_ARGS+= \
 	--disable-avahi \
 	--disable-launchd \
 	--disable-pam \
-	--disable-slp \
 	--disable-gnutls \
 	--disable-cdsassl \
 	--disable-ssl \
