@@ -53,7 +53,7 @@ start_service() {
 	else
 		addr=""
 	fi
-	addr=${addr%/*}
+	addr="${addr%/*}"
 
 	local config_dir="${config_path%/*}"
 	[ -d "$config_dir" ] || mkdir -p "$config_dir"
