@@ -215,7 +215,7 @@ endif
 		$(1)/etc/keepalived/keepalived.conf
 
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
-	$(INSTALL_BIN) ./files/etc/uci-defaults/keepalived \
+	$(INSTALL_DATA) ./files/etc/uci-defaults/keepalived \
 		$(1)/etc/uci-defaults/keepalived
 
 	$(INSTALL_DIR) $(1)/etc/init.d

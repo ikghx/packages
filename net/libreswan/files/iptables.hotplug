@@ -1,0 +1,44 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+IPTABLES="iptables -w"
+IPSEC_HOOK="ipsec_hook"
+IPSEC_SET="IPSEC_REMOTE_SUBNETS"
+
+init_ipsec_chains_rules() {
+	$IPTABLES -t filter -N "$IPSEC_HOOK"
+	$IPTABLES -t filter -C forwarding_rule -j "$IPSEC_HOOK"
+	[ $? -ne 0 ] && $IPTABLES -t filter -I forwarding_rule -j "$IPSEC_HOOK"
+
+	$IPTABLES -t filter -C "$IPSEC_HOOK" -m set --match-set "$IPSEC_SET" src -j ACCEPT
+	[ $? -ne 0 ] && $IPTABLES -t filter -A "$IPSEC_HOOK" -m set --match-set "$IPSEC_SET" src -j ACCEPT
+
+	$IPTABLES -t nat -N "$IPSEC_HOOK"
+	$IPTABLES -t nat -C postrouting_rule -j "$IPSEC_HOOK"
+	[ $? -ne 0 ] && $IPTABLES -t nat -I postrouting_rule -j "$IPSEC_HOOK"
+
+	$IPTABLES -t nat -C "$IPSEC_HOOK" -m set --match-set "$IPSEC_SET" dst -m policy --dir out --pol ipsec -j ACCEPT
+	[ $? -ne 0 ] && $IPTABLES -t nat -A "$IPSEC_HOOK" -m set --match-set "$IPSEC_SET" dst -m policy --dir out --pol ipsec -j ACCEPT
+}
+
+rightsubnets_rules() {
+	local id=$1
+	local subnet
+
+	config_get rightsubnets "$id" rightsubnets
+
+	ipset flush "$IPSEC_SET"
+	for subnet in $rightsubnets; do
+		[ -z "$subnet" ] && continue
+		ipset -exist add "$IPSEC_SET" "$subnet" comment "$id"
+	done
+}
+
+update_ipsec_ipsets() {
+	config_load libreswan
+	config_foreach rightsubnets_rules tunnel
+}
+
+init_ipsec_chains_rules
+update_ipsec_ipsets

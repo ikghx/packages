@@ -1,0 +1,31 @@
+#!/bin/sh
+
+. /lib/functions.sh
+
+add_firewall_include() {
+	local include=libreswan_rules
+
+	if [ "$(uci_get firewall $include)" != "include" ]; then
+		uci_add firewall include "$include"
+		uci_set firewall "$include" path "/etc/firewall.libreswan-rules"
+		uci_set firewall "$include" reload "1"
+	fi
+}
+
+add_firewall_ipset() {
+	local ipset=IPSEC_REMOTE_SUBNETS
+
+	if [ "$(uci_get firewall $ipset)" != "ipset" ]; then
+		uci_add firewall ipset "$ipset"
+		uci_set firewall "$ipset" name "$ipset"
+		uci_set firewall "$ipset" match "dst_net"
+		uci_set firewall "$ipset" storage "hash"
+		uci_set firewall "$ipset" enabled "1"
+		uci_set firewall "$ipset" comment "1"
+	fi
+}
+
+add_firewall_include
+add_firewall_ipset
+
+uci_commit firewall

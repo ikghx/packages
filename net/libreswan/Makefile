@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libreswan
 PKG_VERSION:=4.7
-PKG_RELEASE:=1
+PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://download.libreswan.org/
@@ -61,9 +61,10 @@ endef
 
 define Package/libreswan/conffiles
 /etc/ipsec.d
-/etc/ipsec.conf
-/etc/ipsec.secrets
+/etc/config/libreswan
+/etc/ipsec.user
 endef
+
 TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 TARGET_CFLAGS += -flto
 
@@ -101,20 +102,34 @@ endef
 
 define Package/libreswan/install
 	$(INSTALL_DIR) \
-	 $(1)/etc/init.d \
 	 $(1)/etc/ipsec.d/policies \
 	 $(1)/usr/libexec/ipsec \
-	 $(1)/usr/sbin
+	 $(1)/usr/sbin \
+	 $(1)/etc/uci-defaults \
+	 $(1)/etc/config \
+	 $(1)/etc/init.d \
+	 $(1)/etc/hotplug.d/libreswan \
+	 $(1)/usr/libexec/rpcd
 
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/ipsec  \
 	    $(1)/usr/sbin/ipsec
-	$(INSTALL_BIN) ./files/ipsec.init $(1)/etc/init.d/ipsec
-	$(INSTALL_DATA) ./files/ipsec.conf $(1)/etc/ipsec.conf
-	$(INSTALL_DATA) ./files/ipsec.secrets $(1)/etc/ipsec.secrets
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/etc/ipsec.d/policies/* \
 	     $(1)/etc/ipsec.d/policies/
 	$(CP) $(PKG_INSTALL_DIR)/usr/libexec/ipsec/* \
 	    $(1)/usr/libexec/ipsec/
+
+	$(INSTALL_BIN) ./files/ipsec.init $(1)/etc/init.d/ipsec
+	$(INSTALL_DATA) ./files/ipsec.conf $(1)/etc/ipsec.conf
+	$(INSTALL_DATA) ./files/ipsec.secrets $(1)/etc/ipsec.secrets
+
+	$(INSTALL_DATA) ./files/libreswan.uci $(1)/etc/config/libreswan
+	$(INSTALL_DATA) ./files/libreswan.defaults $(1)/etc/uci-defaults/901-libreswan
+
+	$(INSTALL_DATA) ./files/user.hotplug $(1)/etc/hotplug.d/libreswan/01-user
+	$(INSTALL_DATA) ./files/vti.hotplug $(1)/etc/hotplug.d/libreswan/02-vti
+	$(INSTALL_DATA) ./files/iptables.hotplug $(1)/etc/hotplug.d/libreswan/03-iptables
+
+	$(INSTALL_BIN) ./files/libreswan.rpcd $(1)/usr/libexec/rpcd/libreswan
 endef
 
 $(eval $(call BuildPackage,libreswan))

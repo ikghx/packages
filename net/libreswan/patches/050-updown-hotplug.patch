@@ -1,0 +1,8 @@
+--- a/programs/_updown.xfrm/_updown.xfrm.in
++++ b/programs/_updown.xfrm/_updown.xfrm.in
+@@ -1025,3 +1025,5 @@ case "${PLUTO_VERB}" in
+ 	exit 1
+ 	;;
+ esac
++
++/sbin/hotplug-call libreswan

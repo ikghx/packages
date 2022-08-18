@@ -215,7 +215,7 @@ $(call Package/strongswan/Default)
 	+strongswan-mod-sha2 \
 	+strongswan-mod-sha3 \
 	+strongswan-mod-smp \
-	+strongswan-mod-socket-default \
+	+strongswan-mod-socket \
 	+strongswan-mod-sql \
 	+strongswan-mod-sqlite \
 	+strongswan-mod-sshkey \
@@ -275,7 +275,7 @@ $(call Package/strongswan/Default)
 	+strongswan-mod-revocation \
 	+strongswan-mod-sha1 \
 	+strongswan-mod-sha2 \
-	+strongswan-mod-socket-default \
+	+strongswan-mod-socket \
 	+strongswan-mod-sshkey \
 	+strongswan-mod-updown \
 	+strongswan-mod-x509 \
@@ -308,7 +308,7 @@ $(call Package/strongswan/Default)
 	+strongswan-mod-pubkey \
 	+strongswan-mod-random \
 	+strongswan-mod-sha1 \
-	+strongswan-mod-socket-default \
+	+strongswan-mod-socket \
 	+strongswan-mod-stroke \
 	+strongswan-mod-uci \
 	+strongswan-mod-updown
@@ -337,7 +337,7 @@ $(call Package/strongswan/Default)
 	+strongswan-mod-pubkey \
 	+strongswan-mod-random \
 	+strongswan-mod-sha1 \
-	+strongswan-mod-socket-default \
+	+strongswan-mod-socket \
 	+strongswan-mod-stroke \
 	+strongswan-mod-updown \
 	+strongswan-mod-x509 \
@@ -351,8 +351,8 @@ endef
 
 define Package/strongswan-charon
 $(call Package/strongswan/Default)
-  TITLE+= IKEv1/IKEv2 keying daemon strongswan-mod-socket-virt
-  DEPENDS:= strongswan
+  TITLE+= IKEv1/IKEv2 keying daemon
+  DEPENDS:= strongswan strongswan-mod-socket
 endef
 
 define Package/strongswan-charon/description
@@ -465,12 +465,14 @@ $(call Package/strongswan/description/Default)
  This package contains the hotplug script for updown to add iptables rules.
 endef
 
-define BuildPluginModSocketVirt
+define BuildPlugin
   define Package/strongswan-mod-$(1)
     $$(call Package/strongswan/Default)
     TITLE:= StrongSwan $(2) plugin
     DEPENDS:= strongswan $(3)
-    PROVIDES:= strongswan-mod-socket-virt
+ifneq ($(4),)
+    PROVIDES:=strongswan-mod-$(4)
+endif
   endef
 
   define Package/strongswan-mod-$(1)/install
@@ -486,24 +488,11 @@ define BuildPluginModSocketVirt
   $$(eval $$(call BuildPackage,strongswan-mod-$(1)))
 endef
 
-define BuildPlugin
-  define Package/strongswan-mod-$(1)
-    $$(call Package/strongswan/Default)
-    TITLE:= StrongSwan $(2) plugin
-    DEPENDS:= strongswan $(3)
-  endef
-
-  define Package/strongswan-mod-$(1)/install
-	$(INSTALL_DIR) $$(1)/etc/strongswan.d/charon
-	if [ -f $(PKG_INSTALL_DIR)/etc/strongswan.d/charon/$(1).conf ]; then \
-		$(INSTALL_DATA) $(PKG_INSTALL_DIR)/etc/strongswan.d/charon/$(1).conf $$(1)/etc/strongswan.d/charon/; fi
-	$(INSTALL_DIR) $$(1)/usr/lib/ipsec/plugins
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/ipsec/plugins/libstrongswan-$(1).so \
-		$$(1)/usr/lib/ipsec/plugins/
-	$(call Plugin/$(1)/install,$$(1))
-  endef
-
-  $$(eval $$(call BuildPackage,strongswan-mod-$(1)))
+define BuildPluginProvides
+ifeq ($(4),)
+    $$(error BuildPluginProvides requires provider suffix)
+endif
+  $(call BuildPlugin,$1,$2,$3,$4)
 endef
 
 CONFIGURE_ARGS+= \
@@ -782,8 +771,8 @@ $(eval $(call BuildPlugin,sha1,SHA1 crypto,))
 $(eval $(call BuildPlugin,sha2,SHA2 crypto,))
 $(eval $(call BuildPlugin,sha3,SHA3 and SHAKE crypto,))
 $(eval $(call BuildPlugin,smp,SMP configuration and control interface,+PACKAGE_strongswan-mod-smp:libxml2))
-$(eval $(call BuildPluginModSocketVirt,socket-default,default socket implementation for charon,))
-$(eval $(call BuildPluginModSocketVirt,socket-dynamic,dynamic socket implementation for charon,))
+$(eval $(call BuildPluginProvides,socket-default,default socket implementation for charon,,socket))
+$(eval $(call BuildPluginProvides,socket-dynamic,dynamic socket implementation for charon,,socket))
 $(eval $(call BuildPlugin,sql,SQL database interface,))
 $(eval $(call BuildPlugin,sqlite,SQLite database interface,+strongswan-mod-sql +PACKAGE_strongswan-mod-sqlite:libsqlite3))
 $(eval $(call BuildPlugin,sshkey,SSH key decoding,))

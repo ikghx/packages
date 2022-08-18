@@ -14,9 +14,6 @@ export NO_TIMESTAMP=1
 
 cmd="$1"
 
-set -- $domains
-main_domain="$1"
-
 case $cmd in
 get)
 	set --
