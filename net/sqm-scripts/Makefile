@@ -12,7 +12,7 @@ PKG_VERSION:=1.5.1
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/tohojo/sqm-scripts
+PKG_SOURCE_URL:=https://github.com/tohojo/sqm-scripts.git
 PKG_SOURCE_VERSION:=1d489e58903b7c3e5f905f34401cb346db6ab7ab
 PKG_MIRROR_HASH:=dad79a899da9e9389d8bdedb0c7b48235dd55f834edf6ed4b4e38c13eff46c19
 
