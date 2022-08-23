@@ -41,11 +41,12 @@ $(call Package/libreswan/Default)
   SUBMENU:=VPN
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:= +IPV6:kmod-ip6-vti +IPV6:kmod-ipsec6 +ip-full +iptables-mod-ipsec \
+  DEPENDS:= +IPV6:kmod-ip6-vti +IPV6:kmod-ipsec6 +ip-full \
 	+kmod-crypto-aead +kmod-crypto-authenc +kmod-crypto-gcm \
 	+kmod-crypto-hash +kmod-crypto-rng +kmod-ip-vti +kmod-ipsec \
-	+kmod-ipsec4 +kmod-ipt-ipsec +kmod-xfrm-interface +libevent2 +libevent2-pthreads \
-	+libldns +librt +libunbound +nss-utils +nspr +libcap-ng
+	+kmod-ipsec4 +kmod-xfrm-interface +libevent2 +libevent2-pthreads \
+	+libldns +librt +libunbound +nss-utils +nspr +libcap-ng \
+	+iptables-mod-ipsec +kmod-ipt-ipsec
   PROVIDES:=openswan
   CONFLICTS:=strongswan
   TITLE+= IPsec Server
@@ -105,7 +106,6 @@ define Package/libreswan/install
 	 $(1)/etc/ipsec.d/policies \
 	 $(1)/usr/libexec/ipsec \
 	 $(1)/usr/sbin \
-	 $(1)/etc/uci-defaults \
 	 $(1)/etc/config \
 	 $(1)/etc/init.d \
 	 $(1)/etc/hotplug.d/libreswan \
@@ -118,16 +118,17 @@ define Package/libreswan/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/libexec/ipsec/* \
 	    $(1)/usr/libexec/ipsec/
 
+	$(INSTALL_BIN) ./files/updown.openwrt $(1)/usr/libexec/ipsec/_updown.xfrm
 	$(INSTALL_BIN) ./files/ipsec.init $(1)/etc/init.d/ipsec
 	$(INSTALL_DATA) ./files/ipsec.conf $(1)/etc/ipsec.conf
 	$(INSTALL_DATA) ./files/ipsec.secrets $(1)/etc/ipsec.secrets
 
 	$(INSTALL_DATA) ./files/libreswan.uci $(1)/etc/config/libreswan
-	$(INSTALL_DATA) ./files/libreswan.defaults $(1)/etc/uci-defaults/901-libreswan
 
+	$(INSTALL_DATA) ./files/default.hotplug $(1)/etc/hotplug.d/libreswan/00-default
 	$(INSTALL_DATA) ./files/user.hotplug $(1)/etc/hotplug.d/libreswan/01-user
 	$(INSTALL_DATA) ./files/vti.hotplug $(1)/etc/hotplug.d/libreswan/02-vti
-	$(INSTALL_DATA) ./files/iptables.hotplug $(1)/etc/hotplug.d/libreswan/03-iptables
+	$(INSTALL_DATA) ./files/iptables.hotplug $(1)/etc/hotplug.d/libreswan/61-iptables
 
 	$(INSTALL_BIN) ./files/libreswan.rpcd $(1)/usr/libexec/rpcd/libreswan
 endef

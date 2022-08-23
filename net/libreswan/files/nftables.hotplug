@@ -1,0 +1,156 @@
+#!/bin/sh
+
+[ -x "$(command -v fw3)" ] && [ ! -L "$(command -v fw3)" ] && exit 0
+[ ! -x "$(command -v nft)" ] && exit 0
+
+. /lib/functions.sh
+
+TABLE="fw4"
+XT_BIN="nft"
+LIBRESWAN_INPUT="libreswan_input"
+LIBRESWAN_FORWARD="libreswan_forward"
+LIBRESWAN_POSTROUTING="libreswan_postrouting"
+IPSEC_BIN="/usr/sbin/ipsec"
+
+nft_check_object() {
+	$XT_BIN --handle --numeric list $1 inet $TABLE $2 > /dev/null 2>&1
+}
+
+nft_get_id() {
+	local chain=$1
+	shift
+	local rule=$*
+
+	$XT_BIN --handle --numeric list chain inet $TABLE $chain | grep "$rule" | sed -e 's/.*# //g' 2>/dev/null
+}
+
+nft_insert_object() {
+	local _type=$1
+	shift
+	local args=$*
+
+	$XT_BIN insert $_type inet $TABLE $args > /dev/null 2>&1
+}
+
+nft_add_object() {
+	local _type=$1
+	shift
+	local args=$*
+
+	$XT_BIN add $_type inet $TABLE $args > /dev/null 2>&1
+}
+
+nft_delete_object() {
+	local _type=$1
+	shift
+	local args=$*
+
+	$XT_BIN delete $_type inet $TABLE $args > /dev/null 2>&1
+}
+
+nft_check_chain() {
+	nft_check_object chain $1
+}
+
+nft_insert_rule() {
+	local chain=$1
+	shift
+	local rule=$*
+	local handle
+
+	handle=$(nft_get_id "$chain" "$rule")
+	[ -n "$handle" ] && return 0
+
+	nft_insert_object rule $chain $rule
+}
+
+nft_add_rule() {
+	local chain=$1
+	shift
+	local rule=$*
+	local handle
+
+	handle=$(nft_get_id "$chain" "$rule")
+	[ -n "$handle" ] && return 0
+
+	nft_add_object rule $chain $rule
+}
+
+nft_delete_rule() {
+	local chain=$1
+	shift
+	local rule=$*
+	local handle _handle
+
+	handle=$(nft_get_id "$chain" "$rule")
+	[ -z "$handle" ] && return 0
+
+	echo -e "$handle" | while read _handle; do
+	nft_delete_object rule $chain $_handle
+done
+}
+
+nft_add_chain() {
+	nft_check_chain $1 && return 0
+	nft_add_object chain $1
+}
+
+nft_delete_chain() {
+	nft_check_chain $1 || return 0
+	nft_delete_object chain $1
+}
+
+add_libreswan_tunnel_rules() {
+	nft_add_rule "$LIBRESWAN_INPUT" "ip saddr $PLUTO_PEER_CLIENT accept"
+	nft_add_rule "$LIBRESWAN_FORWARD" "ip saddr $PLUTO_PEER_CLIENT accept"
+	nft_add_rule "$LIBRESWAN_POSTROUTING" "ip daddr $PLUTO_PEER_CLIENT accept"
+}
+
+delete_libreswan_tunnel_rules() {
+	nft_delete_rule "$LIBRESWAN_INPUT" "ip saddr $PLUTO_PEER_CLIENT accept"
+	nft_delete_rule "$LIBRESWAN_FORWARD" "ip saddr $PLUTO_PEER_CLIENT accept"
+	nft_delete_rule "$LIBRESWAN_POSTROUTING" "ip daddr $PLUTO_PEER_CLIENT accept"
+}
+
+fw_libreswan_init() {
+	nft_add_chain $LIBRESWAN_INPUT
+	nft_insert_rule input "jump $LIBRESWAN_INPUT"
+
+	nft_add_chain $LIBRESWAN_FORWARD
+	nft_insert_rule forward "jump $LIBRESWAN_FORWARD"
+
+	nft_add_chain $LIBRESWAN_POSTROUTING
+	nft_insert_rule srcnat "jump $LIBRESWAN_POSTROUTING"
+}
+
+fw_libreswan_deinit() {
+	nft_delete_rule input "jump $LIBRESWAN_INPUT"
+	nft_delete_chain $LIBRESWAN_INPUT
+
+	nft_delete_rule forward "jump $LIBRESWAN_FORWARD"
+	nft_delete_chain $LIBRESWAN_FORWARD
+
+	nft_delete_rule srcnat "jump $LIBRESWAN_POSTROUTING"
+	nft_delete_chain $LIBRESWAN_POSTROUTING
+}
+
+tunnels_found() {
+	local count
+
+	count=$($IPSEC_BIN readwriteconf | grep ^conn | wc -l)
+	[ -n "$count" ] && [ "$count" -gt 0 ]
+}
+
+if ! tunnels_found; then
+	fw_libreswan_deinit
+	exit 0
+fi
+
+fw_libreswan_init
+
+case "${PLUTO_VERB}" in
+	up-host|up-client) add_libreswan_tunnel_rules ;;
+	down-host|down-client) delete_libreswan_tunnel_rules ;;
+	up-host-v6|down-host-v6) ;;
+	up-client|down-client-v6) ;;
+esac

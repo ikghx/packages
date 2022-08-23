@@ -11,9 +11,40 @@ PROG="/usr/libexec/ipsec/pluto"
 IPSEC_BIN="/usr/sbin/ipsec"
 
 IPSEC_DIR="/var/run/ipsec"
-IPSEC_CONF="$IPSEC_DIR/ipsec.conf"
-IPSEC_SECRETS="$IPSEC_DIR/ipsec.secrets"
+IPSEC_CONF="$IPSEC_DIR/setup.conf"
 IPSEC_CONF_DIR="$IPSEC_DIR/conf.d"
+
+IPSEC_AUTO="${IPSEC_BIN} auto"
+
+set_var() {
+	export "$1=$2"
+}
+
+get_var() {
+	local var
+
+	var=$(eval echo "\"\${${1}}\"")
+
+    	[ "$var" == "1" ] && return 0
+
+	return 1
+}
+
+set_restart_flag() {
+	set_var "RESTART_IPSEC" 1
+}
+
+restart_flag() {
+	get_var RESTART_IPSEC
+}
+
+set_replace_flag() {
+	set_var "REPLACE_${1}" 1
+}
+
+replace_flag() {
+	get_var "REPLACE_${1}"
+}
 
 checkconfig() {
 	${IPSEC_BIN} addconn --checkconfig || return 1
@@ -47,6 +78,8 @@ generate_tunnel_config() {
 	local id=$1
 	local config_file="$IPSEC_CONF_DIR/$id.conf"
 	local secret_file="$IPSEC_CONF_DIR/$id.secret"
+	local tmp_config_file="/tmp/$id.conf"
+	local tmp_secret_file="/tmp/$id.secret"
 
 	config_get auto "$id" auto
 	config_get left "$id" left
@@ -91,7 +124,7 @@ generate_tunnel_config() {
 		rightsubnets="{${rightsubnets// /,}}"
 	fi
 
-	cat << EOF > "$config_file"
+	cat << EOF > "$tmp_config_file"
 conn $id
 	auto=${auto}
 	authby=${authby}
@@ -119,14 +152,27 @@ conn $id
 	${mark:+mark=${mark}}
 EOF
 
-cat << EOF > "$secret_file"
+cat << EOF > "$tmp_secret_file"
 $leftid $rightid : PSK "$psk"
 EOF
+
+	[ -f "$config_file" ] && {
+		cmp "$config_file" "$tmp_config_file" 2>/dev/null && rm -f "$tmp_config_file"
+	}
+
+	[ -f "$secret_file" ] && {
+		cmp "$secret_file" "$tmp_secret_file" 2>/dev/null && rm -f "$tmp_secret_file"
+	}
+
+	[ -f "$tmp_config_file" ] && mv "$tmp_config_file" "$config_file" && set_replace_flag "$id"
+	[ -f "$tmp_secret_file" ] && mv "$tmp_secret_file" "$secret_file" && set_replace_flag "$id"
 
 	unset ike_proposal phase2alg_proposal
 }
 
 generate_daemon_config() {
+	local tmp_config_file="/tmp/setup.conf"
+
 	config_get_bool debug globals debug 0
 	[ "$debug" = "0" ] && debug=none || debug=all
 	config_get_bool uniqueids globals uniqueids 0
@@ -140,22 +186,22 @@ generate_daemon_config() {
 	[ ! -d $IPSEC_DIR ] && mkdir -p $IPSEC_DIR
 	[ ! -d $IPSEC_CONF_DIR ] && mkdir -p $IPSEC_CONF_DIR
 
-	cat << EOF > "$IPSEC_SECRETS"
-include /etc/ipsec.d/*.secrets
-include $IPSEC_CONF_DIR/*.secret
-EOF
-
-	cat << EOF > "$IPSEC_CONF"
+	cat << EOF > "$tmp_config_file"
 config setup
 	${debug:+plutodebug=${debug}}
 	${uniqueids:+uniqueids=${uniqueids}}
 	${listen:+listen=${listen}}
 	${virtual_private:+virtual-private=%v4:${virtual_private// /,%v4:}}
-	secretsfile=${IPSEC_SECRETS}
-
-include /etc/ipsec.d/*.conf
-include $IPSEC_CONF_DIR/*.conf
 EOF
+
+	if ! cmp "$IPSEC_CONF" "$tmp_config_file" 2>/dev/null; then
+		mv "$tmp_config_file" "$IPSEC_CONF"
+		set_restart_flag 1
+	else
+		rm -f "$tmp_config_file"
+	fi
+
+	return 0
 }
 
 clean_config() {
@@ -186,7 +232,7 @@ active_conns() {
 
 	for file in $IPSEC_CONF_DIR/*.conf; do
 		_file="${file##*/}"
-		list_contains active_conns "$_file" || append active_conns "${_file%%.*}"
+		list_contains active_conns "${_file%%.*}" || append active_conns "${_file%%.*}"
 	done
 
 	echo "$active_conns"
@@ -201,7 +247,7 @@ start_service() {
 	${IPSEC_BIN} --checknflog > /dev/null
 
 	procd_open_instance
-	procd_set_param command $PROG --config ${IPSEC_CONF} --nofork
+	procd_set_param command $PROG --nofork
 	procd_set_param respawn
 	procd_close_instance
 }
@@ -213,21 +259,38 @@ stop_service() {
 }
 
 delete_tunnel() {
-	${IPSEC_BIN} auto --delete "$1" > /dev/null 2>&1
+	${IPSEC_AUTO} --delete "$1" > /dev/null 2>&1
 	rm -f ${IPSEC_CONF_DIR}/$1.*
 }
 
 add_tunnel() {
 	generate_tunnel_config "$1"
-	${IPSEC_BIN} auto --add "$1" > /dev/null 2>&1
-	${IPSEC_BIN} auto --rereadsecrets
-	${IPSEC_BIN} auto --up "$1" > /dev/null 2>&1 &
+	${IPSEC_AUTO} --add "$1" > /dev/null 2>&1
+	${IPSEC_AUTO} --rereadsecrets
+	${IPSEC_AUTO} --up "$1" > /dev/null 2>&1 &
+}
+
+replace_tunnel() {
+	generate_tunnel_config "$1"
+
+	replace_flag "$1" || return 0
+
+	${IPSEC_AUTO} --rereadsecrets
+	${IPSEC_AUTO} --replace "$1" > /dev/null 2>&1
+	${IPSEC_AUTO} --up "$1" > /dev/null 2>&1 &
 }
 
 reload_service() {
 	local active_tunnels uci_tunnels
 
 	config_load libreswan
+	generate_daemon_config
+
+	if restart_flag; then
+		restart
+		return 0
+	fi
+
 	config_get uci_tunnels tunnel SECTIONS
 
 	active_tunnels="$(active_conns)"
@@ -237,10 +300,12 @@ reload_service() {
 	done
 
 	for tunnel in $uci_tunnels; do
-		list_contains active_tunnels "$tunnel" || add_tunnel "$tunnel"
+		if list_contains active_tunnels "$tunnel"; then
+			replace_tunnel "$tunnel"
+		else
+			add_tunnel "$tunnel"
+		fi
 	done
-
-	${IPSEC_BIN} auto --rereadall
 }
 
 service_triggers() {
