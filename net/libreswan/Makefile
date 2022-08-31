@@ -46,7 +46,7 @@ $(call Package/libreswan/Default)
 	+kmod-crypto-hash +kmod-crypto-rng +kmod-ip-vti +kmod-ipsec \
 	+kmod-ipsec4 +kmod-xfrm-interface +libevent2 +libevent2-pthreads \
 	+libldns +librt +libunbound +nss-utils +nspr +libcap-ng \
-	+iptables-mod-ipsec +kmod-ipt-ipsec
+	+iptables-mod-ipsec +kmod-ipt-ipsec +kmod-ipt-nflog +iptables-mod-nflog
   PROVIDES:=openswan
   CONFLICTS:=strongswan
   TITLE+= IPsec Server
@@ -118,19 +118,25 @@ define Package/libreswan/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/libexec/ipsec/* \
 	    $(1)/usr/libexec/ipsec/
 
-	$(INSTALL_BIN) ./files/updown.openwrt $(1)/usr/libexec/ipsec/_updown.xfrm
-	$(INSTALL_BIN) ./files/ipsec.init $(1)/etc/init.d/ipsec
-	$(INSTALL_DATA) ./files/ipsec.conf $(1)/etc/ipsec.conf
-	$(INSTALL_DATA) ./files/ipsec.secrets $(1)/etc/ipsec.secrets
+	$(INSTALL_BIN) ./files/usr/libexec/ipsec/_updown.xfrm $(1)/usr/libexec/ipsec/_updown.xfrm
+	$(INSTALL_BIN) ./files/etc/init.d/ipsec $(1)/etc/init.d/ipsec
+	$(INSTALL_BIN) ./files/usr/libexec/rpcd/libreswan $(1)/usr/libexec/rpcd/libreswan
+	$(INSTALL_DATA) ./files/etc/ipsec.conf $(1)/etc/ipsec.conf
+	$(INSTALL_DATA) ./files/etc/ipsec.secrets $(1)/etc/ipsec.secrets
+	$(INSTALL_DATA) ./files/etc/config/libreswan $(1)/etc/config/libreswan
+	$(INSTALL_DATA) ./files/etc/hotplug.d/libreswan/00-default $(1)/etc/hotplug.d/libreswan/00-default
+	$(INSTALL_DATA) ./files/etc/hotplug.d/libreswan/01-user $(1)/etc/hotplug.d/libreswan/01-user
+	$(INSTALL_DATA) ./files/etc/hotplug.d/libreswan/02-vti $(1)/etc/hotplug.d/libreswan/02-vti
+	$(INSTALL_DATA) ./files/etc/hotplug.d/libreswan/61-iptables $(1)/etc/hotplug.d/libreswan/61-iptables
+	$(INSTALL_DATA) ./files/etc/uci-defaults/091-libreswan $(1)/etc/uci-defaults/091-libreswan
+	$(INSTALL_BIN) ./files/etc/libreswan_firewall.sh $(1)/etc/libreswan_firewall.sh
+endef
 
-	$(INSTALL_DATA) ./files/libreswan.uci $(1)/etc/config/libreswan
-
-	$(INSTALL_DATA) ./files/default.hotplug $(1)/etc/hotplug.d/libreswan/00-default
-	$(INSTALL_DATA) ./files/user.hotplug $(1)/etc/hotplug.d/libreswan/01-user
-	$(INSTALL_DATA) ./files/vti.hotplug $(1)/etc/hotplug.d/libreswan/02-vti
-	$(INSTALL_DATA) ./files/iptables.hotplug $(1)/etc/hotplug.d/libreswan/61-iptables
-
-	$(INSTALL_BIN) ./files/libreswan.rpcd $(1)/usr/libexec/rpcd/libreswan
+define Package/libreswan/postinst
+#!/bin/sh
+[ -n "$$IPKG_INSTROOT" ] || {
+	/etc/init.d/firewall reload
+}
 endef
 
 $(eval $(call BuildPackage,libreswan))
