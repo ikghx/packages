@@ -18,6 +18,7 @@ PKG_HASH:=512a0e5fc4c1e06d472a20da26aa96a9b9bf2a26b23f094f77f1b8da56cc427f
 PKG_MAINTAINER:=Paul Wassi <p.wassi@gmx.at>
 PKG_LICENSE:=GPL-2.0-only
 PKG_LICENSE_FILES:=License
+PKG_CPE_ID:=cpe:/a:libcap:libcap
 
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1

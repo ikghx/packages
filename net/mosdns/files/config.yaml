@@ -181,19 +181,15 @@ plugins:
           exec:
             - _prefer_ipv4 # 优先应答 IPv4 地址。
             - forward_local # 使用本地 DNS 服务器解析。
-            - modify_ttl # 修改应答 TTL
-            - if: response_has_local_ip
-              exec:
-                - _return
+            #- modify_ttl # 修改应答 TTL
+            - _return
 
         - if: "query_is_non_local_domain"
           exec:
             - _prefer_ipv4
             - forward_remote # 使用远程 DNS 服务器解析。
-            - modify_ttl
-            - if: "! response_has_local_ip"
-              exec:
-                - _return
+            #- modify_ttl
+            - _return
 
         # 剩下的未知域名用 IP 分流。
         - primary: # 从本地服务器获取应答，丢弃非本地 IP 的结果。
@@ -204,8 +200,8 @@ plugins:
           secondary: # 从远程服务器获取应答。
             - _prefer_ipv4 # 优先应答 IPv4 地址。
             - forward_remote # 使用远程 DNS 服务器解析。
-            - modify_ttl # 修改应答 TTL
-          fast_fallback: 500 # 快速 fallback 触发阈值。单位：毫秒。
+            #- modify_ttl # 修改应答 TTL
+          fast_fallback: 200 # 快速 fallback 触发阈值。单位：毫秒。
           always_standby: true
 
 # 服务器设置

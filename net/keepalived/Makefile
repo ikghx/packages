@@ -32,7 +32,6 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_KEEPALIVED_SNMP_RFC3 \
 	CONFIG_KEEPALIVED_SNMP_REPLY_V3_FOR_V2 \
 	CONFIG_KEEPALIVED_DBUS \
-	CONFIG_KEEPALIVED_JSON \
 	CONFIG_KEEPALIVED_ROUTES \
 	CONFIG_IPV6
 
@@ -57,6 +56,8 @@ define Package/keepalived
     +libnl-genl \
     +libmagic \
     +libkmod \
+    +kmod-nf-ipvs \
+    +libjson-c \
     +KEEPALIVED_VRRP:kmod-macvlan \
     +KEEPALIVED_VRRP:libnl-route \
     +KEEPALIVED_VRRP:libnfnetlink \
@@ -66,7 +67,6 @@ define Package/keepalived
     +KEEPALIVED_IPTABLES:libxtables \
     +KEEPALIVED_IPTABLES:libipset \
     +(KEEPALIVED_SNMP_VRRP||KEEPALIVED_SNMP_CHECKER||KEEPALIVED_SNMP_RFC2||KEEPALIVED_SNMP_RFC3):libnetsnmp \
-    +KEEPALIVED_JSON:libjson-c \
     +KEEPALIVED_DBUS:glib2
 endef
 
@@ -81,6 +81,7 @@ define Package/keepalived/conffiles
 endef
 
 CONFIGURE_ARGS+= \
+	--enable-json \
 	--with-init=SYSV \
 	--disable-nftables \
 	--disable-track-process \
@@ -139,11 +140,6 @@ CONFIGURE_ARGS += \
 	--disable-snmp-reply-v3-for-v2
 endif
 endif # CONFIG_KEEPALIVED_SNMP_RFC3
-
-ifeq ($(CONFIG_KEEPALIVED_JSON),y)
-CONFIGURE_ARGS += \
-	--enable-json
-endif
 
 ifeq ($(CONFIG_KEEPALIVED_VRRP_AUTH),)
 CONFIGURE_ARGS += \
@@ -233,6 +229,10 @@ endif
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/keepalived
 	$(INSTALL_DATA) ./files/hotplug-user \
 		$(1)/etc/hotplug.d/keepalived/01-user
+
+	$(INSTALL_DIR) $(1)/usr/libexec/rpcd
+	$(INSTALL_BIN) ./files/usr/libexec/rpcd/keepalived \
+		$(1)/usr/libexec/rpcd/keepalived
 
 ifneq ($(CONFIG_KEEPALIVED_SNMP_VRRP)$(CONFIG_KEEPALIVED_SNMP_CHECKER)$(CONFIG_KEEPALIVED_SNMP_RFC2)$(CONFIG_KEEPALIVED_SNMP_RFC3),)
 	$(INSTALL_DIR) $(1)/usr/share/snmp/mibs

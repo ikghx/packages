@@ -1,16 +1,16 @@
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright (C) 2021 ImmortalWrt.org
+# Copyright (C) 2021-2022 ImmortalWrt.org
 
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=v2ray-core
-PKG_VERSION:=5.0.8
+PKG_VERSION:=5.1.0
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/v2fly/v2ray-core/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=19494f3d25a0ecbad4fe4aea0f89d35b8dc0fa1662577a5c747a6d2156726979
+PKG_HASH:=b3dbd2bbee9486999b81d1968545c5a6caa7b0f4726a7259939f1bda54fcf5ea
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
@@ -27,7 +27,7 @@ GO_PKG_LDFLAGS_X:= \
 	$(GO_PKG).version=$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
-include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
+include ../../lang/golang/golang-package.mk
 
 define Package/v2ray/template
   TITLE:=A platform for building proxies to bypass network restrictions.

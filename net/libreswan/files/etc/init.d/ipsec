@@ -82,6 +82,8 @@ generate_tunnel_config() {
 
 	config_get auto "$id" auto
 	config_get left "$id" left
+	config_get left_interface "$id" left_interface
+	[ -n "$left_interface" ] && network_get_ipaddr left "$left_interface"
 	config_get right "$id" right
 	config_get leftid "$id" leftid "$left"
 	config_get rightid "$id" rightid "$right"

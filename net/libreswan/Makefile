@@ -127,6 +127,7 @@ define Package/libreswan/install
 	$(INSTALL_DATA) ./files/etc/hotplug.d/libreswan/00-default $(1)/etc/hotplug.d/libreswan/00-default
 	$(INSTALL_DATA) ./files/etc/hotplug.d/libreswan/01-user $(1)/etc/hotplug.d/libreswan/01-user
 	$(INSTALL_DATA) ./files/etc/hotplug.d/libreswan/02-vti $(1)/etc/hotplug.d/libreswan/02-vti
+	$(INSTALL_DATA) ./files/etc/hotplug.d/iface/89-libreswan $(1)/etc/hotplug.d/iface/89-libreswan
 	$(INSTALL_DATA) ./files/etc/hotplug.d/libreswan/61-iptables $(1)/etc/hotplug.d/libreswan/61-iptables
 	$(INSTALL_DATA) ./files/etc/uci-defaults/091-libreswan $(1)/etc/uci-defaults/091-libreswan
 	$(INSTALL_BIN) ./files/etc/libreswan_firewall.sh $(1)/etc/libreswan_firewall.sh
