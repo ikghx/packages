@@ -41,7 +41,7 @@ $(call Package/libreswan/Default)
   SUBMENU:=VPN
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:= +IPV6:kmod-ip6-vti +IPV6:kmod-ipsec6 +ip-full \
+  DEPENDS:= +IPV6:kmod-ip6-vti +IPV6:kmod-ipsec6 +ip-full +ipset \
 	+kmod-crypto-aead +kmod-crypto-authenc +kmod-crypto-gcm \
 	+kmod-crypto-hash +kmod-crypto-rng +kmod-ip-vti +kmod-ipsec \
 	+kmod-ipsec4 +kmod-xfrm-interface +libevent2 +libevent2-pthreads \
@@ -108,7 +108,9 @@ define Package/libreswan/install
 	 $(1)/usr/sbin \
 	 $(1)/etc/config \
 	 $(1)/etc/init.d \
+	 $(1)/etc/uci-defaults \
 	 $(1)/etc/hotplug.d/libreswan \
+	 $(1)/etc/hotplug.d/iface \
 	 $(1)/usr/libexec/rpcd
 
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/ipsec  \
