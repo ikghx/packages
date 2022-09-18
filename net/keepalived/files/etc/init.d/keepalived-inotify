@@ -1,0 +1,50 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+USE_PROCD=1
+PROG="/usr/bin/keepalived-rsync-inotify"
+
+start_instance() {
+	local cfg=$1
+	local vrrp_instance=$2
+	local peer=$3
+
+	config_get name $cfg name
+	[ -z "$name" ] && return
+
+	[ "$name" != "$peer" ] && return
+
+	config_get sync $cfg sync 0
+	[ "$sync" = "0" ] && return
+
+	config_get sync_mode $cfg sync_mode
+	[ "$sync_mode" != "receive" ] && return
+
+	config_get sync_dir $cfg sync_dir /usr/share/keepalived/rsync
+	[ ! -d "$sync_dir" ] && mkdir -p "$sync_dir"
+
+	procd_open_instance "$name"
+	procd_set_param command /bin/sh "$PROG" "$vrrp_instance" "$name" "$sync_dir"
+	procd_set_param pidfile /var/run/keepalived-inotify-$instance-$name.pid
+	procd_close_instance
+}
+
+process_unicast_peer() {
+	local peer=$1
+	local vrrp_instance=$2
+
+	config_foreach start_instance peer "$vrrp_instance" "$peer"
+}
+
+process_vrrp_instance() {
+	local cfg=$1
+	local name
+
+	config_get name $cfg name
+	config_list_foreach $1 unicast_peer process_unicast_peer $name
+}
+
+start_service() {
+	config_load keepalived
+	config_foreach process_vrrp_instance vrrp_instance
+}

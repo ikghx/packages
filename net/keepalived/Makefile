@@ -75,7 +75,7 @@ define Package/keepalived/description
 endef
 
 define Package/keepalived/conffiles
-/etc/keepalived/keepalived.conf
+/etc/keepalived
 /etc/config/keepalived
 /etc/keepalived.user
 endef
@@ -267,4 +267,33 @@ endif
 
 endef
 
+define Package/keepalived-sync
+  SECTION:=net
+  CATEGORY:=Network
+  TITLE:=Keepalived Master and Backup Synchronization
+  DEPENDS:= +keepalived +rsync +inotifywait
+endef
+
+define Package/keepalived-sync/description
+ Keepalived Master Backup sync files
+endef
+
+define Package/keepalived-sync/install
+	$(INSTALL_DIR) $(1)/etc/init.d \
+		$(1)/etc/keepalived/scripts \
+		$(1)/etc/keepalived/keys \
+		$(1)/usr/bin \
+		$(1)/etc/hotplug.d/keepalived
+
+	$(INSTALL_BIN) ./files/etc/init.d/keepalived-inotify \
+		$(1)/etc/init.d/keepalived-inotify
+	$(INSTALL_BIN) ./files/etc/keepalived/scripts/rsync.sh \
+		$(1)/etc/keepalived/scripts/rsync.sh
+	$(INSTALL_BIN) ./files/usr/bin/keepalived-rsync-inotify \
+		$(1)/usr/bin/keepalived-rsync-inotify
+	$(INSTALL_DATA) ./files/etc/hotplug.d/keepalived/101-dnsmasq \
+		$(1)/etc/hotplug.d/keepalived/101-dnsmasq
+endef
+
 $(eval $(call BuildPackage,keepalived))
+$(eval $(call BuildPackage,keepalived-sync))

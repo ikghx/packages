@@ -8,21 +8,21 @@ RPC_SCRIPTS=/usr/libexec/keepalived/rpc
 [ -d $RPC_SCRIPTS ] && include $RPC_SCRIPTS
 
 __function__() {
-    type "$1" > /dev/null 2>&1
+	type "$1" > /dev/null 2>&1
 }
 
 foreach_extra() {
 	local file obj
 
 	[ ! -d $RPC_SCRIPTS ] && return
-	
+
 	for file in $RPC_SCRIPTS/*; do
 		obj="${file##*/}"
 		$1 "${obj%%.*}"
 	done
 }
 
-keepalived_status() {
+keepalived_dump() {
 	local stats_file="/tmp/keepalived.json"
 	local pids
 
@@ -51,8 +51,8 @@ call_extra() {
 
 call_method() {
 	case "$1" in
-		status)
-			keepalived_status
+		dump)
+			keepalived_dump
 			;;
 		*)
 			call_extra $1
@@ -74,13 +74,13 @@ list_methods() {
 
 	json_init
 
-	json_add_object status
+	json_add_object dump
 	json_close_object
 
 	foreach_extra list_extra ${1}
 
 	json_dump
-} 
+}
 
 main () {
 	case "$1" in

@@ -1,0 +1,33 @@
+#!/bin/sh
+
+notify_backup() {
+	/etc/init.d/dnsmasq running && /etc/init.d/dnsmasq stop
+}
+
+notify_master() {
+	/etc/init.d/dnsmasq running || /etc/init.d/dnsmasq start
+}
+
+notify_sync() {
+	[ -z "$RSYNC_SOURCE" ] && return
+	[ -z "$RSYNC_TARGET" ] && return
+
+	update_rsync_target() {
+		cp -a "$RSYNC_SOURCE" "$RSYNC_TARGET"
+	}
+
+	case "$RSYNC_TARGET" in
+		/etc/config/dhcp|\
+		/tmp/dhcp.leases)
+			update_rsync_target
+			;;
+	esac
+}
+
+case $ACTION in
+	NOTIFY_MASTER) notify_master ;;
+	NOTIFY_BACKUP) notify_backup ;;
+	NOTIFY_SYNC) notify_sync ;;
+esac
+
+exit 0
