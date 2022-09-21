@@ -165,8 +165,8 @@ do_connect() {
 
 do_disconnect() {
 	if [ -f "/tmp/dnsmasq.d/openconnect.$TUNDEV" ]; then
-	rm -f "/tmp/dnsmasq.d/openconnect.$TUNDEV"
-	/etc/init.d/dnsmasq restart
+		rm -f "/tmp/dnsmasq.d/openconnect.$TUNDEV"
+		/etc/init.d/dnsmasq restart
 	fi
 
 	proto_init_update "$TUNDEV" 0
