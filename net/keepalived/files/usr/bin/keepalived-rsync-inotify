@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 
 [ $# -lt 3 ] && exit 1
 
@@ -9,7 +9,8 @@ rsync_dir=$3
 INOTIFY_ACTIONS="create delete modify move moved_to moved_from"
 ARGS=${INOTIFY_ACTIONS:+ -e ${INOTIFY_ACTIONS// / -e }}
 
-fifo=/tmp/inotifywait.$$
+[ ! -d /tmp/keepalived ] && mkdir /tmp/keepalived
+fifo=/tmp/keepalived/inotifywait-$peer.fifo
 mkfifo "${fifo}" || exit 1
 
 /usr/bin/inotifywait -q -r --exclude '/\..+' -o $fifo -m $rsync_dir $ARGS 2>/dev/null &

@@ -21,7 +21,7 @@ start_instance() {
 	[ "$sync_mode" != "receive" ] && return
 
 	config_get sync_dir $cfg sync_dir /usr/share/keepalived/rsync
-	[ ! -d "$sync_dir" ] && mkdir -p "$sync_dir"
+	[ ! -d "$sync_dir" ] && mkdir -m 755 -p "$sync_dir"
 
 	procd_open_instance "$name"
 	procd_set_param command /bin/sh "$PROG" "$vrrp_instance" "$name" "$sync_dir"
@@ -41,7 +41,7 @@ process_vrrp_instance() {
 	local name
 
 	config_get name $cfg name
-	config_list_foreach $1 unicast_peer process_unicast_peer $name
+	config_list_foreach $cfg unicast_peer process_unicast_peer $name
 }
 
 start_service() {
