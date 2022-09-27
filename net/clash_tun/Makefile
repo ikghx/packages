@@ -7,7 +7,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=clash_tun
-PKG_VERSION:=2022.08.26-6-g6ec887c
+PKG_VERSION:=2022.08.26-9-g8896dd8
 PKG_RELEASE:=1
 
 ifeq ($(ARCH),i386)
@@ -26,10 +26,10 @@ ifeq ($(ARCH),arm)
 	PKG_ARCH_clash:=armv7
 endif
 ifeq ($(ARCH),arm64)
-	PKG_ARCH_clash:=armv8
+	PKG_ARCH_clash:=arm64
 endif
 ifeq ($(ARCH),aarch64)
-	PKG_ARCH_clash:=armv8
+	PKG_ARCH_clash:=arm64
 endif
 ifeq ($(ARCH),mips)
 	PKG_ARCH_clash:=mips
