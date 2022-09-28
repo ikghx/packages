@@ -75,7 +75,7 @@ define Package/keepalived/description
 endef
 
 define Package/keepalived/conffiles
-/etc/keepalived
+/etc/keepalived/keepalived.conf
 /etc/config/keepalived
 /etc/keepalived.user
 endef
@@ -307,6 +307,56 @@ define Package/keepalived-sync/install
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/keepalived
 	$(CP) ./files/etc/hotplug.d/keepalived/* \
 		$(1)/etc/hotplug.d/keepalived
+endef
+
+USER=keepalived
+USER_ID=60001
+USER_HOME=/usr/share/keepalived/rsync
+SUDO_DIR=/etc/sudoers.d
+SUDO_FILE=$(SUDO_DIR)/$(USER)
+KEYS_DIR=/etc/keepalived/keys
+
+define Package/keepalived-sync/postinst
+	#!/bin/sh
+
+	mkdir -p "$${IPKG_INSTROOT}/etc/uci-defaults"
+	DEFAULT_SCRIPT="$${IPKG_INSTROOT}/etc/uci-defaults/99-keepalived-sync"
+
+	cat << EOF > $${DEFAULT_SCRIPT}
+#!/bin/sh
+
+. /lib/functions.sh
+
+mkdir -p $(KEYS_DIR)
+
+group_add "$(USER)" "$(USER_ID)"
+user_add "$(USER)" "$(USER_ID)" "$(USER_ID)" "$(USER)" "$(USER_HOME)" "/bin/ash"
+
+mkdir -m 700 -p "$(USER_HOME)"
+mkdir -m 700 -p "$(USER_HOME)/.ssh"
+chown "$(USER)":"$(USER)" "$(USER_HOME)" -R
+
+[ ! -d "$(SUDO_DIR)" ] && mkdir "$(SUDO_DIR)"
+echo "$(USER) ALL= NOPASSWD:/usr/bin/rsync" > "$(SUDO_FILE)"
+EOF
+
+	[ -z "$${IPKG_INSTROOT}" ] && [ -f "$${DEFAULT_SCRIPT}" ] && sh "$${DEFAULT_SCRIPT}"
+
+	exit 0
+endef
+
+define Package/keepalived-sync/postrm
+	#!/bin/sh
+
+	[ -n "$${IPKG_INSTROOT}" ] && exit 0
+
+	[ -d "$(KEYS_DIR)" ] && rm -rf "$(KEYS_DIR)"
+	[ -d "$(USER_HOME)" ] && rm -rf "$(USER_HOME)"
+	[ -f "$(SUDO_FILE)" ] && rm -f "$(SUDO_FILE)"
+
+	sed -i -e "/^$(USER):/d" /etc/passwd /etc/shadow /etc/group
+
+	exit 0
 endef
 
 $(eval $(call BuildPackage,keepalived))

@@ -2,9 +2,8 @@
 
 . /lib/functions.sh
 
-SYNC_USER=keepalived
-SYNC_USER_ID=60001
-SYNC_DIR=/usr/share/keepalived/rsync
+KEEPALIVED_USER=keepalived
+KEEPALIVED_HOME=$(awk -F: "/^$KEEPALIVED_USER/{print \$6}" /etc/passwd)
 
 utc_timestamp() {
 	date -u +%s
@@ -25,16 +24,17 @@ update_last_sync_status() {
 
 ha_sync_send() {
 	local cfg=$1
-	local address ssh_user ssh_port sync_list sync_dir sync_file
+	local address ssh_port sync_list sync_dir sync_file
+	local ssh_options ssh_remote
 	local DIRS FILES
 
 	config_get address $cfg address
 	[ -z "$address" ] && return 0
 
-	config_get ssh_user $cfg ssh_user $SYNC_USER
 	config_get ssh_port $cfg ssh_port 22
-	config_get ssh_key $cfg ssh_key /root/.ssh/id_rsa
-	config_get sync_dir $cfg sync_dir $SYNC_DIR
+	config_get sync_dir $cfg sync_dir $KEEPALIVED_HOME
+	[ -z "$sync_dir" ] && return 0
+	config_get ssh_key $cfg ssh_key $sync_dir/.ssh/id_rsa
 	config_get sync_list $cfg sync_list
 
 	for sync_file in $sync_list $(sysupgrade -l); do
@@ -46,7 +46,10 @@ ha_sync_send() {
 		list_contains DIRS ${sync_dir}${dir} || append DIRS ${sync_dir}${dir}
 	done
 
-	changed_files=$(rsync --out-format='%n' --dry-run -a --relative $FILES -e "ssh -y -i $ssh_key -p $ssh_port" --rsync-path="sudo rsync" $ssh_user@$address:$sync_dir | wc -l)
+	ssh_options="-y -y -i $ssh_key -p $ssh_port"
+	ssh_remote="$KEEPALIVED_USER@$address"
+
+	changed_files=$(rsync --out-format='%n' --dry-run -a --relative $FILES -e "ssh $ssh_options" --rsync-path="sudo rsync" $ssh_remote:$sync_dir | wc -l)
 	if [ $? -ne 0 ]; then
 		update_last_sync_time "$cfg"
 		update_last_sync_status "$cfg" "Rsync Detection Failed"
@@ -57,13 +60,13 @@ ha_sync_send() {
 		return 0
 	fi
 
-	ssh -y -i $ssh_key -p $ssh_port $ssh_user@$address mkdir -m 755 -p $DIRS || {
+	ssh $ssh_options $ssh_remote mkdir -m 755 -p $DIRS || {
 		update_last_sync_time "$cfg"
 		update_last_sync_status "SSH Connection Failed"
 		return 0
 	}
 
-	rsync -a --relative $FILES -e "ssh -y -i $ssh_key -p $ssh_port" --rsync-path="sudo rsync" $ssh_user@$address:$sync_dir || {
+	rsync -a --relative $FILES -e "ssh $ssh_options" --rsync-path="sudo rsync" $ssh_remote:$sync_dir || {
 		update_last_sync_time "$cfg"
 		update_last_sync_status "$cfg" "Rsync Transfer Failed"
 	}
@@ -75,39 +78,19 @@ ha_sync_send() {
 ha_sync_receive() {
 	local cfg=$1
 	local ssh_pubkey
-	local auth_file home_dir sudo_dir sudo_file
+	local auth_file home_dir
 
-	config_get sync_dir $cfg sync_dir $SYNC_DIR
-	config_get ssh_user $cfg ssh_user $SYNC_USER
+	config_get sync_dir $cfg sync_dir $KEEPALIVED_HOME
+	[ -z "$sync_dir" ] && return 0
 	config_get ssh_pubkey $cfg ssh_pubkey
 	[ -z "$ssh_pubkey" ] && return 0
 
 	home_dir=$sync_dir
 	auth_file="$home_dir/.ssh/authorized_keys"
-	sudo_dir="/etc/sudoers.d"
-	sudo_file="$sudo_dir/keepalived-sync"
 
-	group_exists "$ssh_user" "$SYNC_USER_ID" || group_add "$ssh_user" "$SYNC_USER_ID"
-
-	if ! user_exists "$ssh_user" "$SYNC_USER_ID"; then
-		user_add "$ssh_user" "$SYNC_USER_ID" "$SYNC_USER_ID" "Keepalived Sync User" "$home_dir" "/bin/ash"
-	fi
-
-	if [ ! -d "$home_dir" ] || [ ! -d "$home_dir/.ssh" ]; then
-		mkdir -m 755 -p "$home_dir/.ssh"
-		chmod 700 "$home_dir/.ssh"
-		chown $ssh_user:$ssh_user "$home_dir" "$home_dir/.ssh"
-	fi
-
-	[ ! -d "$sudo_dir" ] && mkdir -p "$sudo_dir"
-
-	if ! grep -q ^"$ssh_user" "$sudoers_file" 2>/dev/null; then
-		echo "$ssh_user ALL= NOPASSWD:/usr/bin/rsync" > "$sudo_file"
-	fi
-
-	if ! grep -q "$ssh_pubkey" "$auth_file" 2>/dev/null; then
+	if ! grep -q "^$ssh_pubkey$" "$auth_file" 2>/dev/null; then
 		echo "$ssh_pubkey" > "$auth_file"
-		chown $ssh_user:$ssh_user "$auth_file"
+		chown $KEEPALIVED_USER:$KEEPALIVED_USER "$auth_file"
 	fi
 
 	/etc/init.d/keepalived-inotify enabled || /etc/init.d/keepalived-inotify enable
@@ -143,7 +126,7 @@ ha_sync() {
 }
 
 
-LOCK=/var/run/keepalived_rsync.lock
+LOCK=/var/lock/keepalived-rsync.lock
 
 lock -n $LOCK > /dev/null 2>&1 || exit 0
 config_load keepalived
