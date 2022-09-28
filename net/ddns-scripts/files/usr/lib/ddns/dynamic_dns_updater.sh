@@ -37,9 +37,7 @@ Parameters:
                         '1' output to console
                         '2' output to console AND logfile
                             + run once WITHOUT retry on error
-                        '3' output to console AND logfile
-                            + run once WITHOUT retry on error
-                            + NOT sending update to DDNS service
+ -d                  dry run (don't send any changes)
 
 EOF
 }
@@ -50,10 +48,11 @@ usage_err() {
 	exit 1
 }
 
-while getopts ":hv:n:S:V" OPT; do
+while getopts ":hv:dn:S:V" OPT; do
 	case "$OPT" in
 		h)	usage; exit 0;;
 		v)	VERBOSE=$OPTARG;;
+		d)	DRY_RUN=1;;
 		n)	NETWORK=$OPTARG;;
 		S)	SECTION_ID=$OPTARG;;
 		V)	printf %s\\n "ddns-scripts $VERSION"; exit 0;;
@@ -108,6 +107,8 @@ LOGFILE="$ddns_logdir/$SECTION_ID.log"	# log file
 # only with this data of this run for easier diagnostic
 # new one created by write_log function
 [ $VERBOSE -gt 1 -a -f $LOGFILE ] && rm -f $LOGFILE
+# Previously -v 3 could we used for dry run
+[ $VERBOSE -ge 3 ] && DRY_RUN=1
 
 # TRAP handler
 trap "trap_handler 0 \$?" 0	# handle script exit with exit status
@@ -145,17 +146,17 @@ trap "trap_handler 15" 15	# SIGTERM	Termination
 #
 # use_syslog	log activity to syslog
 #
-# ip_source	source to detect current local IP ('network' or 'web' or 'script' or 'interface')
+# ip_source	source to detect current IP ('network' or 'web' or 'script' or 'interface')
 # ip_network	local defined network to read IP from i.e. 'wan' or 'wan6'
-# ip_url	URL to read local address from i.e. http://checkip.dyndns.com/ or http://checkipv6.dyndns.com/
-# ip_script	full path and name of your script to detect local IP
+# ip_url	URL to read current IP from i.e. http://checkip.dyndns.com/ or http://checkipv6.dyndns.com/
+# ip_script	full path and name of your script to detect current IP
 # ip_interface	physical interface to use for detecting
 #
 # check_interval	check for changes every  !!! checks below 10 minutes make no sense because the Internet
 # check_unit		'days' 'hours' 'minutes' !!! needs about 5-10 minutes to sync an IP-change for an DNS entry
 #
 # force_interval	force to send an update to your service if no change was detected
-# force_unit		'days' 'hours' 'minutes' !!! force_interval="0" disables all forced updates, unless run_once=""
+# force_unit		'days' 'hours' 'minutes' !!! force_interval="0" runs this script once for use i.e. with cron
 #					Or run_once=-1. This is to maintain backwards compatibility for configurations where run_once is not set.
 #
 # run_once          Boolean (1/0). If set to 1, run_once and exit. force_interval is checked for non-sero value
@@ -164,13 +165,13 @@ trap "trap_handler 15" 15	# SIGTERM	Termination
 #
 # retry_interval	if error was detected retry in
 # retry_unit		'days' 'hours' 'minutes' 'seconds'
-# retry_count 		number of retries before scripts stops
+# retry_max_count	number of retries before scripts stops
 #
 # use_ipv6		detecting/sending IPv6 address
 # force_ipversion	force usage of IPv4 or IPv6 for the whole detection and update communication
 # dns_server		using a non default dns server to get Registered IP from Internet
 # force_dnstcp		force communication with DNS server via TCP instead of default UDP
-# proxy			using a proxy for communication !!! ALSO used to detect local IP via web => return proxy's IP !!!
+# proxy			using a proxy for communication !!! ALSO used to detect current IP via web => return proxy's IP !!!
 # use_logfile		self-explanatory "/var/log/ddns/$SECTION_ID.log"
 # is_glue			the record that should be updated is a glue record
 #
@@ -185,7 +186,7 @@ ERR_LAST=$?	# save return code - equal 0 if SECTION_ID found
 
 # set defaults if not defined
 [ -z "$enabled" ]	  && enabled=0
-[ -z "$retry_count" ]	  && retry_count=0	# endless retry
+[ -z "$retry_max_count" ] && retry_max_count=0	# endless retry
 [ -z "$use_syslog" ]      && use_syslog=2	# syslog "Notice"
 [ -z "$use_https" ]       && use_https=0	# not use https
 [ -z "$use_logfile" ]     && use_logfile=1	# use logfile by default
@@ -238,9 +239,9 @@ case $VERBOSE in
 	0) write_log  7 "verbose mode  : 0 - run normal, NO console output";;
 	1) write_log  7 "verbose mode  : 1 - run normal, console mode";;
 	2) write_log  7 "verbose mode  : 2 - run once, NO retry on error";;
-	3) write_log  7 "verbose mode  : 3 - run once, NO retry on error, NOT sending update";;
 	*) write_log 14 "error detecting VERBOSE '$VERBOSE'";;
 esac
+[ $DRY_RUN -ge 1 ] && write_log  7 "Dry Run: NOT sending update"
 
 # check enabled state otherwise we don't need to continue
 [ $enabled -eq 0 ] && write_log 14 "Service section disabled!"
@@ -296,8 +297,8 @@ esac
 # verify ip_source 'script' if script is configured and executable
 if [ "$ip_source" = "script" ]; then
 	set -- $ip_script	#handling script with parameters, we need a trick
-	[ -z "$1" ] && write_log 14 "No script defined to detect local IP!"
-	[ -x "$1" ] || write_log 14 "Script to detect local IP not executable!"
+	[ -z "$1" ] && write_log 14 "No script defined to detect current IP!"
+	[ -x "$1" ] || write_log 14 "Script to detect current IP not executable!"
 fi
 
 # compute update interval in seconds
@@ -309,7 +310,7 @@ get_seconds RETRY_SECONDS ${retry_interval:-60} ${retry_unit:-"seconds"} # defau
 write_log 7 "check interval: $CHECK_SECONDS seconds"
 write_log 7 "force interval: $FORCE_SECONDS seconds"
 write_log 7 "retry interval: $RETRY_SECONDS seconds"
-write_log 7 "retry counter : $retry_count times"
+write_log 7 "retry max count : $retry_max_count times"
 
 # kill old process if it exists & set new pid file
 stop_section_processes "$SECTION_ID"
@@ -363,35 +364,34 @@ ERR_LAST=$?
 write_log 6 "Starting main loop at $(eval $DATE_PROG)"
 while : ; do
 
-	get_local_ip LOCAL_IP		# read local IP
-	[ $use_ipv6 -eq 1 ] && expand_ipv6 "$LOCAL_IP" LOCAL_IP	# on IPv6 we use expanded version
+	get_current_ip CURRENT_IP		# read current IP
+	[ $use_ipv6 -eq 1 ] && expand_ipv6 "$CURRENT_IP" CURRENT_IP	# on IPv6 we use expanded version
 
 	# prepare update
 	# never updated or run-once forced then NEXT_TIME = 0
-	[ $FORCE_SECONDS -ge 1 -a $run_once -eq 1 -o $LAST_TIME -eq 0 ] \
+	[ $FORCE_SECONDS -ge 1 -a ( $run_once -eq 1 -o $LAST_TIME -eq 0 ) ] \
 		&& NEXT_TIME=0 \
 		|| NEXT_TIME=$(( $LAST_TIME + $FORCE_SECONDS ))
 
 	get_uptime CURR_TIME		# get current uptime
 
-	# send update when current time > next time or local ip different from registered ip
-	if [ $CURR_TIME -ge $NEXT_TIME -o "$LOCAL_IP" != "$REGISTERED_IP" ]; then
-		if [ $VERBOSE -gt 2 ]; then
-			write_log 7 "Verbose Mode: $VERBOSE - NO UPDATE send"
-		elif [ "$LOCAL_IP" != "$REGISTERED_IP" ]; then
-			write_log 7 "Update needed - L: '$LOCAL_IP' <> R: '$REGISTERED_IP'"
+	# send update when current time > next time or current ip different from registered ip
+	if [ $CURR_TIME -ge $NEXT_TIME -o "$CURRENT_IP" != "$REGISTERED_IP" ]; then
+		if [ $DRY_RUN -ge 1 ]; then
+			write_log 7 "Dry Run: NO UPDATE send"
+		elif [ "$CURRENT_IP" != "$REGISTERED_IP" ]; then
+			write_log 7 "Update needed - L: '$CURRENT_IP' <> R: '$REGISTERED_IP'"
 		else
-			write_log 7 "Forced Update - L: '$LOCAL_IP' == R: '$REGISTERED_IP'"
+			write_log 7 "Forced Update - L: '$CURRENT_IP' == R: '$REGISTERED_IP'"
 		fi
 
 		ERR_LAST=0
-		[ $VERBOSE -lt 3 ] && {
-			# only send if VERBOSE < 3
-			send_update "$LOCAL_IP"
+		[ $DRY_RUN -eq 0 ] && {
+			send_update "$CURRENT_IP"
 			ERR_LAST=$?	# save return value
 		}
 
-		# error sending local IP to provider
+		# error sending current IP to provider
 		# we have no communication error (handled inside send_update/do_transfer)
 		# but update was not recognized
 		# do NOT retry after RETRY_SECONDS, do retry after CHECK_SECONDS
@@ -400,9 +400,9 @@ while : ; do
 		if [ $ERR_LAST -eq 0 ]; then
 			get_uptime LAST_TIME		# we send update, so
 			echo $LAST_TIME > $UPDFILE	# save LASTTIME to file
-			[ "$LOCAL_IP" != "$REGISTERED_IP" ] \
-				&& write_log 6 "Update successful - IP '$LOCAL_IP' send" \
-				|| write_log 6 "Forced update successful - IP: '$LOCAL_IP' send"
+			[ "$CURRENT_IP" != "$REGISTERED_IP" ] \
+				&& write_log 6 "Update successful - IP '$CURRENT_IP' send" \
+				|| write_log 6 "Forced update successful - IP: '$CURRENT_IP' send"
 		elif [ $ERR_LAST -eq 127 ]; then
 			write_log 3 "No update send to DDNS Provider"
 		else
@@ -411,26 +411,25 @@ while : ; do
 	fi
 
 	# now we wait for check interval before testing if update was recognized
-	# only sleep if VERBOSE <= 2 because otherwise nothing was send
-	[ $VERBOSE -le 2 ] && {
+	[ $DRY_RUN -eq 0 ] && {
 		write_log 7 "Waiting $CHECK_SECONDS seconds (Check Interval)"
 		sleep $CHECK_SECONDS &
 		PID_SLEEP=$!
 		wait $PID_SLEEP	# enable trap-handler
 		PID_SLEEP=0
-	} || write_log 7 "Verbose Mode: $VERBOSE - NO Check Interval waiting"
+	} || write_log 7 "Dry Run: NO Check Interval waiting"
 
 	REGISTERED_IP=""		# clear variable
 	get_registered_ip REGISTERED_IP	# get registered/public IP
 	[ $use_ipv6 -eq 1 ] && expand_ipv6 "$REGISTERED_IP" REGISTERED_IP	# on IPv6 we use expanded version
 
 	# IP's are still different
-	if [ "$LOCAL_IP" != "$REGISTERED_IP" ]; then
+	if [ "$CURRENT_IP" != "$REGISTERED_IP" ]; then
 		if [ $VERBOSE -le 1 ]; then	# VERBOSE <=1 then retry
-			ERR_UPDATE=$(( $ERR_UPDATE + 1 ))
-			[ $retry_count -gt 0 -a $ERR_UPDATE -gt $retry_count ] && \
-				write_log 14 "Updating IP at DDNS provider failed after $retry_count retries"
-			write_log 4 "Updating IP at DDNS provider failed - starting retry $ERR_UPDATE/$retry_count"
+			RETRY_COUNT=$(( $RETRY_COUNT + 1 ))
+			[ $retry_max_count -gt 0 -a $RETRY_COUNT -gt $retry_max_count ] && \
+				write_log 14 "Updating IP at DDNS provider failed after $retry_max_count retries"
+			write_log 4 "Updating IP at DDNS provider failed - starting retry $RETRY_COUNT/$retry_max_count"
 			continue # loop to beginning
 		else
 			write_log 4 "Updating IP at DDNS provider failed"
@@ -438,7 +437,7 @@ while : ; do
 		fi
 	else
 		# we checked successful the last update
-		ERR_UPDATE=0			# reset error counter
+		RETRY_COUNT=0			# reset error counter
 	fi
 
 	# force_update=0 or VERBOSE > 1 - leave here

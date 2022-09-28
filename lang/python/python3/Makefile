@@ -327,7 +327,7 @@ endif
 HOST_CONFIGURE_ARGS+= \
 	--enable-optimizations \
 	--with-ensurepip=upgrade \
-	--with-system-expat=$(STAGING_DIR_HOSTPKG) \
+	--with-system-expat=$(STAGING_DIR_HOST) \
 	--without-cxx-main \
 	--without-pymalloc \
 	CONFIG_SITE=
