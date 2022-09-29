@@ -25,6 +25,7 @@ Once installed, you can configure the 2G/3G/4G modem connections directly in
         option plmn        '214001'
         option lowpower    '1'
         option signalrate  '30'
+        option rat  	   '4G'
 
 Only 'device' and 'proto' are mandatory options, the remaining ones are all
 optional.
@@ -41,3 +42,6 @@ The 'plmn' option allows to set the network operator MCCMNC.
 
 The 'signalrate' option set's the signal refresh rate (in seconds) for the device.
 You can call signal info with command: mmcli -m 0 --signal-get
+
+The 'rat' option set's the Radio access technology for the device.
+You can get the RAT info with command: mmcli -m 0 or with AT+QENG="servingcell AT command.

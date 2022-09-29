@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=zabbix
-PKG_VERSION:=5.0.18
-PKG_RELEASE:=2
+PKG_VERSION:=6.2.3
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://cdn.zabbix.com/zabbix/sources/stable/5.0/
-PKG_HASH:=7d15c4d683801edc2bdcda3fd94afdf6a7142a1a92aa71f4a9220af8e39d9e0e
+PKG_SOURCE_URL:=https://cdn.zabbix.com/zabbix/sources/stable/6.2/
+PKG_HASH:=2be7e57fb33a55fee71480598e317ffa6a8ee5a39639a7e1b42b2ea6872107b5
 
 PKG_MAINTAINER:=Etienne CHAMPETIER <champetier.etienne@gmail.com>
 PKG_LICENSE:=GPL-2.0
@@ -24,32 +24,11 @@ PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
 
 PKG_CONFIG_DEPENDS:= \
-  CONFIG_ZABBIX_GNUTLS \
-  CONFIG_ZABBIX_OPENSSL \
   CONFIG_ZABBIX_MYSQL \
   CONFIG_ZABBIX_POSTGRESQL
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
-
-define Package/zabbix-agentd/config
-comment "SSL support"
-
-choice
-        prompt "Selected SSL library"
-        default ZABBIX_NOSSL
-
-        config ZABBIX_OPENSSL
-                bool "OpenSSL"
-
-        config ZABBIX_GNUTLS
-                bool "GnuTLS"
-
-        config ZABBIX_NOSSL
-                bool "No SSL support"
-
-endchoice
-endef
 
 define Package/zabbix-server/config
 comment "Database Software"
@@ -74,12 +53,31 @@ define Package/zabbix/Default
   TITLE:=Zabbix
   URL:=https://www.zabbix.com/
   USERID:=zabbix=53:zabbix=53
-  DEPENDS += $(ICONV_DEPENDS) +libpcre +zlib +ZABBIX_GNUTLS:libgnutls +ZABBIX_OPENSSL:libopenssl
+  DEPENDS += $(ICONV_DEPENDS) +libpcre +zlib
 endef
 
 define Package/zabbix-agentd
   $(call Package/zabbix/Default)
   TITLE+= agentd
+  PROVIDES:=zabbix-agentd
+  VARIANT:=nossl
+  DEFAULT_VARIANT:=1
+endef
+
+define Package/zabbix-agentd-openssl
+  $(call Package/zabbix/Default)
+  TITLE+= agentd (with OpenSSL)
+  DEPENDS+= +libopenssl
+  PROVIDES:=zabbix-agentd
+  VARIANT:=openssl
+endef
+
+define Package/zabbix-agentd-gnutls
+  $(call Package/zabbix/Default)
+  TITLE+= agentd (with GnuTLS)
+  DEPENDS+= +libgnutls
+  PROVIDES:=zabbix-agentd
+  VARIANT:=gnutls
 endef
 
 define Package/zabbix-extra-mac80211
@@ -164,9 +162,15 @@ CONFIGURE_ARGS+= \
 	$(if $(CONFIG_ZABBIX_POSTGRESQL),--with-postgresql) \
 	--with-libevent=$(STAGING_DIR)/usr/include/libevent \
 	--with-libpcre=$(STAGING_DIR)/usr/include \
-	--with-zlib=$(STAGING_DIR)/usr/include \
-	$(if $(CONFIG_ZABBIX_GNUTLS),--with-gnutls="$(STAGING_DIR)/usr") \
-	$(if $(CONFIG_ZABBIX_OPENSSL),--with-openssl="$(STAGING_DIR)/usr")
+	--with-zlib=$(STAGING_DIR)/usr/include
+
+ifeq ($(BUILD_VARIANT),openssl)
+	CONFIGURE_ARGS+= --with-openssl="$(STAGING_DIR)/usr"
+endif
+
+ifeq ($(BUILD_VARIANT),gnutls)
+	CONFIGURE_ARGS+= --with-gnutls="$(STAGING_DIR)/usr"
+endif
 
 CONFIGURE_VARS += \
 	ac_cv_header_sys_sysinfo_h=no
@@ -221,6 +225,8 @@ endef
 define Package/zabbix-agentd/conffiles
 /etc/zabbix_agentd.conf
 endef
+Package/zabbix-agentd-openssl/conffiles = $(Package/zabbix-agentd/conffiles)
+Package/zabbix-agentd-gnutls/conffiles = $(Package/zabbix-agentd/conffiles)
 define Package/zabbix-server/conffiles
 /etc/zabbix_server.conf
 endef
@@ -255,6 +261,8 @@ define Package/zabbix-agentd/install
 	$(call Package/zabbix/install/etc,$(1),agentd)
 	$(call Package/zabbix/install/init.d,$(1),agentd)
 endef
+Package/zabbix-agentd-openssl/install = $(Package/zabbix-agentd/install)
+Package/zabbix-agentd-gnutls/install = $(Package/zabbix-agentd/install)
 
 define Package/zabbix-extra-mac80211/install
 	$(call Package/zabbix/install/zabbix.conf.d,$(1),mac80211)
@@ -313,6 +321,8 @@ define Package/zabbix-proxy/install
 endef
 
 $(eval $(call BuildPackage,zabbix-agentd))
+$(eval $(call BuildPackage,zabbix-agentd-openssl))
+$(eval $(call BuildPackage,zabbix-agentd-gnutls))
 $(eval $(call BuildPackage,zabbix-extra-mac80211))
 $(eval $(call BuildPackage,zabbix-extra-network))
 $(eval $(call BuildPackage,zabbix-extra-wifi))
