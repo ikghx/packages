@@ -66,7 +66,11 @@ is_sync_file() {
 }
 
 set_update_target() {
-	set_var UPDATE_TARGET 1
+	set_var UPDATE_TARGET "${1:-1}"
+}
+
+get_update_target() {
+	get_var UPDATE_TARGET
 }
 
 unset_update_target() {
@@ -142,7 +146,11 @@ backup_and_stop() {
 }
 
 set_reload_if_sync() {
-	set_var NOTIFY_SYNC_RELOAD 1
+	set_var NOTIFY_SYNC_RELOAD "${1:-1}"
+}
+
+get_reload_if_sync() {
+	get_var NOTIFY_SYNC_RELOAD
 }
 
 sync_and_reload() {
@@ -199,14 +207,13 @@ call_cb() {
 }
 
 keepalived_hotplug() {
-	set_master_cb _notify_master
-	set_backup_cb _notify_backup
-	set_fault_cb  _notify_fault
-	set_sync_cb   _notify_sync
+	[ -z "$(get_master_cb)" ] && set_master_cb _notify_master
+	[ -z "$(get_backup_cb)" ] && set_backup_cb _notify_backup
+	[ -z "$(get_fault_cb)" ]  && set_fault_cb  _notify_fault
+	[ -z "$(get_sync_cb)" ]   && set_sync_cb   _notify_sync
 
-	set_update_target
-
-	set_reload_if_sync
+	[ -z "$(get_update_target)" ]  && set_update_target
+	[ -z "$(get_reload_if_sync)" ] && set_reload_if_sync
 
 	case $ACTION in
 		NOTIFY_MASTER) call_cb $(get_master_cb) ;;
