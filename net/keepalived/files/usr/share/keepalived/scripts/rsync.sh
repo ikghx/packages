@@ -78,8 +78,9 @@ ha_sync_send() {
 ha_sync_receive() {
 	local cfg=$1
 	local ssh_pubkey
-	local auth_file home_dir
+	local name auth_file home_dir
 
+	config_get name $cfg name
 	config_get sync_dir $cfg sync_dir $KEEPALIVED_HOME
 	[ -z "$sync_dir" ] && return 0
 	config_get ssh_pubkey $cfg ssh_pubkey
@@ -94,7 +95,7 @@ ha_sync_receive() {
 	fi
 
 	/etc/init.d/keepalived-inotify enabled || /etc/init.d/keepalived-inotify enable
-	/etc/init.d/keepalived-inotify running || /etc/init.d/keepalived-inotify start
+	/etc/init.d/keepalived-inotify running "$name" || /etc/init.d/keepalived-inotify start "$name"
 }
 
 ha_sync_each_peer() {
