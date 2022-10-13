@@ -2,7 +2,7 @@
 
 . /lib/functions.sh
 
-START=99
+START=98
 STOP=00
 
 run_command() {

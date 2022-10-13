@@ -3,7 +3,7 @@
 
 . /lib/functions/network.sh
 
-START=99
+START=98
 
 USE_PROCD=1
 PROG=/usr/bin/wifidogx

@@ -4,7 +4,7 @@
 # Copyright (C) 2010 segal.di.ubi.pt
 #
 
-START=99
+START=98
 STOP=01
 USE_PROCD=1
 

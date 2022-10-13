@@ -5,7 +5,7 @@
 # See /LICENSE for more information.
 #
 
-START=99
+START=98
 USE_PROCD=1
 
 NAME=xfrpc
@@ -41,7 +41,7 @@ handle_xfrpc() {
 
 	if [ "$name" = "common" ]; then
 		uci_validate_section xfrpc xfrp "$name" \
-				'server_addr:ipaddr' \
+				'server_addr:string' \
 				'server_port:uinteger' \
 				'token:string:'	
 
