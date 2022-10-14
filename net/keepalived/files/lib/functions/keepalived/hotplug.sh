@@ -1,21 +1,22 @@
 #!/bin/sh
 
-__function__() {
-	type "$1" > /dev/null 2>&1
-}
+# shellcheck disable=SC2039
+
+# shellcheck source=/dev/null
+. /lib/functions/keepalived/common.sh
 
 set_var() {
 	export "$1=$2"
 }
 
 get_var() {
-	eval echo "\"\${${1}}\"";
+	eval echo "\"\${${1}}\""
 }
 
 get_var_flag() {
 	local value
 
-	value=$(get_var $@)
+	value=$(get_var "$1")
 	value=${value:-0}
 	[ "$value" = "0" ] && return 1
 
@@ -27,13 +28,25 @@ _service() {
 
 	local rc="/etc/init.d/$SERVICE_NAME"
 
-	[ ! -x $rc ] && return
+	[ ! -x "$rc" ] && return
 
 	case $1 in
-		start)   $rc running || $rc start ;;
-		stop)    $rc running && $rc stop  ;;
-		reload)  $rc running && $rc reload  || $rc start ;;
-		restart) $rc running && $rc restart || $rc start ;;
+		start) $rc running || $rc start ;;
+		stop) $rc running && $rc stop ;;
+		reload)
+			if $rc running; then
+				$rc reload
+			else
+				$rc start
+			fi
+			;;
+		restart)
+			if $rc running; then
+				$rc restart
+			else
+				$rc start
+			fi
+			;;
 	esac
 }
 
@@ -167,16 +180,20 @@ sync_and_restart() {
 
 _notify_master() {
 	if master_and_reload; then
+		log_debug "reload service $SERVICE_NAME"
 		_reload_service
 	elif master_and_restart; then
+		log_debug "restart service $SERVICE_NAME"
 		_restart_service
 	fi
 }
 
 _notify_backup() {
 	if backup_and_stop; then
+		log_debug "stop service $SERVICE_NAME"
 		_stop_service
 	elif backup_and_reload; then
+		log_debug "restart service $SERVICE_NAME"
 		_restart_service
 	fi
 }
@@ -189,36 +206,52 @@ _notify_sync() {
 	[ -z "$RSYNC_SOURCE" ] && return
 	[ -z "$RSYNC_TARGET" ] && return
 
-	is_sync_file "$RSYNC_TARGET" || return
-	is_update_target || return
+	if ! is_update_target; then
+		log_notice "skip $RSYNC_TARGET. Update target not set. To set use \"set_update_target 1\""
+		return
+	fi
 
-	cp -a "$RSYNC_SOURCE" "$RSYNC_TARGET" || return
+	is_sync_file "$RSYNC_TARGET" || return
+
+	if ! cp -a "$RSYNC_SOURCE" "$RSYNC_TARGET"; then
+		log_err "can not copy $RSYNC_SOURCE => $RSYNC_TARGET"
+		return
+	fi
+
+	log_debug "updated $RSYNC_SOURCE to $RSYNC_TARGET"
 
 	if sync_and_reload; then
+		log_debug "reload service $SERVICE_NAME"
 		_reload_service
 	elif sync_and_restart; then
+		log_debug "restart service $SERVICE_NAME"
 		_restart_service
 	fi
 }
 
 call_cb() {
 	[ $# -eq 0 ] && return
-	__function__ $1 && $1
+	if __function__ "$1"; then
+		log_debug "calling function \"$1\""
+		"$1"
+	else
+		log_err "function \"$1\" not defined"
+	fi
 }
 
 keepalived_hotplug() {
 	[ -z "$(get_master_cb)" ] && set_master_cb _notify_master
 	[ -z "$(get_backup_cb)" ] && set_backup_cb _notify_backup
-	[ -z "$(get_fault_cb)" ]  && set_fault_cb  _notify_fault
-	[ -z "$(get_sync_cb)" ]   && set_sync_cb   _notify_sync
+	[ -z "$(get_fault_cb)" ] && set_fault_cb _notify_fault
+	[ -z "$(get_sync_cb)" ] && set_sync_cb _notify_sync
 
-	[ -z "$(get_update_target)" ]  && set_update_target
-	[ -z "$(get_reload_if_sync)" ] && set_reload_if_sync
+	[ -z "$(get_update_target)" ] && set_update_target "$@"
+	[ -z "$(get_reload_if_sync)" ] && set_reload_if_sync "$@"
 
 	case $ACTION in
-		NOTIFY_MASTER) call_cb $(get_master_cb) ;;
-		NOTIFY_BACKUP) call_cb $(get_backup_cb) ;;
-		NOTIFY_FAULT)  call_cb $(get_fault_cb)  ;;
-		NOTIFY_SYNC)   call_cb $(get_sync_cb)   ;;
+		NOTIFY_MASTER) call_cb "$(get_master_cb)" ;;
+		NOTIFY_BACKUP) call_cb "$(get_backup_cb)" ;;
+		NOTIFY_FAULT) call_cb "$(get_fault_cb)" ;;
+		NOTIFY_SYNC) call_cb "$(get_sync_cb)" ;;
 	esac
 }

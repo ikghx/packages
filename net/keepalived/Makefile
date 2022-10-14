@@ -303,6 +303,12 @@ define Package/keepalived-sync/install
 	$(INSTALL_DIR) $(1)/lib/functions/keepalived
 	$(INSTALL_DATA) ./files/lib/functions/keepalived/hotplug.sh \
 		$(1)/lib/functions/keepalived/hotplug.sh
+	$(INSTALL_DATA) ./files/lib/functions/keepalived/common.sh \
+		$(1)/lib/functions/keepalived/common.sh
+
+	$(INSTALL_DIR) $(1)/usr/libexec/keepalived/rpc
+	$(INSTALL_DATA) ./files/usr/libexec/keepalived/rpc/sync.sh \
+		$(1)/usr/libexec/keepalived/rpc/sync.sh
 
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/keepalived
 	$(CP) ./files/etc/hotplug.d/keepalived/* \

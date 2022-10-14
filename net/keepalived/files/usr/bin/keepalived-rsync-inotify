@@ -1,28 +1,54 @@
 #!/bin/sh
 
-[ $# -lt 3 ] && exit 1
+# shellcheck shell=ash
 
-vrrp_instance=$1
-peer=$2
-rsync_dir=$3
+# shellcheck source=/dev/null
+. /lib/functions/keepalived/common.sh
 
-INOTIFY_ACTIONS="create delete modify move moved_to moved_from"
-ARGS=${INOTIFY_ACTIONS:+ -e ${INOTIFY_ACTIONS// / -e }}
+if [ $# -lt 3 ]; then
+	echo "$0 <vrrp_instance> <peer> <rsync_dir>"
+	exit 1
+fi
 
-[ ! -d /tmp/keepalived ] && mkdir /tmp/keepalived
-fifo=/tmp/keepalived/inotifywait-$peer.fifo
-mkfifo "${fifo}" || exit 1
+VRRP_INSTANCE=$1
+PEER=$2
+RSYNC_DIR=$3
 
-/usr/bin/inotifywait -q -r --exclude '/\..+' -o $fifo -m $rsync_dir $ARGS 2>/dev/null &
-pid="$!"
+INOTIFY_ACTIONS="create,delete,modify,move,moved_to,moved_from"
+INOTIFY_PID=""
+TMP_DIR=/tmp/keepalived
+FIFO_FILE="$TMP_DIR"/inotifywait-$PEER.fifo
 
-cleanup() {
-	[ -n "$pid" ] && kill $pid
-	rm -f $fifo
+daemonize_inotifywait() {
+	/usr/bin/inotifywait -q -r --exclude '/\..+' -o "$FIFO_FILE" -m "$RSYNC_DIR" -e ${INOTIFY_ACTIONS} 2> /dev/null &
+	INOTIFY_PID="$!"
 }
-trap cleanup TERM INT
 
-while read -r dir action file; do
-	RSYNC_TARGET_DIR=$(echo "${dir}" | sed -e "s:${rsync_dir}::g")
-	ACTION=NOTIFY_SYNC TYPE=peer INSTANCE=$vrrp_instance NAME=$peer RSYNC_SOURCE="${dir}${file}" RSYNC_TARGET="${RSYNC_TARGET_DIR}${file}" /sbin/hotplug-call keepalived
-done < $fifo
+main() {
+	local inotify_action inotify_dir inotify_file
+	local source_file target_file
+
+	[ ! -d "$TMP_DIR" ] && mkdir "$TMP_DIR"
+	mkfifo "${FIFO_FILE}" || exit 1
+
+	daemonize_inotifywait
+
+	while read -r inotify_dir inotify_action inotify_file; do
+		source_file="${inotify_dir}${inotify_file}"
+		target_file=$(echo "${inotify_dir}" | sed -e "s:${RSYNC_DIR}::g")"${inotify_file}"
+
+		log_debug "received $target_file ($inotify_action) in $source_file"
+
+		ACTION=NOTIFY_SYNC TYPE=peer NAME=$PEER INSTANCE=$VRRP_INSTANCE \
+			RSYNC_SOURCE="${source_file}" RSYNC_TARGET="${target_file}" \
+			/sbin/hotplug-call keepalived
+	done < "$FIFO_FILE"
+}
+
+TRAP() {
+	[ -n "$INOTIFY_PID" ] && kill "$INOTIFY_PID"
+	[ -e "$FIFO_FILE" ] && rm -f "$FIFO_FILE"
+}
+
+trap TRAP TERM INT
+main "$@"
