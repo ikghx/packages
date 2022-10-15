@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=koolproxy
 PKG_VERSION:=3.8.6
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 ifeq ($(ARCH),i386)
 	PKG_ARCH:=386
