@@ -60,7 +60,7 @@
  # behind unrestricted full-cone NAT 1:1 when all incoming traffic is NAT-ed and
 --- a/natpmp.c
 +++ b/natpmp.c
-@@ -108,7 +108,7 @@ static void FillPublicAddressResponse(un
+@@ -109,7 +109,7 @@ static void FillPublicAddressResponse(un
  			syslog(LOG_ERR, "Failed to get IP for interface %s", ext_if_name);
  			resp[3] = 3;	/* Network Failure (e.g. NAT box itself
  			                 * has not obtained a DHCP lease) */
@@ -113,7 +113,7 @@
  #ifndef CHECK_PORTINUSE
 --- a/upnpdescgen.c
 +++ b/upnpdescgen.c
-@@ -1305,7 +1305,7 @@ genEventVars(int * len, const struct ser
+@@ -1316,7 +1316,7 @@ genEventVars(int * len, const struct ser
  				else {
  					struct in_addr addr;
  					char ext_ip_addr[INET_ADDRSTRLEN];
