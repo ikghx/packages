@@ -80,7 +80,7 @@ start_service() {
 	config_load 'minidlna'
 	config_get_bool enabled config 'enabled' '0'
 
-	[ "$enabled" -gt 0 ] || return 1
+	[ $enabled -gt 0 ] || return 1
 
 	config_get val "config" uuid
 	[ "$val" = '' ] && uci set minidlna.config.uuid="$(cat /proc/sys/kernel/random/uuid)" && uci commit minidlna

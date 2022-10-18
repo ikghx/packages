@@ -17,10 +17,7 @@ start_instance() {
 	config_get_bool enabled "$cfg" 'enabled' '0'
 	config_get_bool debug "$cfg" 'debug' '0'
 
-	[ "$enabled" -eq 0 ] && {
-		echo "Gerbera not enabled. Please enable in /etc/config/gerbera"
-		return 1
-	}
+	[ $enabled -gt 0 ] || return 1
 
 	config_get user "$cfg" 'user' 'gerbera'
 	config_get group "$cfg" 'group' 'gerbera'

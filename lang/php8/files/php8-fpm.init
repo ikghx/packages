@@ -33,7 +33,7 @@ start_service() {
 }
 
 stop_service() {
-	killall -9 php-fpm >/dev/null 2>&1
+	killall -9 php8-fpm >/dev/null 2>&1
 }
 
 service_triggers() {

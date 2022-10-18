@@ -7,6 +7,16 @@ START=98
 CONF="v2raya"
 PROG="/usr/bin/v2raya"
 
+is_enabled() {
+	local enabled
+	config_get_bool enabled "$1" "$2" "${3:-0}"
+	if [ "$enabled" -eq "1" ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 append_env() {
 	procd_append_param env "V2RAYA_$(echo "$1" | tr "[a-z]" "[A-Z]")"="$2"
 }
@@ -17,11 +27,14 @@ append_env_arg() {
 	[ -n "$value" ] && append_env "$2" "$value"
 }
 
-start_instance() {
-	local cfg="$1"
+append_env_bool() {
+	is_enabled "$1" "$2" && append_env "$2" "true"
+}
 
-	config_get_bool enabled "$cfg" enabled 0
-	[ "$enabled" -gt 0 ] || return 1
+start_service() {
+	config_load "$CONF"
+
+	is_enabled "config" "enabled" || return 1
 
 	local nofile=$(cat /proc/sys/fs/nr_open)
 
@@ -48,11 +61,6 @@ start_instance() {
 	procd_set_param stderr 1
 
 	procd_close_instance
-}
-
-start_service() {
-	config_load 'v2raya'
-	config_foreach start_instance 'v2raya'
 }
 
 reload_service() {
