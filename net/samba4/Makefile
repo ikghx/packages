@@ -2,7 +2,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=samba
-PKG_VERSION:=4.14.14
+PKG_VERSION:=4.17.1
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
@@ -13,7 +13,7 @@ PKG_SOURCE_URL:= \
 		http://www.nic.funet.fi/index/samba/pub/samba/stable/ \
 		http://samba.mirror.bit.nl/samba/ftp/stable/ \
 		https://download.samba.org/pub/samba/stable/
-PKG_HASH:=abd5e9e6aa45e55114b188ba189ebdfc8fd3d7718d43f749e477ce7f791e5519
+PKG_HASH:=1b939d03f8ca57194c413ed863014a3850c9ce9f9e31c2a7df706806fba77c01
 
 PKG_LICENSE:=GPL-3.0-only
 PKG_LICENSE_FILES:=COPYING
@@ -21,7 +21,7 @@ PKG_CPE_ID:=cpe:/a:samba:samba
 
 # samba4=(asn1_compile,compile_et) rpcsvc-proto=(rpcgen)
 HOST_BUILD_DEPENDS:=python3/host rpcsvc-proto/host perl/host perl-parse-yapp/host
-PKG_BUILD_DEPENDS:=samba4/host libtasn1/host
+PKG_BUILD_DEPENDS:=samba4/host libtasn1/host perl/host
 
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_SAMBA4_SERVER_NETBIOS \
@@ -177,7 +177,6 @@ CONFIGURE_ARGS += \
 		--without-automount \
 		--without-iconv \
 		--without-lttng \
-		--without-ntvfs-fileserver \
 		--without-pam \
 		--without-systemd \
 		--without-utmp \
@@ -202,7 +201,6 @@ HOST_CONFIGURE_ARGS += \
 		--without-automount \
 		--without-iconv \
 		--without-lttng \
-		--without-ntvfs-fileserver \
 		--without-pam \
 		--without-systemd \
 		--without-utmp \
@@ -214,7 +212,7 @@ HOST_CONFIGURE_ARGS += \
 
 HOST_CONFIGURE_ARGS += --disable-avahi --without-quotas --without-acl-support --without-winbind \
 	--without-ad-dc --without-json --without-libarchive --disable-python --nopyc --nopyo \
-	--without-dnsupdate --without-ads --without-ldap --without-ldb-lmdb
+	--without-ads --without-ldap --without-ldb-lmdb
 
 # Optional AES-NI support - https://lists.samba.org/archive/samba-technical/2017-September/122738.html
 # Support for Nettle wasn't comitted
@@ -246,7 +244,7 @@ ifeq ($(CONFIG_SAMBA4_SERVER_AD_DC),y)
 	CONFIGURE_ARGS += --without-winbind --without-ldb-lmdb --with-acl-support
 else
 	CONFIGURE_ARGS += --without-winbind --without-ads --without-ldap --without-ldb-lmdb --without-ad-dc \
-		--without-json --without-libarchive --disable-python --nopyc --nopyo --without-dnsupdate --without-acl-support
+		--without-json --without-libarchive --disable-python --nopyc --nopyo --without-acl-support
 endif
 
 SAMBA4_PDB_MODULES :=pdb_smbpasswd,pdb_tdbsam,
@@ -309,6 +307,7 @@ CONFIGURE_ARGS += --private-libraries=$(SYSTEM_PRIVATE_BUNDLED_LIBS)
 
 export COMPILE_ET=$(STAGING_DIR_HOSTPKG)/bin/compile_et_samba
 export ASN1_COMPILE=$(STAGING_DIR_HOSTPKG)/bin/asn1_compile_samba
+export PYTHONHASHSEED=1
 
 # make sure we use the hostpkg build toolset and we need to find host 'yapp'
 HOST_CONFIGURE_VARS+= \
@@ -327,6 +326,9 @@ define Host/Prepare
 	$(call Host/Prepare/Default)
 	$(SED) 's,mandatory=True,mandatory=False,g' $(HOST_BUILD_DIR)/wscript_configure_system_gnutls
 	$(SED) 's,gnutls_version =.*,gnutls_version = gnutls_min_required_version,g' $(HOST_BUILD_DIR)/wscript_configure_system_gnutls
+	$(SED) 's,gnutls_version_str.*,gnutls_version_str = "3.7.7",g' $(HOST_BUILD_DIR)/wscript_configure_system_gnutls
+	$(SED) 's,(gnutls_version > .*,(parse_version(gnutls_version) > parse_version("3.6.10")):,g' $(HOST_BUILD_DIR)/wscript_configure_system_gnutls
+	$(SED) 's,(gnutls_version < .*,(parse_version(gnutls_version) < parse_version("3.5.2")):,g' $(HOST_BUILD_DIR)/wscript_configure_system_gnutls
 endef
 define Host/Compile
 	(cd $(HOST_BUILD_DIR); \
@@ -349,6 +351,9 @@ ifeq ($(CONFIG_SAMBA4_SERVER_AD_DC),)
 	$(SED) '/"dns.resolver":/d' $(PKG_BUILD_DIR)/third_party/wscript
 	# unbundle iso8601
 	$(SED) '/"iso8601":/d' $(PKG_BUILD_DIR)/third_party/wscript
+endif
+ifeq ($(CONFIG_HOST_OS_MACOS),y)
+	$(SED) "/^VERSION=/i sys.platform='linux'" $(PKG_BUILD_DIR)/buildtools/bin/waf
 endif
 endef
 

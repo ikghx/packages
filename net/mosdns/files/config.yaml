@@ -150,11 +150,9 @@ plugins:
         - addr:            https://cloudflare-dns.com/dns-query
           dial_addr:       1.1.1.1
           enable_pipeline: true # TCP/DoT 使用 RFC 7766 新的 query pipelining 连接复用模式。
-          trusted: true # 是否是可信服务器，可信服务器的任何应答都会被接受。
         - addr:            https://dns.google/dns-query
           dial_addr:       8.8.8.8
           enable_pipeline: true
-          trusted: true
 
 # 主要的运行逻辑插件
   - tag: main_sequence # 逻辑插件的标签。
@@ -210,6 +208,6 @@ servers:
     timeout: 5 # 请求处理超时时间。单位: 秒。默认值: 5。
     listeners:
       - protocol: udp # 协议，支持 "udp", "tcp", "tls", "https" 和 "http"
-        addr: 0.0.0.0:5335 # 监听地址和端口。
+        addr: 127.0.0.1:5335 # 监听地址和端口。
       - protocol: tcp
-        addr: 0.0.0.0:5335
+        addr: 127.0.0.1:5335

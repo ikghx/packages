@@ -370,7 +370,7 @@ while : ; do
 
 	# prepare update
 	# never updated or run-once forced then NEXT_TIME = 0
-	[ $FORCE_SECONDS -ge 1 -a ( $run_once -eq 1 -o $LAST_TIME -eq 0 ) ] \
+	[ $FORCE_SECONDS -ge 1 -a $( $run_once -eq 1 -o $LAST_TIME -eq 0 ) ] \
 		&& NEXT_TIME=0 \
 		|| NEXT_TIME=$(( $LAST_TIME + $FORCE_SECONDS ))
 

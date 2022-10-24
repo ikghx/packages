@@ -33,4 +33,5 @@ service_triggers() {
 	procd_add_reload_trigger "nginx"
 	procd_add_reload_interface_trigger loopback
 	procd_add_reload_interface_trigger lan
+	procd_add_raw_trigger acme.renew 5000 /etc/init.d/nginx reload
 }
