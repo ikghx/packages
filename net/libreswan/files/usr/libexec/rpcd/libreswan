@@ -8,7 +8,7 @@ RPC_SCRIPTS=/usr/libexec/libreswan/rpc
 [ -d $RPC_SCRIPTS ] && include $RPC_SCRIPTS
 
 IPSEC_TRAFFIC_STATES="/tmp/ipsec_traffic.$$"
-IPSEC_TUNNEL_STATES="/tmp/ipsec_states.$$"
+IPSEC_TUNNEL_STATUS="/tmp/ipsec_status.$$"
 
 __function__() {
     type "$1" > /dev/null 2>&1
@@ -47,23 +47,27 @@ get_index() {
 }
 
 phase1_established() {
-	grep -q "\"${1%/*}\/.*(IKE SA established)" "$IPSEC_TUNNEL_STATES"
+	local msg="IKE SA established"
+	grep -q "\"${1%/*}\/.*($msg)" "$IPSEC_TUNNEL_STATUS"
 }
 
 phase2_established() {
-	grep -q "\"$1\":500 .*(IPsec SA established)" "$IPSEC_TUNNEL_STATES"
+	local msg="IPsec SA established"
+	grep -q "\"$1\".*($msg)" "$IPSEC_TUNNEL_STATUS"
 }
 
 add_tunnel_object() {
 	local id="$1"
-	local leftsubnets rightsubnets right ctime
-	local phase1=0 phase2=0
+	local leftsubnets rightsubnets right ctime active_right
+	local phase1=0 phase2=0 add_time inBytes outBytes
 
 	config_get right "$id" right
 	config_get leftsubnets "$id" leftsubnets
 	config_get rightsubnets "$id" rightsubnets
 
-	json_add_array tunnels
+	if [ -z "$right" ] || [ "$right" = "%any" ] || [ "$right" == "0.0.0.0" ]; then
+		active_right=$(awk -F'[: ]' '{ if ( $4 ~ "'"$id/"'") {print $5; exit 0};}' "$IPSEC_TUNNEL_STATUS")
+	fi
 
 	for lsubnet in $leftsubnets; do
 		lidx=$(get_index leftsubnets $lsubnet)
@@ -74,7 +78,7 @@ add_tunnel_object() {
 			eval $(awk -F, '{if ($1 ~ "'"$tid"'" ) {printf("%s %s %s", $3, $4, $5)};}' "$IPSEC_TRAFFIC_STATES")
 			json_add_object tunnels
 			json_add_string name "$id"
-			json_add_string right "$right"
+			json_add_string right "$right${active_right:+ (${active_right})}"
 			json_add_string leftsubnet "$lsubnet"
 			json_add_string rightsubnet "$rsubnet"
 			json_add_int tx "$outBytes"
@@ -98,17 +102,16 @@ add_tunnel_object() {
 			json_close_object
 		done
 	done
-	json_close_array
 }
 
 generate_libreswan_states() {
 	ipsec trafficstatus  > "$IPSEC_TRAFFIC_STATES"
-	ipsec showstates > "$IPSEC_TUNNEL_STATES"
+	ipsec status > "$IPSEC_TUNNEL_STATUS"
 }
 
 clean_libreswan_states() {
 	return
-	rm -f "$IPSEC_TRAFFIC_STATES" "$IPSEC_TUNNEL_STATES"
+	rm -f "$IPSEC_TRAFFIC_STATES" "$IPSEC_TUNNEL_STATUS"
 }
 
 libreswan_status() {
@@ -117,7 +120,9 @@ libreswan_status() {
 	generate_libreswan_states
 
 	json_init
+	json_add_array tunnels
 	config_foreach add_tunnel_object tunnel
+	json_close_array
 	json_dump
 
 	clean_libreswan_states

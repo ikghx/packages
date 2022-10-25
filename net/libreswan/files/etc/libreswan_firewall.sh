@@ -14,15 +14,26 @@ FW_DIR="/tmp/libreswan/firewall.d"
 LIBRESWAN_RULES_FILE="$FW_DIR/libreswan.rules"
 
 flush_delete_chain() {
-	$BIN -t $1 -F $chain
-	$BIN -t $1 -X $chain
+	[ $# -lt 2 ] && return
+
+	$BIN -t $1 -nL $2 > /dev/null 2>&1 || return
+
+	$BIN -t $1 -F $2
+	$BIN -t $1 -X $2
 }
 
 cleanup_libreswan_rules() {
-	$BIN -t filter -D input_rule -j $LIBRESWAN_INPUT
-	$BIN -t filter -D output_rule -j $LIBRESWAN_OUTPUT
-	$BIN -t filter -D forwarding_rule -j $LIBRESWAN_FORWARD
-	$BIN -t nat -D postrouting_rule -j $LIBRESWAN_POSTROUTING
+	$BIN -t filter -C input_rule -j $LIBRESWAN_INPUT > /dev/null 2>&1
+	[ $? -eq 0 ] && $BIN -t filter -D input_rule -j $LIBRESWAN_INPUT
+
+	$BIN -t filter -C output_rule -j $LIBRESWAN_OUTPUT > /dev/null 2>&1
+	[ $? -eq 0 ] && $BIN -t filter -D output_rule -j $LIBRESWAN_OUTPUT
+
+	$BIN -t filter -C forwarding_rule -j $LIBRESWAN_FORWARD > /dev/null 2>&1
+	[ $? -eq 0 ] && $BIN -t filter -D forwarding_rule -j $LIBRESWAN_FORWARD
+
+	$BIN -t nat -C postrouting_rule -j $LIBRESWAN_POSTROUTING > /dev/null 2>&1
+	[ $? -eq 0 ] && $BIN -t nat -D postrouting_rule -j $LIBRESWAN_POSTROUTING
 
 	flush_delete_chain filter $LIBRESWAN_NFLOG_INPUT
 	flush_delete_chain filter $LIBRESWAN_INPUT
@@ -35,6 +46,8 @@ cleanup_libreswan_rules() {
 }
 
 create_chain_jump() {
+	[ $# -lt 3 ] && return
+
 	local table=$1
 	local chain=$2
 	local base_chain=$3
@@ -45,7 +58,7 @@ create_chain_jump() {
 	$BIN -t $table -F $chain
 }
 
-if ! service ipsec running; then
+if ! /etc/init.d/ipsec running; then
 	cleanup_libreswan_rules
 	exit 0
 fi
