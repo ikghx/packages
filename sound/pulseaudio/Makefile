@@ -46,6 +46,7 @@ define Package/pulseaudio-daemon-avahi
   $(call Package/pulseaudio/Default)
   DEPENDS+=+dbus +libavahi-client +sbc
   TITLE+= (avahi/bluez)
+  CONFLICTS:=pulseaudio-daemon
   VARIANT:=avahi
 endef
 
