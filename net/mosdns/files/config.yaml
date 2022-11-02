@@ -100,8 +100,6 @@ plugins:
     args:
       ip:
         - 'provider:geoip:cn'
-      cname:
-        - 'provider:geosite:cn'
 
 # 匹配 HOSTS 规则的插件
   - tag:                   "query_is_hosts_domain"
@@ -121,9 +119,9 @@ plugins:
   - tag:                   "lazy_cache"
     type:                  cache
     args:
-      size:                100000 # DNS 缓存大小。单位: 条。
-      lazy_cache_ttl:      259200 # 惰性缓存生存时间。单位: 秒。
-      lazy_cache_reply_ttl: 30
+      size:                10000 # DNS 缓存大小。单位: 条。
+      lazy_cache_ttl:      86400 # 惰性缓存生存时间。单位: 秒。
+      lazy_cache_reply_ttl: 5
       cache_everything: false
 
 # 修改应答 TTL （单位: 秒。）
@@ -132,6 +130,15 @@ plugins:
     args:
       minimal_ttl: 300
       maximum_ttl: 3600
+
+# ipset 写入应答 IP 到系统 ipset
+  - tag: blacklist
+    type: 'ipset'
+    args:
+      set_name4: 'blacklist'   # 如果非空，存放 ipv4 地址到这个表。这个表属性 family 需为 `inet`。
+      set_name6: ''   # 如果非空，存放 ipv6 地址到这个表。这个表属性 family 需为 `inet6`。
+      mask4: 24       # 写入 ipv4 地址时使用的掩码。默认: 24。
+      mask6: 32       # 写入 ipv6 地址时使用的掩码。默认: 32。
 
 # 转发至本地服务器的插件
   - tag:                   "forward_local"
@@ -163,7 +170,7 @@ plugins:
         - lazy_cache # 启用缓存规则（匹配插件标签）。
         - query_is_hosts_domain # 启用 hosts 规则（匹配插件标签）。
         - query_is_redirect_domain # 启用重定向规则（匹配插件标签）。
-        - _no_ecs # 删除请求和应答中的 ECS（EDNS）信息。
+        #- _no_ecs # 删除请求和应答中的 ECS（EDNS）信息。
 
         - if: "query_is_whitelist_domain" # 执行判断条件（匹配插件标签）。
           exec:
@@ -192,13 +199,20 @@ plugins:
         # 剩下的未知域名用 IP 分流。
         - primary: # 从本地服务器获取应答，丢弃非本地 IP 的结果。
             - forward_local # 使用本地 DNS 服务器解析。
-            - if: "(! response_has_local_ip) && [_response_valid_answer]"
+            - if: "response_has_local_ip"
+              exec:
+                - _return
+            - if: "!response_has_local_ip"
               exec:
                 - _drop_response # 丢弃已存在的应答。
           secondary: # 从远程服务器获取应答。
+            - _no_ecs
             - _prefer_ipv4 # 优先应答 IPv4 地址。
             - forward_remote # 使用远程 DNS 服务器解析。
             #- modify_ttl # 修改应答 TTL
+            - if: "!response_has_local_ip"
+              exec:
+                - blacklist
           fast_fallback: 200 # 快速 fallback 触发阈值。单位：毫秒。
           always_standby: true
 
