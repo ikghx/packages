@@ -33,8 +33,7 @@ config_cb() {
 	}
 }
 
-service_triggers()
-{
+service_triggers() {
 	procd_add_reload_trigger "stdiscosrv"
 }
 
@@ -60,7 +59,6 @@ start_service() {
 
 	procd_open_instance
 	procd_set_param command "$PROG"
-	procd_set_param file /etc/config/stdiscosrv
 	procd_append_param command -listen="$listen"
 	procd_append_param command -db-dir="$db_dir"
 	procd_append_param command -cert="$cert"
@@ -74,4 +72,9 @@ start_service() {
 	procd_set_param stdout 1
 	procd_set_param stderr 1
 	procd_close_instance
+}
+
+reload_service() {
+	stop
+	start
 }
