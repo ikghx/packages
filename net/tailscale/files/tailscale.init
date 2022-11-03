@@ -7,12 +7,15 @@
 USE_PROCD=1
 START=80
 
-start_service() {
+start_instance() {
   local state_file
   local port
   local std_err std_out
+  local enabled
 
-  config_load tailscale
+  config_get_bool enabled "settings" 'enabled' 0
+  [ $enabled -gt 0 ] || return 1
+
   config_get_bool std_out "settings" log_stdout 1
   config_get_bool std_err "settings" log_stderr 1
   config_get port "settings" port 41641
@@ -35,6 +38,15 @@ start_service() {
   procd_set_param stderr "$std_err"
 
   procd_close_instance
+}
+
+start_service() {
+	config_load 'tailscale'
+	config_foreach start_instance 'settings'
+}
+
+service_triggers() {
+	procd_add_reload_trigger "tailscale"
 }
 
 stop_service() {
