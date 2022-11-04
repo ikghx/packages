@@ -27,7 +27,6 @@ define Package/vsftpd/Default
   CATEGORY:=Network
   TITLE:=Fast and secure FTP server
   URL:=https://security.appspot.com/vsftpd.html
-  MAINTAINER:=Cezary Jackiewicz <cezary@eko.one.pl>
   DEPENDS:=+libuci
 endef
 
@@ -74,7 +73,7 @@ ifeq ($(BUILD_VARIANT),notls)
 	$(SED) 's/-lcrypt -lnsl/$(NLSSTRING)/' $(PKG_BUILD_DIR)/Makefile
 	$(MAKE) -C $(PKG_BUILD_DIR) \
 		CC="$(TARGET_CC)" \
-		CFLAGS="$(TARGET_CFLAGS)" \
+		CFLAGS="$(TARGET_CFLAGS) $(TARGET_CPPFLAGS)" \
 		LDFLAGS="$(TARGET_LDFLAGS)" \
 		vsftpd
  endef
@@ -87,7 +86,7 @@ ifeq ($(BUILD_VARIANT),tls)
 	$(SED) 's/-lcrypt -lnsl/$(NLSSTRING)/' $(PKG_BUILD_DIR)/Makefile
 	$(MAKE) -C $(PKG_BUILD_DIR) \
 		CC="$(TARGET_CC)" \
-		CFLAGS="$(TARGET_CFLAGS)" \
+		CFLAGS="$(TARGET_CFLAGS) $(TARGET_CPPFLAGS)" \
 		LDFLAGS="$(TARGET_LDFLAGS)" \
 		vsftpd
  endef
