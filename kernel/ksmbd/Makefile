@@ -37,7 +37,7 @@ define KernelPackage/fs-ksmbd
 		+kmod-crypto-ccm \
 		+kmod-crypto-gcm \
 		+kmod-asn1-decoder \
-		+kmod-fs-nfs-common-rpcsec
+		+kmod-oid-registry
 endef
 
 # The last two DEPENDS are hacks in order to get CONFIG_ASN1 and CONFIG_OID_REGISTRY
