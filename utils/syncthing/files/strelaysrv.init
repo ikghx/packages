@@ -18,7 +18,7 @@ config_cb() {
 			eval $option=$value
 			;;
 		_*)
-			[ "$value" = "false" ] || extra_args="$extra_args -${option//_/-}"
+			[ "$value" = "0" ] || extra_args="$extra_args -${option//_/-}"
 			;;
 		*)
 			extra_args="$extra_args -${option//_/-}=$value"

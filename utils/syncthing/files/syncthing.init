@@ -21,7 +21,7 @@ config_cb() {
 			extra_args="$extra_args --${option//_/-}-$value"
 			;;
 		_*)
-			[ "$value" = "false" ] || extra_args="$extra_args -${option//_/-}"
+			[ "$value" = "0" ] || extra_args="$extra_args -${option//_/-}"
 			;;
 		*)
 			extra_args="$extra_args --${option//_/-}=$value"
@@ -41,7 +41,7 @@ service_triggers() {
 }
 
 start_service() {
-	local extra_args
+	local extra_args="--no-browser"
 
 	# Options with default value different with the syncthing should be defined explicitly here
 	local enabled=0
