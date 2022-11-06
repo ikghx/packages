@@ -23,13 +23,14 @@ include $(INCLUDE_DIR)/package.mk
 define Package/vlmcsd
 	SECTION:=net
 	CATEGORY:=Network
-	TITLE:=vlmcsd for OpenWRT
-	URL:=http://forums.mydigitallife.info/threads/50234
+	TITLE:=A KMS Emulator in C
+	URL:=https://github.com/Wind4/vlmcsd
 	DEPENDS:=+libpthread
 endef
 
 define Package/vlmcsd/description
-	vlmcsd is a KMS Emulator in C.
+	KMS Emulator in C (currently runs on Linux including Android, FreeBSD,
+	Solaris, Minix, Mac OS, iOS, Windows with or without Cygwin)
 endef
 
 MAKE_FLAGS += \

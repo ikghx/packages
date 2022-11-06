@@ -25,8 +25,12 @@
 	smb2 max read = 4MB
 	smb2 max trans = 1MB
 	smb2 max write = 4MB
-	cache read buffers = no
-	cache trans buffers = no
 	smb3 encryption = no
 	smbd max io size = 8MB
 	tcp port = 445
+	invalid users = 
+	max connections = 0
+	oplocks = yes
+	store dos attributes = yes
+	vfs objects = 
+

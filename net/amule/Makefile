@@ -83,7 +83,7 @@ CONFIGURE_ARGS+= \
 MAKE_FLAGS += HOSTCC="$(HOSTCC)"
 
 define Build/Configure
-	cd $(PKG_BUILD_DIR); $(SHELL) autogen.sh
+	( cd $(PKG_BUILD_DIR); $(SHELL) autogen.sh; )
 	$(call Build/Configure/Default)
 ifeq ($(CONFIG_AMULE_CRYPTOPP_STATIC_LINKING),y)
 	$(SED) 's;^CRYPTOPP_LIBS.*;CRYPTOPP_LIBS \= "$(STAGING_DIR)/usr/lib/libcryptopp.a";g' \

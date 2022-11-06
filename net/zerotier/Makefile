@@ -48,7 +48,7 @@ MAKE_FLAGS += \
 	ZT_EMBEDDED=1 \
 	ZT_SSO_SUPPORTED=0 \
 	DEFS="" \
-	OSTYPE="Linux" \
+	OS_TYPE="LINUX" \
 
 define Build/Compile
 	$(call Build/Compile/Default,one)
@@ -63,6 +63,7 @@ TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 
 define Package/zerotier/conffiles
 /etc/config/zerotier
+/etc/config/zero/
 endef
 
 define Package/zerotier/install

@@ -7,12 +7,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=filebrowser
-PKG_VERSION:=2.22.4
+PKG_VERSION:=2.23.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=filebrowser-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/filebrowser/filebrowser/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=511f0e200c4c2c3851f92d1090804a67ed425a8290493a70af49aea93c229d91
+PKG_HASH:=9a99f0c51114ff7e3df89190729a8ca1c0ed48c491a5c6f9d9e266eb6657898d
 
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
@@ -25,7 +25,7 @@ PKG_USE_MIPS16:=0
 GO_PKG:=github.com/filebrowser/filebrowser
 GO_PKG_LDFLAGS_X:= \
 	$(GO_PKG)/v2/version.CommitSHA=$(PKG_SOURCE_VERSION) \
-	$(GO_PKG)/v2/version.Version=$(PKG_VERSION)
+	$(GO_PKG)/v2/version.Version=v$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
 include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
