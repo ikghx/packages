@@ -62,7 +62,7 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) ./files/$(PKG_ARCH)/webd $(1)/usr/bin/webd
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/webd $(1)/etc/init.d/webd
+	$(INSTALL_BIN) ./files/webd.init $(1)/etc/init.d/webd
 endef
 
 $(eval $(call BuildPackage,webd))
