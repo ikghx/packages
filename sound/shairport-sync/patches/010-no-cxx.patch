@@ -1,7 +1,7 @@
 --- a/Makefile.am
 +++ b/Makefile.am
-@@ -23,10 +23,6 @@ else
- endif
+@@ -55,10 +55,6 @@ noinst_HEADERS += $(BUILT_SOURCES)
+ CLEANFILES += $(BUILT_SOURCES)
  endif
  
 -if USE_APPLE_ALAC
@@ -11,8 +11,8 @@
  if USE_CUSTOMPIDDIR
  AM_CFLAGS+= \
  	-DPIDDIR=\"$(CUSTOM_PID_DIR)\"
-@@ -80,11 +76,6 @@ if USE_PA
- shairport_sync_SOURCES += audio_pa.c
+@@ -116,11 +112,6 @@ if USE_PW
+ shairport_sync_SOURCES += audio_pw.c
  endif
  
 -if USE_CONVOLUTION
@@ -25,7 +25,7 @@
  endif
 --- a/configure.ac
 +++ b/configure.ac
-@@ -23,7 +23,6 @@ fi
+@@ -32,7 +32,6 @@ esac
  
  # Checks for programs.
  AC_PROG_CC
