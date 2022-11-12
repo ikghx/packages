@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nginx
-PKG_VERSION:=1.20.2
-PKG_RELEASE:=1
+PKG_VERSION:=1.22.1
+PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=nginx-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://nginx.org/download/
-PKG_HASH:=958876757782190a1653e14dc26dfc7ba263de310e04c113e11e97d1bef45a42
+PKG_HASH:=9ebb333a9e82b952acd3e2b4aeb1d4ff6406f72491bab6cd9fe69f0dea737f31
 
 PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de> \
 				Ansuel Smith <ansuelsmth@gmail.com>
@@ -456,11 +456,11 @@ define Prepare/nginx-ts
 endef
 
 define Download/nginx-naxsi
-  VERSION:=304e66d86fc4771821585b1bc32169de8afc9cea
+  VERSION:=d714f1636ea49a9a9f4f06dba14aee003e970834
   SUBDIR:=nginx-naxsi
   FILE:=nginx-naxsi-module-$$(VERSION).tar.xz
   URL:=https://github.com/nbs-system/naxsi.git
-  MIRROR_HASH:=ac810c1220dec59c03f88ad764ad2f7b5fd5228b08b8c3a6866803cfdfebf454
+  MIRROR_HASH:=0c2ba8675a291a81b406994c376e1f5e6b602f4b7676d5d53029592d5d71c420
   PROTO:=git
 endef
 
