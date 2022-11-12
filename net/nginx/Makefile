@@ -100,7 +100,7 @@ define Package/nginx-ssl
   $(Package/nginx/default)
   TITLE += with SSL support
   VARIANT:=ssl
-  DEPENDS+= +NGINX_PCRE:libpcre \
+  DEPENDS+= +NGINX_PCRE:libpcre2 \
 	+NGINX_HTTP_GZIP:zlib +NGINX_LUA:liblua +NGINX_DAV:libxml2 \
 	+NGINX_UBUS:libubus +NGINX_UBUS:libblobmsg-json +NGINX_UBUS:libjson-c
   CONFLICTS:=nginx-all-module
@@ -113,7 +113,7 @@ Package/nginx-ssl/description = $(Package/nginx/description) \
 define Package/nginx-all-module
   $(Package/nginx/default)
   TITLE += with ALL module selected
-  DEPENDS+=+libpcre +zlib +liblua +libxml2 +libubus \
+  DEPENDS+=+libpcre2 +zlib +liblua +libxml2 +libubus \
 	+libblobmsg-json +libjson-c
   VARIANT:=all-module
   PROVIDES += nginx-ssl
