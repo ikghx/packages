@@ -29,6 +29,10 @@ start_service() {
 	config_foreach start_instance 'base'
 }
 
+reload_service() {
+	procd_send_signal nginx
+}
+
 service_triggers() {
 	procd_add_reload_trigger "nginx"
 	procd_add_reload_interface_trigger loopback

@@ -6,7 +6,7 @@
 #
 
 menu "Configuration"
-        depends on PACKAGE_nginx-ssl
+        depends on PACKAGE_nginx
 
 config NGINX_DAV
 	bool
@@ -74,7 +74,7 @@ config NGINX_HTTP_AUTH_BASIC
 config NGINX_HTTP_AUTH_REQUEST
 	bool
 	prompt "Enable HTTP auth request module"
-	default n
+	default y
 
 config NGINX_HTTP_AUTOINDEX
 	bool
@@ -195,7 +195,7 @@ config NGINX_NAXSI
 config NGINX_LUA
 	bool
 	prompt "Enable Lua module"
-	default n
+	default y
 
 config NGINX_HTTP_REAL_IP
 	bool

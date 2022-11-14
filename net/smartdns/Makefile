@@ -23,7 +23,7 @@ PKG_BUILD_PARALLEL:=1
 include $(INCLUDE_DIR)/package.mk
 
 MAKE_PATH:=src
-MAKE_VARS += VER=$(PKG_VERSION) 
+MAKE_VARS+= VER=$(PKG_VERSION)
 
 define Package/smartdns
   SECTION:=net
