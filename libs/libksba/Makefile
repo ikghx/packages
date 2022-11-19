@@ -18,6 +18,9 @@ PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
+CONFIGURE_ARGS += \
+	ac_cv_path_GPGRT_CONFIG="$(STAGING_DIR)/host/bin/gpgrt-config"
+
 define Package/libksba
   SECTION:=libs
   CATEGORY:=Libraries
