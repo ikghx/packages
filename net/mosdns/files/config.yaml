@@ -46,7 +46,7 @@ plugins:
         - 'provider:whitelist' # 匹配数据源标签。
 
 # 匹配黑名单的插件
-  - tag:                   "query_is_blocklist_domain"
+  - tag:                   "query_is_blacklist_domain"
     type:                  query_matcher
     args:
       domain:
@@ -177,7 +177,7 @@ plugins:
             - forward_local # 运行匹配插件标签的规则。
             - _return # 结束此执行序列。
 
-        - if: "query_is_blocklist_domain || query_is_ad_domain || query_is_qtype65 || query_is_local_ptr"
+        - if: "query_is_blacklist_domain || query_is_ad_domain || query_is_qtype65 || query_is_local_ptr"
           exec:
             - _new_nxdomain_response # 响应域名不存在应答（NXDOMAIN）。
             - _return
