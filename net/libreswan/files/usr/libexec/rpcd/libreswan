@@ -47,13 +47,11 @@ get_index() {
 }
 
 phase1_established() {
-	local msg="IKE SA established"
-	grep -q "\"${1%/*}\/.*($msg)" "$IPSEC_TUNNEL_STATUS"
+	grep -q "\"${1%/*}\/.*(IKE SA established)\|\"${1%/*}\/.*(established IKE SA)" "$IPSEC_TUNNEL_STATUS"
 }
 
 phase2_established() {
-	local msg="IPsec SA established"
-	grep -q "\"$1\".*($msg)" "$IPSEC_TUNNEL_STATUS"
+	grep -q "\"$1\".*(IPsec SA established)\|\"$1\".*(established Child SA)" "$IPSEC_TUNNEL_STATUS"
 }
 
 add_tunnel_object() {

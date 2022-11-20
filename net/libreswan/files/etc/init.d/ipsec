@@ -79,6 +79,7 @@ generate_tunnel_config() {
 	local secret_file="$IPSEC_CONF_DIR/$id.secret"
 	local tmp_config_file="/tmp/$id.conf"
 	local tmp_secret_file="/tmp/$id.secret"
+	local ikey mark_in okey mark_out ifid
 
 	config_get auto "$id" auto
 	config_get left "$id" left
@@ -102,14 +103,8 @@ generate_tunnel_config() {
 	config_get dpddelay "$id" dpddelay
 	config_get phase2 "$id" phase2
 	config_get phase2alg "$id" phase2alg
-	config_get vti_interface "$id" vti_interface
 	config_get nflog "$id" nflog 0
 	[ "$nflog" = "0" ] && unset nflog
-
-	if [ -n "$vti_interface" ]; then
-		config_get leftvti "$id" leftvti
-		config_get mark "$id" mark
-	fi
 
 	config_list_foreach "$id" ike expand_ike
 	config_list_foreach "$id" phase2alg expand_phase2alg
@@ -126,6 +121,12 @@ generate_tunnel_config() {
 		[[ "$rightsubnets" =~ 0.0.0.0* ]] && rightsubnets="0.0.0.0/0"
 		rightsubnets="{${rightsubnets// /,}}"
 	fi
+
+	config_get interface "$id" interface
+
+	cat << EOF > "$tmp_secret_file"
+$leftid $rightid : PSK "$psk"
+EOF
 
 	cat << EOF > "$tmp_config_file"
 conn $id
@@ -150,15 +151,28 @@ conn $id
 	${phase2:+phase2=${phase2}}
 	${ike_proposal:+ike=${ike_proposal}}
 	${phase2alg_proposal:+phase2alg=${phase2alg_proposal}}
-	${vti_interface:+vti-interface=${vti_interface}}
-	${leftvti:+leftvti=${leftvti}}
-	${mark:+mark=${mark}}
 	${nflog:+nflog=${nflog}}
 EOF
 
-cat << EOF > "$tmp_secret_file"
-$leftid $rightid : PSK "$psk"
-EOF
+	if [ -n "$interface" ]; then
+		proto=$(uci_get network "$interface" proto)
+		case "$proto" in
+			vti)
+				ikey=$(uci_get network "$interface" ikey)
+				okey=$(uci_get network "$interface" okey)
+				mark_in=$(printf "0x%x" $ikey)
+				mark_out=$(printf "0x%x" $okey)
+				echo -e "${mark_in:+\tmark-in=${mark_in}}" >> "$tmp_config_file"
+				echo -e "${mark_out:+\tmark-out=${mark_out}}" >> "$tmp_config_file"
+				echo -e "${interface:+\tvti-interface=${interface}}" >> "$tmp_config_file"
+				;;
+			xfrm)
+				ifid=$(uci_get network "$interface" ifid)
+				echo -e "${ifid:+\tipsec-interface=${ifid}}" >> "$tmp_config_file"
+				;;
+		esac
+	fi
+
 
 	[ -f "$config_file" ] && {
 		cmp "$config_file" "$tmp_config_file" 2>/dev/null && rm -f "$tmp_config_file"

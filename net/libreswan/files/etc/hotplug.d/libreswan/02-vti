@@ -1,26 +1,24 @@
 #!/bin/sh
 
-addvti() {
-	[ -d /proc/sys/net/ipv4/conf/${VTI_IFACE} ] && ip tun del ${VTI_IFACE}
+. /lib/functions.sh
 
-	ip tunnel add ${VTI_IFACE} mode vti local ${PLUTO_ME} remote ${PLUTO_PEER} okey ${CONNMARK_OUT%/*} ikey ${CONNMARK_IN%/*}  
+[ "${PLUTO_VERB}" != "route-client" ] && [ "${PLUTO_VERB}" != "up-client" ] && exit 0
 
-	sysctl -w net.ipv4.conf.${VTI_IFACE}.disable_policy=1
-	sysctl -w net.ipv4.conf.${VTI_IFACE}.rp_filter=0
-	sysctl -w net.ipv4.conf.${VTI_IFACE}.forwarding=1
+CONNECTION=${PLUTO_CONNECTION%/*}
+[ -z "$CONNECTION" ] && exit 0
 
-	[ -n "${VTI_IP}" ] && ip addr add ${VTI_IP} dev ${VTI_IFACE}
+update_peeraddr=$(uci_get libreswan $CONNECTION update_peeraddr)
+[ "$update_peeraddr" != "1" ] && exit 0
 
-	ip link set ${VTI_IFACE} up
-}
+interface=$(uci_get libreswan $CONNECTION interface)
+[ -z "$interface" ] && exit 0
 
-delvti() {
-	[ -n "${VTI_IFACE}" -a -d /proc/sys/net/ipv4/conf/${VTI_IFACE} ] && ip tun del ${VTI_IFACE}
-}
+proto=$(uci_get network "$interface" proto)
+[ "$proto" != "vti" ] && exit 0
 
-[ -z "$VTI_IFACE" ] && exit 0
+peeraddr=$(uci_get network "$interface" peeraddr)
+[ "$peeraddr" == "$PLUTO_PEER" ] && exit 0
 
-case "${PLUTO_VERB}" in
-	up-host|up-client) addvti ;;
-	down-host|down-client) delvti ;;
-esac
+uci_set network "$interface" peeraddr "$PLUTO_PEER"
+uci_commit network
+ifup "$interface"

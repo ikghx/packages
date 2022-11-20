@@ -41,12 +41,39 @@ $(call Package/libreswan/Default)
   SUBMENU:=VPN
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:= +IPV6:kmod-ip6-vti +IPV6:kmod-ipsec6 +ip-full +ipset \
-	+kmod-crypto-aead +kmod-crypto-authenc +kmod-crypto-gcm \
-	+kmod-crypto-hash +kmod-crypto-rng +kmod-ip-vti +kmod-ipsec \
-	+kmod-ipsec4 +kmod-xfrm-interface +libevent2 +libevent2-pthreads \
-	+libldns +librt +libunbound +nss-utils +nspr +libcap-ng \
-	+iptables-mod-ipsec +kmod-ipt-ipsec +kmod-ipt-nflog +iptables-mod-nflog
+  DEPENDS:= \
+	  +kmod-ip-vti +IPV6:kmod-ip6-vti \
+	  +kmod-ipsec +kmod-ipsec4 +IPV6:kmod-ipsec6 \
+	  +ip-full +kmod-xfrm-interface \
+	  +libevent2 +libevent2-pthreads \
+	  +libldns +librt +libunbound +nss-utils +nspr +libcap-ng \
+	  +iptables-mod-ipsec +kmod-ipt-ipsec +kmod-ipt-nflog +iptables-mod-nflog \
+	  +kmod-crypto-acompress \
+	  +kmod-crypto-aead \
+	  +kmod-crypto-authenc \
+	  +kmod-crypto-arc4 \
+	  +kmod-crypto-cbc \
+	  +kmod-crypto-ccm \
+	  +kmod-crypto-chacha20poly1305 \
+	  +kmod-crypto-cmac \
+	  +kmod-crypto-ctr \
+	  +kmod-crypto-cts \
+	  +kmod-crypto-des \
+	  +kmod-crypto-ecb \
+	  +kmod-crypto-ecdh \
+	  +kmod-crypto-gcm \
+	  +kmod-crypto-ghash \
+	  +kmod-crypto-hash \
+	  +kmod-crypto-hmac \
+	  +kmod-crypto-md4 \
+	  +kmod-crypto-md5 \
+	  +kmod-crypto-null \
+	  +kmod-crypto-pcbc \
+	  +kmod-crypto-sha1 \
+	  +kmod-crypto-sha256 \
+	  +kmod-crypto-sha512 \
+	  +kmod-crypto-xcbc \
+	  +kmod-crypto-rng
   PROVIDES:=openswan
   CONFLICTS:=strongswan
   TITLE+= IPsec Server
