@@ -1,13 +1,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=tvheadend
-PKG_VERSION:=2022-11-21
+PKG_VERSION:=2022-11-22
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/tvheadend/tvheadend.git
-PKG_MIRROR_HASH:=7730ce8cdf92a02e1284beace4eea0eb91bb45f017303097c2b103ec28c76398
-PKG_SOURCE_VERSION:=c0f616e56bc4df70978a060b72f8c6a7ca487d3f
+PKG_MIRROR_HASH:=dba50de5e88a7ed37e51c1493f8a58540803d551ac247e87eb3c86760a8ee34f
+PKG_SOURCE_VERSION:=5543ce518faaeeb0677fd7c2fca26f8ae0d265d3
 
 PKG_LICENSE:=GPL-3.0
 PKG_LICENSE_FILES:=LICENSE.md
@@ -220,6 +220,7 @@ CONFIGURE_ARGS += \
 	--disable-pcloud_cache \
 	--enable-bundle \
 	--disable-uriparser \
+	--disable-execinfo \
 	--nowerror=unused-variable
 
 ## Transcoding | Remove these from CONFIGURE_ARGS.

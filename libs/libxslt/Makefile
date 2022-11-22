@@ -91,7 +91,7 @@ CMAKE_OPTIONS += \
 ifeq ($(CONFIG_BUILD_NLS),y)
 	CMAKE_OPTIONS += \
 		-DIconv_INCLUDE_DIR=$(ICONV_PREFIX)/include \
-		-DIconv_LIBRARY=$(ICONV_PREFIX)/lib
+		-DIconv_LIBRARY=$(ICONV_PREFIX)/lib/libiconv.so
 endif
 
 define Build/InstallDev/Xslt
