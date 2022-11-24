@@ -50,7 +50,7 @@ get)
 					ln -s "$domain_dir/$main_domain.cer" "/etc/ssl/acme/$main_domain.crt"
 				fi
 				if [ ! -e "/etc/ssl/acme/$main_domain.key" ]; then
-					ln -s "$domain_dir/$main_domain.key" /etc/ssl/acme
+					ln -s "$domain_dir/$main_domain.key" "/etc/ssl/acme/$main_domain.key"
 				fi
 				if [ ! -e "/etc/ssl/acme/$main_domain.fullchain.crt" ]; then
 					ln -s "$domain_dir/fullchain.cer" "/etc/ssl/acme/$main_domain.fullchain.crt"
