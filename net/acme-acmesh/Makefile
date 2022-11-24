@@ -12,7 +12,7 @@ PKG_VERSION:=3.0.5
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/acmesh-official/acme.sh/tar.gz/$(PKG_VERSION)?
+PKG_SOURCE_URL:=https://codeload.github.com/acmesh-official/acme.sh/tar.gz/v$(PKG_VERSION)?
 PKG_HASH:=a19132ed65491409a8d8a93c264dcbcf265a91d45a46de674811b93f5995398f
 PKG_BUILD_DIR:=$(BUILD_DIR)/acme.sh-$(PKG_VERSION)
 
