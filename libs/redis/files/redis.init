@@ -27,7 +27,7 @@ start_service() {
 }
 
 stop_service() {
-	kill -9 redis-server >/dev/null 2>&1
+	killall redis-server >/dev/null 2>&1
 }
 
 service_triggers() {

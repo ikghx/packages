@@ -32,7 +32,7 @@ start_service() {
 }
 
 stop_service() {
-	kill -9 php7-fpm >/dev/null 2>&1
+	killall php-fpm >/dev/null 2>&1
 }
 
 service_triggers() {
