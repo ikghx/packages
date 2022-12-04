@@ -41,7 +41,7 @@ config AMULE_CRYPTOPP_STATIC_LINKING
 	default n
 endef
 
-TARGET_LDFLAGS+= -liconv
+TARGET_LDFLAGS+= $(if $(ICONV_FULL),-liconv)
 
 CONFIGURE_ARGS+= \
 	--disable-static \
