@@ -8,10 +8,7 @@
 #
 # Authors: Toke Høiland-Jørgensen <toke@toke.dk>
 
-export state_dir=/etc/acme
-export account_email=
-export debug=0
-export run_dir=/var/run/acme
+run_dir=/var/run/acme
 NFT_HANDLE=
 HOOK=/usr/lib/acme/hook
 LOG_TAG=acme
@@ -107,11 +104,19 @@ load_globals() {
 		log err "account_email option is required"
 		exit 1
 	fi
+	export account_email
 
-	config_get state_dir "$section" state_dir "$state_dir"
-	mkdir -p "$state_dir"
+	config_get state_dir "$section" state_dir
+	if [ "$state_dir" ]; then
+		log warn "Option \"state_dir\" is deprecated, setting it to a custom location might result in losing certificates after upgrading OpenWrt. If you need to process the certificates, look for them in /etc/ssl/acme."
+		mkdir -p "$state_dir"
+	else
+		state_dir=/etc/acme
+	fi
+	export state_dir
 
-	config_get debug "$section" debug "$debug"
+	config_get debug "$section" debug 0
+	export debug
 
 	# only look for the first acme section
 	return 1

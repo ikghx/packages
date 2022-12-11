@@ -77,7 +77,7 @@ endef
 
 define Package/tailscaled/conffiles
 /etc/config/tailscale
-/etc/tailscale
+/etc/tailscale/tailscaled.state
 endef
 
 $(eval $(call BuildPackage,tailscale))

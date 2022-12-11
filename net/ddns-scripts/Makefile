@@ -85,7 +85,6 @@ define Package/ddns-scripts-gcp
   $(call Package/ddns-scripts/Default)
   TITLE:=Extension for Google Cloud DNS API v1
   DEPENDS:=ddns-scripts +curl +openssl-util
-  PROVIDES:=ddns-scripts_gcp_v1
 endef
 
 define Package/ddns-scripts-gcp/description

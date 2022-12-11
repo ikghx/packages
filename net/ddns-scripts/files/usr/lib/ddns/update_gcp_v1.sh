@@ -37,6 +37,8 @@
 # - openssl-util  (for the authentication flow)
 # - curl          (for the GCP REST API)
 
+. /usr/share/libubox/jshn.sh
+
 
 # Authentication
 # ---------------------------------------------------------------------------
@@ -49,9 +51,9 @@
 #
 # See https://developers.google.com/identity/protocols/oauth2/service-account
 
-# Combined base64 and URL encoding, used to encode the JWT.
+# A URL-safe variant of base64 encoding, used by JWTs.
 base64_urlencode() {
-	openssl base64 | tr -d '=' | tr '/+' '_-' | tr -d '\n'
+	openssl base64 | tr '/+' '_-' | tr -d '=\n'
 }
 
 # Prints the service account private key in PEM format.
@@ -105,7 +107,10 @@ sign() {
 # Print the JWT header in JSON format.
 # Currently, Google only supports RS256.
 jwt_header() {
-	echo '{"alg":"RS256","typ":"JWT"}'
+	json_init
+	json_add_string "alg" "RS256"
+	json_add_string "typ" "JWT"
+	json_dump
 }
 
 # Prints the JWT claim-set in JSON format.
@@ -114,14 +119,13 @@ jwt_claim_set() {
 	local iat=$(date -u +%s)  # Current UNIX time, UTC.
 	local exp=$(( iat + 300 ))  # Expiration is 5m in the future.
 
-	printf "{"
-	printf "\"iss\":\"${username}\","
-	printf "\"scope\":\"https://www.googleapis.com/auth/ndev.clouddns.readwrite\","
-	printf "\"aud\":\"https://oauth2.googleapis.com/token\","
-	printf "\"iat\":\"${iat}\","
-	printf "\"exp\":\"${exp}\""
-	printf "}"
-	echo
+	json_init
+	json_add_string "iss" "${username}"
+	json_add_string "scope" "https://www.googleapis.com/auth/ndev.clouddns.readwrite"
+	json_add_string "aud" "https://oauth2.googleapis.com/token"
+	json_add_string "iat" "${iat}"
+	json_add_string "exp" "${exp}"
+	json_dump
 }
 
 # Generate a JWT signed by the service account key, which can be exchanged for
@@ -171,21 +175,6 @@ get_access_token() {
 #
 # - The API requires SSL, and this implementation uses curl.
 
-# Prints a list of strings in JSON format.
-# Does not print a trailing newline.
-format_json_list_internal() {
-	local is_not_first=false
-	printf "["
-	for value in $@; do
-		if $is_not_first; then
-			printf ","
-		fi
-		printf "\"${value}\""
-		is_not_first=true
-	done
-	printf "]"
-}
-
 # Prints a ResourceRecordSet in JSON format.
 format_record_set() {
 	local domain="$1"
@@ -193,14 +182,17 @@ format_record_set() {
 	local ttl="$3"
 	shift 3 # The remaining arguments are the IP addresses for this record set.
 
-	printf "{"
-	printf "\"kind\":\"dns#resourceRecordSet\","
-	printf "\"name\":\"${domain}.\","  # trailing dot on the domain
-	printf "\"type\":\"${record_type}\","
-	printf "\"ttl\":${ttl},"
-	printf "\"rrdatas\":"; format_json_list_internal $@
-	printf "}"
-	echo
+	json_init
+	json_add_string "kind" "dns#resourceRecordSet"
+	json_add_string "name" "${domain}."  # trailing dot on the domain
+	json_add_string "type" "${record_type}"
+	json_add_string "ttl" "${ttl}"
+	json_add_array "rrdatas"
+	for value in $@; do
+		json_add_string "" "${value}"
+	done
+	json_close_array
+	json_dump
 }
 
 # Makes an HTTP PATCH request to the Cloud DNS API.
