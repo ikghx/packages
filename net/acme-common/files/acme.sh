@@ -108,7 +108,7 @@ load_globals() {
 
 	config_get state_dir "$section" state_dir
 	if [ "$state_dir" ]; then
-		log warn "Option \"state_dir\" is deprecated, setting it to a custom location might result in losing certificates after upgrading OpenWrt. If you need to process the certificates, look for them in /etc/ssl/acme."
+		log warn "Option \"state_dir\" is deprecated, please remove it. Certificates now exist in /etc/ssl/acme."
 		mkdir -p "$state_dir"
 	else
 		state_dir=/etc/acme

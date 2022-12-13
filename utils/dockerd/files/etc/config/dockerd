@@ -13,4 +13,5 @@ config globals 'globals'
 
 config firewall 'firewall'
 	option device 'docker0'
+	list blocked_interfaces 'wan'
 
