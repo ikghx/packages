@@ -1,0 +1,508 @@
+--- a/src/base/bittorrent/torrentimpl.cpp
++++ b/src/base/bittorrent/torrentimpl.cpp
+@@ -501,6 +501,9 @@ void TorrentImpl::setAutoTMMEnabled(bool
+ 
+ QString TorrentImpl::actualStorageLocation() const
+ {
++    if (!hasMetadata())
++        return {};
++
+     return Utils::Fs::toUniformPath(QString::fromStdString(m_nativeStatus.save_path));
+ }
+ 
+@@ -1634,6 +1637,12 @@ void TorrentImpl::resume(const TorrentOp
+ 
+ void TorrentImpl::moveStorage(const QString &newPath, const MoveStorageMode mode)
+ {
++    if (!hasMetadata())
++    {
++        m_session->handleTorrentSavePathChanged(this);
++        return;
++    }
++
+     if (m_session->addMoveTorrentStorageJob(this, Utils::Fs::toNativePath(newPath), mode))
+     {
+         m_storageIsMoving = true;
+--- a/src/gui/torrentcontentfiltermodel.cpp
++++ b/src/gui/torrentcontentfiltermodel.cpp
+@@ -110,17 +110,13 @@ bool TorrentContentFilterModel::lessThan
+ void TorrentContentFilterModel::selectAll()
+ {
+     for (int i = 0; i < rowCount(); ++i)
+-        setData(index(i, 0), Qt::Checked, Qt::CheckStateRole);
+-
+-    emit dataChanged(index(0, 0), index((rowCount() - 1), (columnCount() - 1)));
++        setData(index(i, TorrentContentModelItem::COL_NAME), Qt::Checked, Qt::CheckStateRole);
+ }
+ 
+ void TorrentContentFilterModel::selectNone()
+ {
+     for (int i = 0; i < rowCount(); ++i)
+-        setData(index(i, 0), Qt::Unchecked, Qt::CheckStateRole);
+-
+-    emit dataChanged(index(0, 0), index((rowCount() - 1), (columnCount() - 1)));
++        setData(index(i, TorrentContentModelItem::COL_NAME), Qt::Unchecked, Qt::CheckStateRole);
+ }
+ 
+ bool TorrentContentFilterModel::hasFiltered(const QModelIndex &folder) const
+--- a/src/gui/torrentcontentmodel.cpp
++++ b/src/gui/torrentcontentmodel.cpp
+@@ -220,7 +220,12 @@ void TorrentContentModel::updateFilesPro
+     // Update folders progress in the tree
+     m_rootItem->recalculateProgress();
+     m_rootItem->recalculateAvailability();
+-    emit dataChanged(index(0, 0), index((rowCount() - 1), (columnCount() - 1)));
++
++    const QVector<ColumnInterval> columns =
++    {
++        {TorrentContentModelItem::COL_PROGRESS, TorrentContentModelItem::COL_PROGRESS}
++    };
++    notifySubtreeUpdated(index(0, 0), columns);
+ }
+ 
+ void TorrentContentModel::updateFilesPriorities(const QVector<BitTorrent::DownloadPriority> &fprio)
+@@ -233,7 +238,13 @@ void TorrentContentModel::updateFilesPri
+     emit layoutAboutToBeChanged();
+     for (int i = 0; i < fprio.size(); ++i)
+         m_filesIndex[i]->setPriority(static_cast<BitTorrent::DownloadPriority>(fprio[i]));
+-    emit dataChanged(index(0, 0), index((rowCount() - 1), (columnCount() - 1)));
++
++    const QVector<ColumnInterval> columns =
++    {
++        {TorrentContentModelItem::COL_NAME, TorrentContentModelItem::COL_NAME},
++        {TorrentContentModelItem::COL_PRIO, TorrentContentModelItem::COL_PRIO}
++    };
++    notifySubtreeUpdated(index(0, 0), columns);
+ }
+ 
+ void TorrentContentModel::updateFilesAvailability(const QVector<qreal> &fa)
+@@ -247,7 +258,12 @@ void TorrentContentModel::updateFilesAva
+         m_filesIndex[i]->setAvailability(fa[i]);
+     // Update folders progress in the tree
+     m_rootItem->recalculateProgress();
+-    emit dataChanged(index(0, 0), index((rowCount() - 1), (columnCount() - 1)));
++
++    const QVector<ColumnInterval> columns =
++    {
++        {TorrentContentModelItem::COL_AVAILABILITY, TorrentContentModelItem::COL_AVAILABILITY}
++    };
++    notifySubtreeUpdated(index(0, 0), columns);
+ }
+ 
+ QVector<BitTorrent::DownloadPriority> TorrentContentModel::getFilePriorities() const
+@@ -269,66 +285,94 @@ bool TorrentContentModel::allFiltered()
+ 
+ int TorrentContentModel::columnCount(const QModelIndex &parent) const
+ {
+-    if (parent.isValid())
+-        return static_cast<TorrentContentModelItem*>(parent.internalPointer())->columnCount();
+-
+-    return m_rootItem->columnCount();
++    Q_UNUSED(parent);
++    return TorrentContentModelItem::NB_COL;
+ }
+ 
+-bool TorrentContentModel::setData(const QModelIndex &index, const QVariant &value, int role)
++bool TorrentContentModel::setData(const QModelIndex &index, const QVariant &value, const int role)
+ {
+     if (!index.isValid())
+         return false;
+ 
+     if ((index.column() == TorrentContentModelItem::COL_NAME) && (role == Qt::CheckStateRole))
+     {
+-        auto *item = static_cast<TorrentContentModelItem*>(index.internalPointer());
+-        qDebug("setData(%s, %d)", qUtf8Printable(item->name()), value.toInt());
++        auto *item = static_cast<TorrentContentModelItem *>(index.internalPointer());
+ 
+-        BitTorrent::DownloadPriority prio = BitTorrent::DownloadPriority::Normal;
+-        if (value.toInt() == Qt::PartiallyChecked)
+-            prio = BitTorrent::DownloadPriority::Mixed;
+-        else if (value.toInt() == Qt::Unchecked)
+-            prio = BitTorrent::DownloadPriority::Ignored;
++        const BitTorrent::DownloadPriority currentPrio = item->priority();
++        const auto checkState = static_cast<Qt::CheckState>(value.toInt());
++        const BitTorrent::DownloadPriority newPrio = (checkState == Qt::PartiallyChecked)
++            ? BitTorrent::DownloadPriority::Mixed
++            : ((checkState == Qt::Unchecked)
++                ? BitTorrent::DownloadPriority::Ignored
++                : BitTorrent::DownloadPriority::Normal);
+ 
+-        if (item->priority() != prio)
++        if (currentPrio != newPrio)
+         {
+-            item->setPriority(prio);
++            item->setPriority(newPrio);
+             // Update folders progress in the tree
+             m_rootItem->recalculateProgress();
+             m_rootItem->recalculateAvailability();
+-            emit dataChanged(this->index(0, 0), this->index((rowCount() - 1), (columnCount() - 1)));
++
++            const QVector<ColumnInterval> columns =
++            {
++                {TorrentContentModelItem::COL_NAME, TorrentContentModelItem::COL_NAME},
++                {TorrentContentModelItem::COL_PRIO, TorrentContentModelItem::COL_PRIO}
++            };
++            notifySubtreeUpdated(index, columns);
+             emit filteredFilesChanged();
++
++            return true;
+         }
+-        return true;
+     }
+ 
+     if (role == Qt::EditRole)
+     {
+-        Q_ASSERT(index.isValid());
+-        auto *item = static_cast<TorrentContentModelItem*>(index.internalPointer());
++        auto *item = static_cast<TorrentContentModelItem *>(index.internalPointer());
++
+         switch (index.column())
+         {
+         case TorrentContentModelItem::COL_NAME:
+-            item->setName(value.toString());
++            {
++                const QString currentName = item->name();
++                const QString newName = value.toString();
++                if (currentName != newName)
++                {
++                    item->setName(newName);
++                    emit dataChanged(index, index);
++                    return true;
++                }
++            }
+             break;
++
+         case TorrentContentModelItem::COL_PRIO:
+             {
+-                const BitTorrent::DownloadPriority previousPrio = item->priority();
++                const BitTorrent::DownloadPriority currentPrio = item->priority();
+                 const auto newPrio = static_cast<BitTorrent::DownloadPriority>(value.toInt());
+-                item->setPriority(newPrio);
+-                if ((newPrio != previousPrio) && ((newPrio == BitTorrent::DownloadPriority::Ignored)
+-                        || (previousPrio == BitTorrent::DownloadPriority::Ignored)))
++                if (currentPrio != newPrio)
+                 {
+-                    emit filteredFilesChanged();
++                    item->setPriority(newPrio);
++
++                    const QVector<ColumnInterval> columns =
++                    {
++                        {TorrentContentModelItem::COL_NAME, TorrentContentModelItem::COL_NAME},
++                        {TorrentContentModelItem::COL_PRIO, TorrentContentModelItem::COL_PRIO}
++                    };
++                    notifySubtreeUpdated(index, columns);
++
++                    if ((newPrio == BitTorrent::DownloadPriority::Ignored)
++                        || (currentPrio == BitTorrent::DownloadPriority::Ignored))
++                    {
++                        emit filteredFilesChanged();
++                    }
++
++                    return true;
+                 }
+             }
+             break;
++
+         default:
+-            return false;
++            break;
+         }
+-        emit dataChanged(index, index);
+-        return true;
+     }
+ 
+     return false;
+@@ -336,14 +380,14 @@ bool TorrentContentModel::setData(const
+ 
+ TorrentContentModelItem::ItemType TorrentContentModel::itemType(const QModelIndex &index) const
+ {
+-    return static_cast<const TorrentContentModelItem*>(index.internalPointer())->itemType();
++    return static_cast<const TorrentContentModelItem *>(index.internalPointer())->itemType();
+ }
+ 
+ int TorrentContentModel::getFileIndex(const QModelIndex &index)
+ {
+-    auto *item = static_cast<TorrentContentModelItem*>(index.internalPointer());
++    auto *item = static_cast<TorrentContentModelItem *>(index.internalPointer());
+     if (item->itemType() == TorrentContentModelItem::FileType)
+-        return static_cast<TorrentContentModelFile*>(item)->fileIndex();
++        return static_cast<TorrentContentModelFile *>(item)->fileIndex();
+ 
+     Q_ASSERT(item->itemType() == TorrentContentModelItem::FileType);
+     return -1;
+@@ -354,7 +398,7 @@ QVariant TorrentContentModel::data(const
+     if (!index.isValid())
+         return {};
+ 
+-    auto *item = static_cast<TorrentContentModelItem*>(index.internalPointer());
++    auto *item = static_cast<TorrentContentModelItem *>(index.internalPointer());
+ 
+     switch (role)
+     {
+@@ -392,8 +436,10 @@ QVariant TorrentContentModel::data(const
+         return item->underlyingData(index.column());
+ 
+     default:
+-        return {};
++        break;
+     }
++
++    return {};
+ }
+ 
+ Qt::ItemFlags TorrentContentModel::flags(const QModelIndex &index) const
+@@ -431,19 +477,14 @@ QVariant TorrentContentModel::headerData
+     }
+ }
+ 
+-QModelIndex TorrentContentModel::index(int row, int column, const QModelIndex &parent) const
++QModelIndex TorrentContentModel::index(const int row, const int column, const QModelIndex &parent) const
+ {
+-    if (parent.isValid() && (parent.column() != 0))
+-        return {};
+-
+-    if (column >= TorrentContentModelItem::NB_COL)
++    if (column >= columnCount())
+         return {};
+ 
+-    TorrentContentModelFolder *parentItem;
+-    if (!parent.isValid())
+-        parentItem = m_rootItem;
+-    else
+-        parentItem = static_cast<TorrentContentModelFolder*>(parent.internalPointer());
++    const TorrentContentModelFolder *parentItem = parent.isValid()
++        ? static_cast<TorrentContentModelFolder *>(parent.internalPointer())
++        : m_rootItem;
+     Q_ASSERT(parentItem);
+ 
+     if (row >= parentItem->childCount())
+@@ -452,6 +493,7 @@ QModelIndex TorrentContentModel::index(i
+     TorrentContentModelItem *childItem = parentItem->child(row);
+     if (childItem)
+         return createIndex(row, column, childItem);
++
+     return {};
+ }
+ 
+@@ -460,28 +502,26 @@ QModelIndex TorrentContentModel::parent(
+     if (!index.isValid())
+         return {};
+ 
+-    auto *childItem = static_cast<TorrentContentModelItem*>(index.internalPointer());
+-    if (!childItem)
++    const auto *item = static_cast<TorrentContentModelItem *>(index.internalPointer());
++    if (!item)
+         return {};
+ 
+-    TorrentContentModelItem *parentItem = childItem->parent();
++    TorrentContentModelItem *parentItem = item->parent();
+     if (parentItem == m_rootItem)
+         return {};
+ 
++    // From https://doc.qt.io/qt-6/qabstractitemmodel.html#parent:
++    // A common convention used in models that expose tree data structures is that only items
++    // in the first column have children. For that case, when reimplementing this function in
++    // a subclass the column of the returned QModelIndex would be 0.
+     return createIndex(parentItem->row(), 0, parentItem);
+ }
+ 
+ int TorrentContentModel::rowCount(const QModelIndex &parent) const
+ {
+-    if (parent.column() > 0)
+-        return 0;
+-
+-    TorrentContentModelFolder *parentItem;
+-    if (!parent.isValid())
+-        parentItem = m_rootItem;
+-    else
+-        parentItem = dynamic_cast<TorrentContentModelFolder*>(static_cast<TorrentContentModelItem*>(parent.internalPointer()));
+-
++    const TorrentContentModelFolder *parentItem = parent.isValid()
++        ? dynamic_cast<TorrentContentModelFolder *>(static_cast<TorrentContentModelItem *>(parent.internalPointer()))
++        : m_rootItem;
+     return parentItem ? parentItem->childCount() : 0;
+ }
+ 
+@@ -537,20 +577,53 @@ void TorrentContentModel::setupModelData
+     emit layoutChanged();
+ }
+ 
+-void TorrentContentModel::selectAll()
++void TorrentContentModel::notifySubtreeUpdated(const QModelIndex &index, const QVector<ColumnInterval> &columns)
+ {
+-    for (int i = 0; i < m_rootItem->childCount(); ++i)
++    // For best performance, `columns` entries should be arranged from left to right
++
++    Q_ASSERT(index.isValid());
++
++    // emit itself
++    for (const ColumnInterval &column : columns)
++        emit dataChanged(index.siblingAtColumn(column.first()), index.siblingAtColumn(column.last()));
++
++    // propagate up the model
++    QModelIndex parentIndex = parent(index);
++    while (parentIndex.isValid())
+     {
+-        TorrentContentModelItem* child = m_rootItem->child(i);
+-        if (child->priority() == BitTorrent::DownloadPriority::Ignored)
+-            child->setPriority(BitTorrent::DownloadPriority::Normal);
++        for (const ColumnInterval &column : columns)
++            emit dataChanged(parentIndex.siblingAtColumn(column.first()), parentIndex.siblingAtColumn(column.last()));
++        parentIndex = parent(parentIndex);
+     }
+-    emit dataChanged(index(0, 0), index((rowCount() - 1), (columnCount() - 1)));
+-}
+ 
+-void TorrentContentModel::selectNone()
+-{
+-    for (int i = 0; i < m_rootItem->childCount(); ++i)
+-        m_rootItem->child(i)->setPriority(BitTorrent::DownloadPriority::Ignored);
+-    emit dataChanged(index(0, 0), index((rowCount() - 1), (columnCount() - 1)));
++    // propagate down the model
++    QVector<QModelIndex> parentIndexes;
++
++    if (hasChildren(index))
++        parentIndexes.push_back(index);
++
++    while (!parentIndexes.isEmpty())
++    {
++        const QModelIndex parent = parentIndexes.takeLast();
++
++        const int childCount = rowCount(parent);
++        const QModelIndex child = this->index(0, 0, parent);
++
++        // emit this generation
++        for (const ColumnInterval &column : columns)
++        {
++            const QModelIndex childTopLeft = child.siblingAtColumn(column.first());
++            const QModelIndex childBottomRight = child.sibling((childCount - 1), column.last());
++            emit dataChanged(childTopLeft, childBottomRight);
++        }
++
++        // check generations further down
++        parentIndexes.reserve(childCount);
++        for (int i = 0; i < childCount; ++i)
++        {
++            const QModelIndex sibling = child.siblingAtRow(i);
++            if (hasChildren(sibling))
++                parentIndexes.push_back(sibling);
++        }
++    }
+ }
+--- a/src/gui/torrentcontentmodel.h
++++ b/src/gui/torrentcontentmodel.h
+@@ -31,6 +31,7 @@
+ #include <QAbstractItemModel>
+ #include <QVector>
+ 
++#include "base/indexrange.h"
+ #include "torrentcontentmodelitem.h"
+ 
+ class QFileIconProvider;
+@@ -79,12 +80,12 @@ public:
+ signals:
+     void filteredFilesChanged();
+ 
+-public slots:
+-    void selectAll();
+-    void selectNone();
+-
+ private:
+-    TorrentContentModelFolder *m_rootItem;
++    using ColumnInterval = IndexInterval<int>;
++
++    void notifySubtreeUpdated(const QModelIndex &index, const QVector<ColumnInterval> &columns);
++
++    TorrentContentModelFolder *m_rootItem = nullptr;
+     QVector<TorrentContentModelFile *> m_filesIndex;
+     QFileIconProvider *m_fileIconProvider;
+ };
+--- a/src/gui/transferlistfilterswidget.cpp
++++ b/src/gui/transferlistfilterswidget.cpp
+@@ -72,11 +72,14 @@ namespace
+         return scheme;
+     }
+ 
+-    QString getHost(const QString &tracker)
++    QString getHost(const QString &url)
+     {
+         // We want the domain + tld. Subdomains should be disregarded
+-        const QUrl url {tracker};
+-        const QString host {url.host()};
++        // If failed to parse the domain or IP address, original input should be returned
++
++        const QString host = QUrl(url).host();
++        if (host.isEmpty())
++            return url;
+ 
+         // host is in IP format
+         if (!QHostAddress(host).isNull())
+@@ -388,10 +391,8 @@ void TrackerFiltersList::addItem(const Q
+ void TrackerFiltersList::removeItem(const QString &tracker, const BitTorrent::TorrentID &id)
+ {
+     const QString host = getHost(tracker);
+-    QSet<BitTorrent::TorrentID> torrentIDs = m_trackers.value(host);
+ 
+-    if (torrentIDs.empty())
+-        return;
++    QSet<BitTorrent::TorrentID> torrentIDs = m_trackers.value(host);
+     torrentIDs.remove(id);
+ 
+     int row = 0;
+--- a/src/gui/watchedfolderoptionsdialog.cpp
++++ b/src/gui/watchedfolderoptionsdialog.cpp
+@@ -52,11 +52,11 @@ WatchedFolderOptionsDialog::WatchedFolde
+     m_ui->savePath->setMode(FileSystemPathEdit::Mode::DirectorySave);
+     m_ui->savePath->setDialogCaption(tr("Choose save path"));
+ 
+-    const auto *session = BitTorrent::Session::instance();
+-
+     m_ui->downloadPath->setMode(FileSystemPathEdit::Mode::DirectorySave);
+     m_ui->downloadPath->setDialogCaption(tr("Choose save path"));
+-    m_ui->groupBoxDownloadPath->setChecked(watchedFolderOptions.addTorrentParams.useDownloadPath.value_or(session->isDownloadPathEnabled()));
++
++    const auto *session = BitTorrent::Session::instance();
++    m_useDownloadPath = watchedFolderOptions.addTorrentParams.useDownloadPath.value_or(session->isDownloadPathEnabled());
+ 
+     connect(m_ui->comboTTM, qOverload<int>(&QComboBox::currentIndexChanged), this, &WatchedFolderOptionsDialog::onTMMChanged);
+     connect(m_ui->categoryComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this, &WatchedFolderOptionsDialog::onCategoryChanged);
+--- a/src/webui/api/appcontroller.cpp
++++ b/src/webui/api/appcontroller.cpp
+@@ -86,12 +86,13 @@ void AppController::buildInfoAction()
+ 
+ void AppController::shutdownAction()
+ {
+-    qDebug() << "Shutdown request from Web UI";
+-
+-    // Special case handling for shutdown, we
++    // Special handling for shutdown, we
+     // need to reply to the Web UI before
+     // actually shutting down.
+-    QTimer::singleShot(100, qApp, &QCoreApplication::quit);
++    QTimer::singleShot(100, qApp, []()
++    {
++        QCoreApplication::exit();
++    });
+ }
+ 
+ void AppController::preferencesAction()
+--- a/src/webui/www/private/scripts/prop-files.js
++++ b/src/webui/www/private/scripts/prop-files.js
+@@ -182,7 +182,6 @@ window.qBittorrent.PropFiles = (function
+         select.set('id', 'comboPrio' + id);
+         select.set('data-id', id);
+         select.set('data-file-id', fileId);
+-        select.set('disabled', is_seed);
+         select.addClass('combo_priority');
+         select.addEvent('change', fileComboboxChanged);
+ 
+@@ -204,9 +203,6 @@ window.qBittorrent.PropFiles = (function
+ 
+         if (parseInt(combobox.value) !== selectedPriority)
+             selectComboboxPriority(combobox, selectedPriority);
+-
+-        if (combobox.disabled !== is_seed)
+-            combobox.disabled = is_seed;
+     };
+ 
+     const selectComboboxPriority = function(combobox, priority) {

@@ -31,8 +31,7 @@ fix_perms() {
 }
 
 no_ipv6() {
-    [ -n "$(named-checkconf -px \
-        | sed -r -ne '1N; N; /^\tlisten-on-v6  ?\{\n\t\t"none";\n\t\};$/{ p; q; }; D')" ]
+    [ -z "$(ip -6 -o route show default)" ]
 }
 
 reload_service() {
