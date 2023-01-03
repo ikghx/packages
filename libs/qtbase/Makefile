@@ -7,8 +7,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qtbase
-PKG_BASE:=6.3
-PKG_BUGFIX:=2
+PKG_BASE:=6.4
+PKG_BUGFIX:=1
 PKG_VERSION:=$(PKG_BASE).$(PKG_BUGFIX)
 PKG_RELEASE:=1
 
@@ -16,7 +16,7 @@ PKG_SOURCE:=$(PKG_NAME)-everywhere-src-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:= \
 		https://download.qt.io/official_releases/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules \
 		https://master.qt.io/archive/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules
-PKG_HASH:=7929ba4df870b6b30870bc0aed2525cfc606ed7091107b23cf7ed7e434caa9a6
+PKG_HASH:=532ad71cc0f9c8f7cb92766c47bc3d23263c60876becd9053802f9727af24fae
 
 HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)
@@ -43,7 +43,7 @@ define Package/qtbase/Default
 	SUBMENU:=Qt6
 	TITLE:=qtbase
 	URL:=http://qt-project.org
-	DEPENDS:=+libgcc +libstdcpp @!LINUX_2_6_36 @!(ARM&&CPU_32v4)
+	DEPENDS:=+libgcc +libstdcpp +libdouble-conversion @!LINUX_2_6_36 @!(ARM&&CPU_32v4)
 endef
 
 define Package/qtbase/description
@@ -101,7 +101,7 @@ TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 CMAKE_SHARED_LDFLAGS:=$(filter-out -Wl$(comma)-Bsymbolic-functions,$(CMAKE_SHARED_LDFLAGS))
 
 CMAKE_HOST_OPTIONS += \
-	-DQT_FORCE_MIN_CMAKE_VERSION_FOR_BUILDING_QT=3.19 \
+	-DQT_FORCE_MIN_CMAKE_VERSION_FOR_BUILDING_QT=3.21 \
 	-DCMAKE_STAGING_PREFIX=$(STAGING_DIR_HOSTPKG) \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DBUILD_SHARED_LIBS=OFF \
@@ -124,8 +124,8 @@ CMAKE_HOST_OPTIONS += \
 	-DQT_BUILD_TESTS=OFF
 
 CMAKE_OPTIONS += \
-	-DQT_FORCE_MIN_CMAKE_VERSION_FOR_BUILDING_QT=3.19 \
-	-DQT_FORCE_MIN_CMAKE_VERSION_FOR_USING_QT=3.19 \
+	-DQT_FORCE_MIN_CMAKE_VERSION_FOR_BUILDING_QT=3.21 \
+	-DQT_FORCE_MIN_CMAKE_VERSION_FOR_USING_QT=3.21 \
 	-DINSTALL_ARCHDATADIR=/usr/share/Qt6 \
 	-DINSTALL_DATADIR=/usr/share/Qt6 \
 	-DQT_HOST_PATH=$(STAGING_DIR_HOSTPKG) \
@@ -148,14 +148,14 @@ CMAKE_OPTIONS += \
 	-DFEATURE_zstd=OFF \
 	-DFEATURE_system_zlib=ON \
 	\
-	-DFEATURE_system_doubleconversion=OFF \
+	-DFEATURE_system_doubleconversion=ON \
 	-DFEATURE_system_pcre2=ON \
 	-DFEATURE_glib=OFF \
 	-DFEATURE_icu=OFF \
 	-DFEATURE_mimetype=ON \
 	\
 	-DFEATURE_network=ON \
-	-DINPUT_openssl=linked \
+	-DINPUT_openssl=runtime \
 	-DFEATURE_libproxy=OFF \
 	-DFEATURE_gssapi=OFF \
 	\
