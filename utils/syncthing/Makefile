@@ -19,19 +19,19 @@ PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
-GO_PKG:=github.com/syncthing/syncthing/
+GO_PKG:=github.com/syncthing/syncthing
 GO_PKG_BUILD_PKG:=\
-	$(if $(CONFIG_PACKAGE_syncthing),github.com/syncthing/syncthing/cmd/syncthing/) \
-	$(if $(CONFIG_PACKAGE_stdiscosrv),github.com/syncthing/syncthing/cmd/stdiscosrv/) \
-	$(if $(CONFIG_PACKAGE_strelaysrv),github.com/syncthing/syncthing/cmd/strelaysrv/)
+	$(if $(CONFIG_PACKAGE_syncthing),$(GO_PKG)/cmd/syncthing/) \
+	$(if $(CONFIG_PACKAGE_stdiscosrv),$(GO_PKG)/cmd/stdiscosrv/) \
+	$(if $(CONFIG_PACKAGE_strelaysrv),$(GO_PKG)/cmd/strelaysrv/)
 GO_PKG_INSTALL_EXTRA:=^gui/
 
 GO_PKG_LDFLAGS_X:=\
-	github.com/syncthing/syncthing/lib/build.Version=v$(PKG_VERSION) \
-	github.com/syncthing/syncthing/lib/build.Stamp=$(SOURCE_DATE_EPOCH) \
-	github.com/syncthing/syncthing/lib/build.User=openwrt \
-	github.com/syncthing/syncthing/lib/build.Host=openwrt \
-	github.com/syncthing/syncthing/lib/build.Tags=noupgrade
+	$(GO_PKG)/lib/build.Version=v$(PKG_VERSION) \
+	$(GO_PKG)/lib/build.Stamp=$(SOURCE_DATE_EPOCH) \
+	$(GO_PKG)/lib/build.User=openwrt \
+	$(GO_PKG)/lib/build.Host=openwrt \
+	$(GO_PKG)/lib/build.Tags=noupgrade
 GO_PKG_TAGS:=noupgrade
 
 include $(INCLUDE_DIR)/package.mk
@@ -90,11 +90,9 @@ define Package/strelaysrv/description
   Relay server for syncthing
 endef
 
-define Build/Install
-	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
-endef
-
 define SyncthingInstall
+	$(INSTALL_DIR) $(1)/etc/$(2)
+
 	$(INSTALL_DIR) $(1)/etc/config/
 	$(INSTALL_CONF) $(CURDIR)/files/$(2).conf $(1)/etc/config/$(2)
 
@@ -102,7 +100,7 @@ define SyncthingInstall
 	$(INSTALL_BIN) $(CURDIR)/files/$(2).init $(1)/etc/init.d/$(2)
 
 	$(INSTALL_DIR) $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/$(2) $(1)/usr/bin
+	$(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/$(2) $(1)/usr/bin
 endef
 
 
