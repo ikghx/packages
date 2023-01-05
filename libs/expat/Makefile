@@ -10,7 +10,8 @@ PKG_VERSION:=2.5.0
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=@SF/expat
+PKG_SOURCE_URL:=@SF/expat \
+	https://github.com/libexpat/libexpat/releases/download/R_$(subst .,_,$(PKG_VERSION))
 PKG_HASH:=ef2420f0232c087801abf705e89ae65f6257df6b7931d37846a193ef2e8cdcbe
 
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>

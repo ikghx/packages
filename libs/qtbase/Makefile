@@ -7,8 +7,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qtbase
-PKG_BASE:=6.4
-PKG_BUGFIX:=1
+PKG_BASE:=6.3
+PKG_BUGFIX:=2
 PKG_VERSION:=$(PKG_BASE).$(PKG_BUGFIX)
 PKG_RELEASE:=1
 
@@ -16,7 +16,7 @@ PKG_SOURCE:=$(PKG_NAME)-everywhere-src-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:= \
 		https://download.qt.io/official_releases/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules \
 		https://master.qt.io/archive/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules
-PKG_HASH:=532ad71cc0f9c8f7cb92766c47bc3d23263c60876becd9053802f9727af24fae
+PKG_HASH:=7929ba4df870b6b30870bc0aed2525cfc606ed7091107b23cf7ed7e434caa9a6
 
 HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)
@@ -160,7 +160,7 @@ CMAKE_OPTIONS += \
 	-DFEATURE_gssapi=OFF \
 	\
 	-DFEATURE_sql=ON \
-	-DFEATURE_system_sqlite=OFF \
+	-DFEATURE_system_sqlite=ON \
 	-DFEATURE_sql_db2=OFF \
 	-DFEATURE_sql_ibase=OFF \
 	-DFEATURE_sql_mysql=OFF \
@@ -206,7 +206,7 @@ endef
 $(eval $(call DefineQtbaseLibrary,core,,+libatomic +libpcre2-16 +zlib))
 $(eval $(call DefineQtbaseLibrary,network,core,+zlib))
 $(eval $(call DefineQtbaseLibrary,xml,core,))
-$(eval $(call DefineQtbaseLibrary,sql,core,))
+$(eval $(call DefineQtbaseLibrary,sql,core,+libsqlite3))
 
 define Package/qtbase/Plugins/install
 	$(INSTALL_DIR) $(1)/usr/share/Qt6/plugins/$(2)

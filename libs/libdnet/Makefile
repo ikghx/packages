@@ -42,6 +42,10 @@ CONFIGURE_ARGS += \
 	--without-python \
 	--without-wpdpack
 
+CONFIGURE_VARS += \
+	ac_cv_dnet_bsd_bpf=no \
+	ac_cv_dnet_linux_pf_packet=yes
+
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/dnet-config $(1)/usr/bin/

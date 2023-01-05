@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=avahi
 PKG_VERSION:=0.8
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_RELEASE:=7
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/lathiat/avahi/releases/download/v$(PKG_VERSION) \
@@ -21,9 +21,9 @@ PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=LICENSE
 PKG_CPE_ID:=cpe:/a:avahi:avahi
 
+PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
-PKG_FIXUP:=autoreconf
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -253,8 +253,6 @@ endef
 
 TARGET_CFLAGS += $(FPIC) -DGETTEXT_PACKAGE
 
-CONFIGURE_VARS += LT_SYS_LIBRARY_PATH="$(TOOLCHAIN_DIR)/lib"
-
 CONFIGURE_ARGS += \
 	--enable-shared \
 	--enable-static \
@@ -293,10 +291,7 @@ CONFIGURE_ARGS += \
 	--with-avahi-group=nogroup \
 	--with-avahi-priv-access-group=nogroup \
 	--with-autoipd-user=nobody \
-	--with-autoipd-group=nogroup \
-	--with-sysroot=$(TOOLCHAIN_DIR) \
-	--disable-compat-howl \
-	--disable-nls
+	--with-autoipd-group=nogroup
 
 ifeq ($(BUILD_VARIANT),dbus)
 ifneq ($(CONFIG_PACKAGE_libavahi-compat-libdnssd),)

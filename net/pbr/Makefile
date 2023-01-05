@@ -5,7 +5,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=pbr
 PKG_VERSION:=1.0.1
-PKG_RELEASE:=1
+PKG_RELEASE:=4
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_MAINTAINER:=Stan Grishin <stangri@melmac.ca>
 
@@ -20,19 +20,20 @@ define Package/pbr/default
   URL:=https://docs.openwrt.melmac.net/pbr/
   DEPENDS:=+ip-full +jshn +jsonfilter +resolveip
   CONFLICTS:=vpnbypass vpn-policy-routing
-  PROVIDES:=pbr vpnbypass vpn-policy-routing
   PKGARCH:=all
 endef
 
 define Package/pbr
 $(call Package/pbr/default)
-	TITLE+= with nft/nft set support
+	TITLE+= with iptables/ipset support
 	DEPENDS+=+ipset +iptables +kmod-ipt-ipset +iptables-mod-ipopt
+	PROVIDES:=pbr vpnbypass vpn-policy-routing
 endef
 
 define Package/pbr-netifd
 $(call Package/pbr/default)
 	TITLE+= with netifd support
+	PROVIDES:=pbr vpnbypass vpn-policy-routing
 endef
 
 define Package/pbr/description

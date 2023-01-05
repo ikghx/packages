@@ -6,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libdrm
-PKG_VERSION:=2.4.113
+PKG_VERSION:=2.4.114
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://dri.freedesktop.org/libdrm
-PKG_HASH:=7fd7eb2967f63beb4606f22d50e277d993480d05ef75dd88a9bd8e677323e5e1
+PKG_HASH:=3049cf843a47d12e5eeefbc3be3496d782fa09f42346bf0b7defe3d1e598d026
 
 PKG_MAINTAINER:=Lucian Cristian <lucian.cristian@gmail.com>
 PKG_LICENSE:=BSD-3-Clause

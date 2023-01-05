@@ -65,12 +65,12 @@ define Package/lz4/description
 endef
 
 MESON_ARGS += \
-	-Ddebug_level=0 \
-	-Dbacktrace=false \
-	-Dbin_programs=$(if $(CONFIG_PACKAGE_lz4),true,false) \
-	-Dbin_tests=false \
-	-Dbin_contrib=false \
-	-Dbin_examples=false \
+	-Ddebug-level=0 \
+	-Dunstable=false \
+	-Dprograms=$(if $(CONFIG_PACKAGE_lz4),true,false) \
+	-Dtests=false \
+	-Dcontrib=false \
+	-Dexamples=false \
 	-Db_lto=false
 
 ifeq ($(CONFIG_LZ4_OPTIMIZE_SPEED),y)

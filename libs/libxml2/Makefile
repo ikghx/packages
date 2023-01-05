@@ -23,7 +23,6 @@ PKG_MAINTAINER:=Michael Heimpold <mhei@heimpold.de>
 
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=0
-PKG_CONFIG_DEPENDS:=CONFIG_BUILD_NLS
 
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
@@ -99,7 +98,7 @@ CONFIGURE_ARGS += \
 	--with-xpath \
 	--with-xptr \
 	--with-zlib=$(STAGING_DIR)/usr \
-	$(if $(CONFIG_BUILD_NLS),--with-iconv=$(ICONV_PREFIX)) \
+	--with-iconv$(if $(ICONV_PREFIX),="$(ICONV_PREFIX)") \
 	--without-lzma
 
 HOST_CONFIGURE_ARGS += \

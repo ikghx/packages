@@ -264,8 +264,8 @@ is_service_running_nft() { [ -x "$nft" ] && [ -n "$(get_mark_nft_chains)" ]; }
 # is_service_running_nft() { [ -x "$nft" ] && [ -s "$nftPermFile" ]; }
 is_service_running() { if is_nft; then is_service_running_nft; else is_service_running_iptables; fi; }
 is_netifd_table() { local iface="$1"; [ "$(uci -q get "network.${iface}.ip4table")" = "${packageName}_${iface%6}" ]; }
-get_rt_tables_id() { grep "${packageName}_${iface}" /etc/iproute2/rt_tables | awk '{print $1;}'; }
-get_rt_tables_next_id() { echo "$(($(sort -r -n /etc/iproute2/rt_tables | grep -o -E -m 1 "^[0-9]+")+1))"; }
+get_rt_tables_id() { local iface="$1"; grep "${packageName}_${iface}" '/etc/iproute2/rt_tables' | awk '{print $1;}'; }
+get_rt_tables_next_id() { echo "$(($(sort -r -n '/etc/iproute2/rt_tables' | grep -o -E -m 1 "^[0-9]+")+1))"; }
 _check_config() { local en; config_get_bool en "$1" 'enabled' 1; [ "$en" -gt 0 ] && _cfg_enabled=0; }
 is_config_enabled() {
 	local cfg="$1" _cfg_enabled=1
@@ -474,7 +474,7 @@ ips() {
 			case "$type" in
 				ip|net)
 					ips4 -q -! create "$ipset4" "hash:$type" comment && ipv4_error=0
-					ips6 -q -! create "$ipset6" "hash:$type" comment family inet6 && ipv4_error=0
+					ips6 -q -! create "$ipset6" "hash:$type" comment family inet6 && ipv6_error=0
 					case "$target" in
 						dst)
 							ipt4 -t mangle -A "${iptPrefix}_PREROUTING" -m set --match-set "$ipset4" dst -g "${iptPrefix}_MARK_${mark}" && ipv4_error=0
@@ -1658,12 +1658,16 @@ interface_routing() {
 					$ip_full -6 rule add fwmark "${mark}/${fw_mask}" table "$tid" priority "$priority" || ipv6_error=1
 				fi
 			else
-				sed -i "/${ipTablePrefix}_${iface}/d" /etc/iproute2/rt_tables
+				if ! grep -q "$tid ${ipTablePrefix}_${iface}" '/etc/iproute2/rt_tables'; then
+					sed -i "/${ipTablePrefix}_${iface}/d" '/etc/iproute2/rt_tables'
+					sync
+					echo "$tid ${ipTablePrefix}_${iface}" >> '/etc/iproute2/rt_tables'
+					sync
+				fi
 				$ip_full -4 rule del fwmark "${mark}/${fw_mask}" table "$tid" >/dev/null 2>&1
 				$ip_full -4 route flush table "$tid" >/dev/null 2>&1
 				if [ -n "$gw4" ] || [ "$strict_enforcement" -ne 0 ]; then
 					ipv4_error=0
-					echo "$tid ${ipTablePrefix}_${iface}" >> /etc/iproute2/rt_tables
 					if [ -z "$gw4" ]; then
 						$ip_full -4 route add unreachable default table "$tid" >/dev/null 2>&1 || ipv4_error=1
 					else
@@ -1737,7 +1741,6 @@ EOF
 			return "$s"
 		;;
 		create_user_set)
-			[ -z "$createUserSets" ] && return 0;
 			if is_nft; then
 				nftset 'create_user_set' "$iface" 'dst' 'ip' 'user' '' "$mark" || s=1
 				nftset 'create_user_set' "$iface" 'src' 'ip' 'user' '' "$mark" || s=1
@@ -1755,7 +1758,8 @@ EOF
 			$ip_full rule del fwmark "${mark}/${fw_mask}" table "$tid" >/dev/null 2>&1
 			if ! is_netifd_table "$iface"; then
 				$ip_full route flush table "$tid" >/dev/null 2>&1
-				sed -i "/${ipTablePrefix}_${iface}/d" /etc/iproute2/rt_tables
+				sed -i "/${ipTablePrefix}_${iface}/d" '/etc/iproute2/rt_tables'
+				sync
 			fi
 			return "$s"
 		;;
@@ -1861,8 +1865,7 @@ interface_process() {
 	case "$action" in
 		create)
 			output 2 "Setting up routing for '$displayText' "
-			if interface_routing 'create' "$ifaceTableID" "$ifaceMark" "$iface" "$gw4" "$dev" "$gw6" "$dev6" "$ifacePriority" && \
-				interface_routing 'create_user_set' "$ifaceTableID" "$ifaceMark" "$iface" "$gw4" "$dev" "$gw6" "$dev6" "$ifacePriority"; then
+			if interface_routing 'create' "$ifaceTableID" "$ifaceMark" "$iface" "$gw4" "$dev" "$gw6" "$dev6" "$ifacePriority"; then
 				json_add_gateway 'create' "$ifaceTableID" "$ifaceMark" "$iface" "$gw4" "$dev" "$gw6" "$dev6" "$ifacePriority" "$dispStatus"
 				gatewaySummary="${gatewaySummary}${displayText}${dispStatus:+ $dispStatus}\\n"
 				output_ok
@@ -1871,9 +1874,9 @@ interface_process() {
 				output_fail
 			fi
 		;;
-#		create_user_set)
-#			interface_routing 'create_user_set' "$ifaceTableID" "$ifaceMark" "$iface" "$gw4" "$dev" "$gw6" "$dev6" "$ifacePriority"
-#		;;
+		create_user_set)
+			interface_routing 'create_user_set' "$ifaceTableID" "$ifaceMark" "$iface" "$gw4" "$dev" "$gw6" "$dev6" "$ifacePriority"
+		;;
 		destroy)
 			displayText="${iface}/${dispDev:+$dispDev/}${dispGw4}${ipv6_enabled:+/$dispGw6}"
 			output 2 "Removing routing for '$displayText' "
@@ -1945,7 +1948,6 @@ on_interface_reload() { rc_procd start_service 'on_interface_reload' "$1"; }
 
 start_service() {
 	local resolverStoredHash resolverNewHash i reloadedIface param="$1"
-	local createUserSets
 
 	load_environment 'on_start' "$(load_validate_config)" || return 1
 	is_wan_up || return 1
@@ -1992,10 +1994,6 @@ start_service() {
 		serviceStartTrigger="${serviceStartTrigger:-on_start}"
 	fi
 
-	if is_config_enabled 'include'; then
-		createUserSets='true'
-	fi
-
 	procd_open_instance "main"
 	procd_set_param command /bin/true
 	procd_set_param stdout 1
@@ -2039,18 +2037,16 @@ start_service() {
 				output 1 '\n'
 			fi
 			if is_config_enabled 'include'; then
-				traffic_killswitch 'remove'
+				interface_process 'all' 'prepare'
+				config_foreach interface_process 'interface' 'create_user_set'
 				output 1 'Processing user file(s) '
 				config_load "$packageName"
 				config_foreach load_validate_include 'include' user_file_process
 				output 1 '\n'
-				resolver 'init_end'
-				resolver 'compare_hash' && resolver 'restart'
-			else
-				resolver 'init_end'
-				resolver 'compare_hash' && resolver 'restart'
-				traffic_killswitch 'remove'
 			fi
+			resolver 'init_end'
+			resolver 'compare_hash' && resolver 'restart'
+			traffic_killswitch 'remove'
 		;;
 		on_start|*)
 			traffic_killswitch 'insert'
@@ -2084,18 +2080,16 @@ start_service() {
 				output 1 '\n'
 			fi
 			if is_config_enabled 'include'; then
-				traffic_killswitch 'remove'
+				interface_process 'all' 'prepare'
+				config_foreach interface_process 'interface' 'create_user_set'
 				output 1 'Processing user file(s) '
 				config_load "$packageName"
 				config_foreach load_validate_include 'include' user_file_process
 				output 1 '\n'
-				resolver 'init_end'
-				resolver 'compare_hash' && resolver 'restart'
-			else
-				resolver 'init_end'
-				resolver 'compare_hash' && resolver 'restart'
-				traffic_killswitch 'remove'
 			fi
+			resolver 'init_end'
+			resolver 'compare_hash' && resolver 'restart'
+			traffic_killswitch 'remove'
 		;;
 	esac
 
