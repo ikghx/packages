@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ddns-scripts
 PKG_VERSION:=2.8.2
-PKG_RELEASE:=32
+PKG_RELEASE:=33
 
 PKG_LICENSE:=GPL-2.0
 
@@ -66,6 +66,17 @@ endef
 
 define Package/ddns-scripts-aliyun/description
   Dynamic DNS Client scripts extension for aliyun.com API (require curl)
+endef
+
+
+define Package/ddns-scripts-luadns
+  $(call Package/ddns-scripts/Default)
+  TITLE:=Extension for LuaDNS API v1
+  DEPENDS:=ddns-scripts +curl
+endef
+
+define Package/ddns-scripts-luadns/description
+  Dynamic DNS Client scripts extension for LuaDNS API v1 (require curl)
 endef
 
 
@@ -345,6 +356,7 @@ define Package/ddns-scripts-services/install
 
 	# Remove special services
 	rm $(1)/usr/share/ddns/default/aliyun.com.json
+	rm $(1)/usr/share/ddns/default/luadns.com-v1.json
 	rm $(1)/usr/share/ddns/default/cloudflare.com-v4.json
 	rm $(1)/usr/share/ddns/default/cloud.google.com-v1.json
 	rm $(1)/usr/share/ddns/default/freedns.42.pl.json
@@ -374,6 +386,25 @@ define Package/ddns-scripts-aliyun/install
 endef
 
 define Package/ddns-scripts-aliyun/prerm
+#!/bin/sh
+if [ -z "$${IPKG_INSTROOT}" ]; then
+	/etc/init.d/ddns stop
+fi
+exit 0
+endef
+
+
+define Package/ddns-scripts-luadns/install
+	$(INSTALL_DIR) $(1)/usr/lib/ddns
+	$(INSTALL_BIN) ./files/usr/lib/ddns/update_luadns_v1.sh \
+		$(1)/usr/lib/ddns
+
+	$(INSTALL_DIR) $(1)/usr/share/ddns/default
+	$(INSTALL_DATA) ./files/usr/share/ddns/default/luadns.com-v1.json \
+		$(1)/usr/share/ddns/default/
+endef
+
+define Package/ddns-scripts-luadns/prerm
 #!/bin/sh
 if [ -z "$${IPKG_INSTROOT}" ]; then
 	/etc/init.d/ddns stop
@@ -670,6 +701,7 @@ endef
 $(eval $(call BuildPackage,ddns-scripts))
 $(eval $(call BuildPackage,ddns-scripts-services))
 $(eval $(call BuildPackage,ddns-scripts-aliyun))
+$(eval $(call BuildPackage,ddns-scripts-luadns))
 $(eval $(call BuildPackage,ddns-scripts-cloudflare))
 $(eval $(call BuildPackage,ddns-scripts-gcp))
 $(eval $(call BuildPackage,ddns-scripts-freedns))
