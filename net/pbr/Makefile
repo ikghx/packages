@@ -5,45 +5,45 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=pbr
 PKG_VERSION:=1.0.1
-PKG_RELEASE:=4
+PKG_RELEASE:=14
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_MAINTAINER:=Stan Grishin <stangri@melmac.ca>
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/pbr/default
+define Package/pbr/Default
   SECTION:=net
   CATEGORY:=Network
-  SUBMENU:=VPN
-  PROVIDES:=pbr
+  SUBMENU:=Routing and Redirection
   TITLE:=Policy Based Routing Service
   URL:=https://docs.openwrt.melmac.net/pbr/
-  DEPENDS:=+ip-full +jshn +jsonfilter +resolveip
+  DEPENDS:=+ip-full +jshn +jsonfilter +libubus +resolveip
   CONFLICTS:=vpnbypass vpn-policy-routing
   PKGARCH:=all
 endef
 
 define Package/pbr
-$(call Package/pbr/default)
+$(call Package/pbr/Default)
 	TITLE+= with iptables/ipset support
 	DEPENDS+=+ipset +iptables +kmod-ipt-ipset +iptables-mod-ipopt
-	PROVIDES:=pbr vpnbypass vpn-policy-routing
+	PROVIDES:=pbr
 endef
 
 define Package/pbr-netifd
-$(call Package/pbr/default)
+$(call Package/pbr/Default)
 	TITLE+= with netifd support
-	PROVIDES:=pbr vpnbypass vpn-policy-routing
+	VARIANT:=netifd
+	PROVIDES:=pbr
 endef
 
 define Package/pbr/description
 This service enables policy-based routing for WAN interfaces and various VPN tunnels.
-This version supports OpenWrt with fw3/ipset/iptables.
+This version supports OpenWrt with firewall3/ipset/iptables.
 endef
 
 define Package/pbr-netifd/description
 This service enables policy-based routing for WAN interfaces and various VPN tunnels.
-This version supports OpenWrt with both fw3/ipset/iptables and fw4/nft.
+This version supports OpenWrt with both firewall3/ipset/iptables and firewall4/nft.
 This version uses OpenWrt native netifd/tables to set up interfaces. This is WIP.
 endef
 
@@ -105,8 +105,8 @@ define Package/pbr/prerm
 	# check if we are on real system
 	if [ -z "$${IPKG_INSTROOT}" ]; then
 		uci -q delete firewall.pbr || true
-		echo "Stopping pbr service... "
-		/etc/init.d/pbr stop || true
+		echo -n "Stopping pbr service... "
+		/etc/init.d/pbr stop && echo "OK" || echo "FAIL"
 		echo -n "Removing rc.d symlink for pbr... "
 		/etc/init.d/pbr disable && echo "OK" || echo "FAIL"
 	fi
@@ -117,12 +117,8 @@ define Package/pbr-netifd/postinst
 	#!/bin/sh
 	# check if we are on real system
 	if [ -z "$${IPKG_INSTROOT}" ]; then
-		echo -n "Installing rc.d symlink for pbr... "
+		echo -n "Installing rc.d symlink for pbr-netifd... "
 		/etc/init.d/pbr enable && echo "OK" || echo "FAIL"
-	#	echo -n "Installing netifd support for pbr... "
-	#	/etc/init.d/pbr netifd install && echo "OK" || echo "FAIL"
-	#	echo -n "Restarting network... "
-	#	/etc/init.d/network restart && echo "OK" || echo "FAIL"
 	fi
 	exit 0
 endef
@@ -132,14 +128,10 @@ define Package/pbr-netifd/prerm
 	# check if we are on real system
 	if [ -z "$${IPKG_INSTROOT}" ]; then
 		uci -q delete firewall.pbr || true
-		echo "Stopping pbr service... "
-		/etc/init.d/pbr stop || true
-	#	echo -n "Removing netifd support for pbr... "
-	#	/etc/init.d/pbr netifd remove && echo "OK" || echo "FAIL"
+		echo -n "Stopping pbr-netifd service... "
+		/etc/init.d/pbr stop && echo "OK" || echo "FAIL"
 		echo -n "Removing rc.d symlink for pbr... "
 		/etc/init.d/pbr disable && echo "OK" || echo "FAIL"
-	#	echo -n "Restarting network... "
-	#	/etc/init.d/network restart && echo "OK" || echo "FAIL"
 	fi
 	exit 0
 endef

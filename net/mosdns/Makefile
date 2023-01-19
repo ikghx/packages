@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mosdns
-PKG_VERSION:=4.5.3
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_VERSION:=5.0.0
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/IrineSistiana/mosdns/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=2a13b1b1d862731cf946a8ceaa99523a0eb0eaae56045dd31207b61a5a6d47ae
+PKG_HASH:=05892a269535684e63667e7959f285bdcf59e88c0dba524764e1ee7396e04192
 
 PKG_LICENSE:=GPL-3.0
 PKG_LICENSE_FILE:=LICENSE
@@ -45,6 +45,7 @@ define Package/mosdns/install
 
 	$(INSTALL_DIR) $(1)/etc/mosdns
 	$(INSTALL_DATA) ./files/config.yaml $(1)/etc/mosdns/config.yaml
+	$(INSTALL_BIN) ./files/up_data.sh $(1)/etc/mosdns/up_data.sh
 endef
 
 $(eval $(call GoBinPackage,mosdns))

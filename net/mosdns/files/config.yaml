@@ -1,227 +1,147 @@
 # 日志设置
+# 日志级别。可选 "debug" "info" "warn" "error"。默认 "info"。
 log:
-  level:                   error # 日志级别。可选 "debug" "info" "warn" "error"。默认 "info"。
-  file:                    "/var/log/mosdns.log" # 记录日志到文件。
-
-# 数据源设置
-data_providers:
-  - tag:                   geosite # 数据源标签，不能重复。
-    file:                  "/usr/share/v2ray/geosite.dat" # 数据文件路径。
-    auto_reload:           true # 文件有变化时是否自动重载。true 是，false 否。
-
-  - tag:                   geoip
-    file:                  "/usr/share/v2ray/geoip.dat"
-    auto_reload:           true
-
-  - tag:                   whitelist
-    file:                  "./rule/whitelist.txt"
-    auto_reload:           true
-
-  - tag:                   blocklist
-    file:                  "./rule/blocklist.txt"
-    auto_reload:           true
-
-# MosDNS 的 hosts 文件格式与其它系统中的不同，其支持一行多个 IP，域名在前、 IP 在后。
-# 示例：dns.google 8.8.8.8 8.8.4.4 2001:4860:4860::8888
-  - tag:                   hosts
-    file:                  "./rule/hosts.txt"
-    auto_reload:           true
-
-  - tag:                   local_ptr
-    file:                  "./rule/local-ptr.txt"
-    auto_reload:           true
-
-  - tag:                   redirect
-    file:                  "./rule/redirect.txt"
-    auto_reload:           true
+  level: error
 
 # 插件设置
 plugins:
 
-# 匹配白名单的插件
-  - tag:                   "query_is_whitelist_domain" # 插件标签，不能重复。
-    type:                  query_matcher # 匹配请求的特性，域名、类型、来源 IP 等。
+# 匹配白名单
+  - tag: whitelist_domain
+    type: domain_set
     args:
-      domain:
-        - 'provider:whitelist' # 匹配数据源标签。
+      files:
+        - "./rule/whitelist.txt"
 
-# 匹配黑名单的插件
-  - tag:                   "query_is_blacklist_domain"
-    type:                  query_matcher
+# 匹配黑名单
+  - tag: blacklist_domain
+    type: domain_set
     args:
-      domain:
-        - 'provider:blocklist'
+      files:
+        - "./rule/blocklist.txt"
 
-# 匹配本地域名的插件
-  - tag:                   "query_is_local_domain"
-    type:                  query_matcher
+# 匹配本地域名
+  - tag: local_domain
+    type: domain_set
     args:
-      domain:
-        - 'provider:geosite:icloud,apple-cn,google-cn,cn'
+      files:
+        - "./rule/direct-list.txt"
 
-# 匹配 GFW 域名的插件
-  - tag:                   "query_is_gfw"
-    type:                  query_matcher
+# 匹配代理域名
+  - tag: proxy_domain
+    type: domain_set
     args:
-      domain:
-        - 'provider:geosite:greatfire,gfw'
+      files:
+        - "./rule/proxy-list.txt"
 
-# 匹配非本地域名的插件
-  - tag:                   "query_is_non_local_domain"
-    type:                  query_matcher
+# 匹配广告域名
+  - tag: ad_domain
+    type: domain_set
     args:
-      domain:
-        - 'provider:geosite:geolocation-!cn'
+      files:
+        - "./rule/reject-list.txt"
 
-# 匹配 Type 65 响应的插件
-  - tag:                   "query_is_qtype65"
-    type:                  query_matcher
+# 匹配本地 IP
+  - tag: local_ip
+    type: ip_set
     args:
-      qtype:               [65]
+      files:
+        - "./rule/CN-ip-cidr.txt"
 
-# 匹配本地 PTR 响应的插件
-  - tag:                   "query_is_local_ptr"
-    type:                  query_matcher
+# DNS 应答缓存
+# DNS 缓存大小。单位: 条。
+# 惰性缓存生存时间。单位: 秒。
+  - tag: lazy_cache
+    type: cache
     args:
-      qtype:               [12]
-      domain:
-        - 'provider:local_ptr'
+      size: 10000
+      lazy_cache_ttl: 86400
 
-# 匹配广告域名的插件
-  - tag:                   "query_is_ad_domain"
-    type:                  query_matcher
+# 转发至本地服务器
+# 建议优先使用网络运营商提供的默认 DNS 服务器。
+  - tag: forward_local
+    type: forward
     args:
-      domain:
-        - 'provider:geosite:category-ads-all'
+      upstreams:
+        - addr: 119.29.29.29
+        - addr: 223.5.5.5
 
-# 匹配本地 IP 的插件
-  - tag:                   "response_has_local_ip"
-    type:                  response_matcher # 匹配应答的特性，应答 IP、CNAME 等。
+# 转发至远程服务器
+  - tag: forward_remote
+    type: forward
     args:
-      ip:
-        - 'provider:geoip:cn'
+      upstreams:
+        - addr: https://1.1.1.1/dns-query
+        - addr: https://8.8.8.8/dns-query
 
-# 匹配 HOSTS 规则的插件
-  - tag:                   "query_is_hosts_domain"
-    type:                  hosts # 为域名指定 IP。
+  # fallback 用本地服务器 sequence
+  # 返回不包含本地 ip 则 reject
+  - tag: local_ip_sequence
+    type: sequence
     args:
-      hosts:
-        - 'provider:hosts'
+      - exec: $forward_local
+      - matches: resp_ip $local_ip
+        exec: accept
+      - exec: reject
 
-# 匹配重定向域名的插件
-  - tag:                   "query_is_redirect_domain"
-    type:                  redirect # 替换(重定向)请求的域名。请求域名 A，但返回域名 B 的记录。
+  # fallback 用远程服务器 sequence
+  - tag: remote_sequence
+    type: sequence
     args:
-      rule:
-        - 'provider:redirect'
+      - exec: $forward_remote
+      - exec: accept
 
-# DNS 应答缓存的插件
-  - tag:                   "lazy_cache"
-    type:                  cache
+  # fallback 用远程服务器 sequence
+  - tag: fallback
+    type: fallback
     args:
-      size:                10000 # DNS 缓存大小。单位: 条。
-      lazy_cache_ttl:      86400 # 惰性缓存生存时间。单位: 秒。
-      lazy_cache_reply_ttl: 5
-      cache_everything: false
+      primary: local_ip_sequence
+      secondary: remote_sequence
+      threshold: 200
+      always_standby: true
 
-# 修改应答 TTL （单位: 秒。）
-  - tag: "modify_ttl"
-    type: ttl
+  # 主要的运行逻辑插件
+  # sequence 插件中调用的插件 tag 必须在 sequence 前定义，
+  # 否则 sequence 找不到对应插件。
+  - tag: main_sequence
+    type: sequence
     args:
-      minimal_ttl: 300
-      maximum_ttl: 3600
-
-# ipset 写入应答 IP 到系统 ipset
-  - tag: blacklist
-    type: 'ipset'
-    args:
-      set_name4: 'blacklist'   # 如果非空，存放 ipv4 地址到这个表。这个表属性 family 需为 `inet`。
-      set_name6: ''   # 如果非空，存放 ipv6 地址到这个表。这个表属性 family 需为 `inet6`。
-      mask4: 24       # 写入 ipv4 地址时使用的掩码。默认: 24。
-      mask6: 32       # 写入 ipv6 地址时使用的掩码。默认: 32。
-
-# 转发至本地服务器的插件
-  - tag:                   "forward_local"
-    type:                  fast_forward # 表示转发请求至上游。
-    args:
-      upstream:
-        - addr:            119.29.29.29 # 建议优先使用网络运营商提供的默认 DNS 服务器。
-        - addr:            223.5.5.5
-        - addr:            114.114.114.114
-
-# 转发至远程服务器的插件
-  - tag:                   "forward_remote"
-    type:                  fast_forward
-    args:
-      upstream:
-        - addr:            https://cloudflare-dns.com/dns-query
-          dial_addr:       1.1.1.1
-          enable_pipeline: true # TCP/DoT 使用 RFC 7766 新的 query pipelining 连接复用模式。
-        - addr:            https://dns.google/dns-query
-          dial_addr:       8.8.8.8
-          enable_pipeline: true
-
-# 主要的运行逻辑插件
-  - tag: main_sequence # 逻辑插件的标签。
-    type: sequence # 表示按顺序运行多个插件规则。
-    args:
-      exec:
-        #- _misc_optm # 多种自动优化规则集合。
-        - lazy_cache # 启用缓存规则（匹配插件标签）。
-        - query_is_hosts_domain # 启用 hosts 规则（匹配插件标签）。
-        - query_is_redirect_domain # 启用重定向规则（匹配插件标签）。
-        #- _no_ecs # 删除请求和应答中的 ECS（EDNS）信息。
-
-        - if: "query_is_whitelist_domain" # 执行判断条件（匹配插件标签）。
-          exec:
-            - forward_local # 运行匹配插件标签的规则。
-            - _return # 结束此执行序列。
-
-        - if: "query_is_blacklist_domain || query_is_ad_domain || query_is_qtype65 || query_is_local_ptr"
-          exec:
-            - _new_nxdomain_response # 响应域名不存在应答（NXDOMAIN）。
-            - _return
-
-        - if: "query_is_local_domain"
-          exec:
-            - _prefer_ipv4 # 优先应答 IPv4 地址。
-            - forward_local # 使用本地 DNS 服务器解析。
-            #- modify_ttl # 修改应答 TTL
-            - _return
-
-        - if: "query_is_non_local_domain"
-          exec:
-            - _prefer_ipv4
-            - forward_remote # 使用远程 DNS 服务器解析。
-            #- modify_ttl
-            - _return
-
-        # 剩下的未知域名用 IP 分流。
-        - primary: # 从本地服务器获取应答，丢弃非本地 IP 的结果。
-            - forward_local # 使用本地 DNS 服务器解析。
-            - if: "response_has_local_ip"
-              exec:
-                - _return
-            - if: "!response_has_local_ip"
-              exec:
-                - _drop_response # 丢弃已存在的应答。
-          secondary: # 从远程服务器获取应答。
-            - _no_ecs
-            - _prefer_ipv4 # 优先应答 IPv4 地址。
-            - forward_remote # 使用远程 DNS 服务器解析。
-            #- modify_ttl # 修改应答 TTL
-            - if: "!response_has_local_ip"
-              exec:
-                - blacklist
-          fast_fallback: 200 # 快速 fallback 触发阈值。单位：毫秒。
-          always_standby: true
+      - matches: qname { $ad_domain | $blacklist_domain }
+        exec: reject
+      - exec: $lazy_cache
+      - matches: has_resp
+        exec: accept
+      - matches: qname { $local_domain | $whitelist_domain }
+        exec: $forward_local
+      - matches: has_resp
+        exec: accept
+      - matches: qname $proxy_domain
+        exec: $forward_remote
+      - matches: has_resp
+        exec: accept
+      - exec: $fallback
 
 # 服务器设置
-servers:
-  - exec: main_sequence # 此服务器规则要运行的插件标签。
-    timeout: 5 # 请求处理超时时间。单位: 秒。默认值: 5。
-    listeners:
-      - protocol: udp # 协议，支持 "udp", "tcp", "tls", "https" 和 "http"
-        addr: 127.0.0.1:5335 # 监听地址和端口。
-      - protocol: tcp
-        addr: 127.0.0.1:5335
+  - tag: udp_server
+    type: udp_server
+    args:
+        entry: main_sequence
+        listen: 127.0.0.1:5335
+
+  - tag: tcp_server
+    type: tcp_server
+    args:
+        entry: main_sequence
+        listen: 127.0.0.1:5335
+
+  - tag: udp_server_v6
+    type: udp_server
+    args:
+        entry: main_sequence
+        listen: "[::1]:5335"
+
+  - tag: tcp_server_v6
+    type: tcp_server
+    args:
+        entry: main_sequence
+        listen: "[::1]:5335"
