@@ -32,7 +32,7 @@ define Package/liburing/description
   For more info on io_uring, please see: https://kernel.dk/io_uring.pdf
 endef
 
-CONFIGURE_ARGS:=--prefix=$(CONFIGURE_PREFIX) --cc=${TARGET_CC}
+CONFIGURE_ARGS:=--prefix=$(CONFIGURE_PREFIX) --cc="${TARGET_CC}"
 
 define Build/Compile
 	$(MAKE) $(PKG_BUILD_DIR) \
