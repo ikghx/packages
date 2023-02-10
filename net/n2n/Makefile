@@ -1,3 +1,4 @@
+# SPDX-License-Identifer: GPL-3.0-only
 #
 # Copyright (C) 2021 - ntop.org and contributors
 #
@@ -15,33 +16,32 @@ PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE_PROTO:=git
 PKG_MIRROR_HASH:=5747251e3f1bb1676ffa81c126deb886f848c8429245c69f83da38b8198eb130
 
+PKG_LICENSE:=GPL-3.0
+PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=Emanuele Faranda <faranda@ntop.org>
-PKG_LICENSE:=GPL3
-
-# autogen fix
-PKG_FIXUP:=autoreconf
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/cmake.mk
 
 define Package/n2n/Default
   SECTION:=net
   CATEGORY:=Network
+  SUBMENU:=VPN
   TITLE:=N2N Peer-to-peer VPN
   URL:=http://www.ntop.org/n2n
-  SUBMENU:=VPN
   DEPENDS+=+libcap
 endef
 
 define Package/n2n-edge
   $(call Package/n2n/Default)
   TITLE+= client (edge node)
-  DEPENDS+=+kmod-tun +resolveip +libopenssl +libzstd
+  DEPENDS+=+kmod-tun +resolveip +libopenssl +libpthread +libzstd
 endef
 
 define Package/n2n-supernode
   $(call Package/n2n/Default)
   TITLE+= server (supernode)
-  DEPENDS+=+libopenssl +libzstd
+  DEPENDS+=+libopenssl +libpthread +libzstd
 endef
 
 define Package/n2n-edge/description
@@ -57,9 +57,12 @@ define Build/Configure
 	$(call Build/Configure/Default)
 endef
 
-CONFIGURE_ARGS += \
-	--with-zstd \
-	--with-openssl
+CMAKE_OPTIONS+= \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DN2N_OPTION_USE_PTHREAD=ON \
+	-DN2N_OPTION_USE_OPENSSL=ON \
+	-DN2N_OPTION_USE_PCAPLIB=ON \
+	-DN2N_OPTION_USE_ZSTD=ON
 
 define Package/n2n-edge/conffiles
 /etc/n2n/edge.conf
@@ -85,6 +88,7 @@ define Package/n2n-supernode/install
 	$(INSTALL_BIN) ./files/supernode $(1)/etc/init.d/supernode
 	$(INSTALL_DIR) $(1)/etc/n2n
 	$(INSTALL_CONF) ./files/supernode.conf.sample $(1)/etc/n2n/supernode.conf
+	$(INSTALL_CONF) ./files/communities.list $(1)/etc/n2n/communities.list
 endef
 
 $(eval $(call BuildPackage,n2n-edge))

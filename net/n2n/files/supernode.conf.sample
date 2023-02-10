@@ -34,7 +34,7 @@
 #       -c|--communities
 #        Specify in supernodes.list the list of allowed communities
 #        设置允许接入服务器的 N2N 网络组列表文件。
-#-c=/etc/n2n/supernodes.list
+-c=/etc/n2n/communities.list
 #
 #       -a|--autoip
 #        subnet range for auto ip address service.
