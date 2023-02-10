@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=zstd
-PKG_VERSION:=1.5.2
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_VERSION:=1.5.4
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/facebook/zstd/releases/download/v$(PKG_VERSION)
-PKG_HASH:=7c42d56fac126929a6a85dbc73ff1db2411d04f104fae9bdea51305663a83fd0
+PKG_HASH:=0f470992aedad543126d06efab344dc5f3e171893810455787d38347343a4424
 
 PKG_MAINTAINER:=
 PKG_LICENSE:=GPL-2.0-or-later
@@ -64,7 +64,7 @@ endif
 MESON_ARGS += \
 	-Dlegacy_level=7 \
 	-Ddebug_level=0 \
-	-Dbacktrace=false \
+	-Dbacktrace=disabled \
 	-Dstatic_runtime=false \
 	-Dbin_programs=true \
 	-Dbin_tests=false \
