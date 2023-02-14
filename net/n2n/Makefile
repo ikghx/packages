@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=n2n
 PKG_SOURCE_URL:=https://github.com/ntop/n2n.git
 PKG_SOURCE_VERSION:=6dac89f1a71358e52649e0dec9de53cadd3411d8
-PKG_VERSION:=3.0.0_git$(PKG_SOURCE_VERSION)
+PKG_VERSION:=3.0.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
