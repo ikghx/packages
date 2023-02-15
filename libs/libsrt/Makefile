@@ -41,7 +41,7 @@ define Package/libsrt
   CATEGORY:=Libraries
   TITLE:=secure reliable transport
   URL:=https://github.com/Haivision/srt
-  DEPENDS:=+libstdcpp $(CRYPTO_DEPENDS)
+  DEPENDS:=+libstdcpp +libatomic $(CRYPTO_DEPENDS)
 endef
 
 define Package/libsrt/description
