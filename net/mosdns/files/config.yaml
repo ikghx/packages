@@ -72,6 +72,7 @@ plugins:
     args:
       upstreams:
         - addr: https://1.1.1.1/dns-query
+        - addr: https://208.67.222.222/dns-query
         - addr: https://8.8.8.8/dns-query
 
   # fallback 用本地服务器 sequence

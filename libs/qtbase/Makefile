@@ -14,8 +14,8 @@ PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-everywhere-src-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:= \
-		https://download.qt.io/official_releases/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules \
-		https://master.qt.io/archive/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules
+		https://download.qt.io/official_releases/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules/ \
+		https://master.qt.io/archive/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules/
 PKG_HASH:=7929ba4df870b6b30870bc0aed2525cfc606ed7091107b23cf7ed7e434caa9a6
 
 HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)
