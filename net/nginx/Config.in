@@ -6,7 +6,6 @@
 #
 
 menu "Configuration"
-        depends on PACKAGE_nginx
 
 config NGINX_DAV
 	bool
@@ -195,7 +194,7 @@ config NGINX_NAXSI
 config NGINX_LUA
 	bool
 	prompt "Enable Lua module"
-	default y
+	default n
 
 config NGINX_HTTP_REAL_IP
 	bool

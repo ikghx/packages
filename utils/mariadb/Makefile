@@ -9,13 +9,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mariadb
-PKG_VERSION:=10.4.26
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_VERSION:=10.6.10
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL := https://archive.mariadb.org/$(PKG_NAME)-$(PKG_VERSION)/source
 
-PKG_HASH:=715ac7e23afc3b8a559c6cc998cdb1973d90f621b2bdd7603e2c6e53860b2ddf
+PKG_HASH:=6ad9fa86f0c85c8eeafad2643549d5ff5dd2872002964e754752de91863aa3b7
 PKG_MAINTAINER:=Michal Hrusecky <Michal@Hrusecky.net>
 PKG_LICENSE:=GPL-2.0-only
 PKG_LICENSE_FILES:=COPYING THIRDPARTY
@@ -35,13 +35,12 @@ SHARE_DIR:=/usr/share/mariadb
 MARIADB_SOCKET=/var/run/mysqld/mysqld.sock
 
 MARIADB_DISABLE_ENGINES := \
-	cassandra \
+	columnstore \
 	example \
 	mroonga \
 	oqgraph \
 	rocksdb \
-	test_sql_discovery \
-	tokudb
+	test_sql_discovery
 
 MARIADB_DISABLE_PLUGINS := \
 	audit_null \
@@ -81,6 +80,7 @@ MARIADB_SERVER_PLUGINS := \
 
 PKG_CONFIG_DEPENDS := \
 	$(patsubst %,CONFIG_PACKAGE_$(PKG_NAME)-server-plugin-%,$(subst _,-,$(MARIADB_SERVER_PLUGINS))) \
+	CONFIG_KERNEL_IO_URING \
 	CONFIG_PACKAGE_mariadb-server
 
 plugin-auth_ed25519             := PLUGIN_AUTH_ED25519
@@ -259,9 +259,10 @@ define Package/mariadb-server-base
   $(call Package/mariadb/Default)
   DEPENDS:= \
 	  $(MARIADB_COMMON_DEPENDS) \
-	  +libaio \
+	  +!KERNEL_IO_URING:libaio \
+	  +KERNEL_IO_URING:liburing \
 	  +liblzma \
-	  +libpcre \
+	  +libpcre2 \
 	  +resolveip \
 	  +sudo
   TITLE:=MariaDB database server base
@@ -270,7 +271,7 @@ endef
 
 define Package/mariadb-server-base/conffiles
 $(CONF_DIR)/my.cnf
-$(CONF_DIR)/conf.d/50-mysql-clients.cnf
+$(CONF_DIR)/conf.d/40-mysql-clients.cnf
 $(CONF_DIR)/conf.d/50-server.cnf
 $(CONF_DIR)/conf.d/60-galera.cnf
 /etc/config/mysqld
@@ -480,7 +481,7 @@ define Package/mariadb-server-base/install
 	$(INSTALL_BIN) files/mysqld.init $(1)/etc/init.d/mysqld
 	$(SED) '/^[a-z]/s/^/#/' $(PKG_INSTALL_DIR)$(SHARE_DIR)/wsrep.cnf
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)$(SHARE_DIR)/wsrep.cnf $(1)$(CONF_DIR)/conf.d/60-galera.cnf
-	$(INSTALL_DATA) conf/50-mysql-clients.cnf $(1)$(CONF_DIR)/conf.d
+	$(INSTALL_DATA) conf/40-mysql-clients.cnf $(1)$(CONF_DIR)/conf.d
 	$(INSTALL_DATA) conf/50-server.cnf $(1)$(CONF_DIR)/conf.d
 	$(INSTALL_DATA) conf/my.cnf $(1)$(CONF_DIR)
 	$(INSTALL_CONF) files/mysqld.config $(1)/etc/config/mysqld
@@ -531,11 +532,6 @@ ifeq ($(1),auth_pam)
 	  $(INSTALL_DATA) \
 		  $(PKG_INSTALL_DIR)/lib/security/pam_user_map.so \
 					  $$(1)/lib/security
-endif
-ifeq ($(1),ha_spider)
-	  $(INSTALL_DIR) $$(1)$(SHARE_DIR)
-	  $(INSTALL_DATA) $(PKG_INSTALL_DIR)$(SHARE_DIR)/install_spider.sql \
-		  $$(1)$(SHARE_DIR)
 endif
   endef
   $$(eval $$(call BuildPackage,mariadb-server-plugin-$(subst _,-,$(1))))

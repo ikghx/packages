@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nginx
 PKG_VERSION:=1.22.1
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_RELEASE:=1
 
 PKG_SOURCE:=nginx-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://nginx.org/download/
@@ -87,7 +87,7 @@ define Package/nginx
   TITLE:=Nginx web server with SSL support
   URL:=http://nginx.org/
   DEPENDS:=+libopenssl +libpthread +NGINX_PCRE:libpcre2 \
-	+NGINX_HTTP_GZIP:zlib +liblua +libpcre +luajit +NGINX_DAV:libxml2 \
+	+NGINX_HTTP_GZIP:zlib +NGINX_LUA:liblua +NGINX_DAV:libxml2 \
 	+NGINX_UBUS:libubus +NGINX_UBUS:libblobmsg-json +NGINX_UBUS:libjson-c
 endef
 
@@ -108,7 +108,6 @@ endef
 
 
 ADDITIONAL_MODULES:= --with-http_ssl_module
-EXTRA_LD_OPT:=
 
   ifneq ($(CONFIG_NGINX_HTTP_CACHE),y)
     ADDITIONAL_MODULES += --without-http-cache
@@ -207,7 +206,6 @@ EXTRA_LD_OPT:=
   endif
   ifeq ($(CONFIG_NGINX_LUA),y)
     ADDITIONAL_MODULES += --add-module=$(PKG_BUILD_DIR)/lua-nginx
-    EXTRA_LD_OPT += -lpcre
   endif
   ifeq ($(CONFIG_IPV6),y)
     ADDITIONAL_MODULES += --with-ipv6
@@ -289,8 +287,8 @@ TARGET_CFLAGS += -fvisibility=hidden -ffunction-sections -fdata-sections -DNGX_L
 TARGET_LDFLAGS += -Wl,--gc-sections
 
 ifeq ($(CONFIG_NGINX_LUA),y)
-  CONFIGURE_VARS += LUAJIT_INC=$(STAGING_DIR)/usr/include/luajit-2.1 \
-					LUAJIT_LIB=$(STAGING_DIR)/usr/lib
+  CONFIGURE_VARS += LUA_INC=$(STAGING_DIR)/usr/include \
+					LUA_LIB=$(STAGING_DIR)/usr/lib
 endif
 
 CONFIGURE_VARS += CONFIG_BIG_ENDIAN=$(CONFIG_BIG_ENDIAN)
@@ -309,7 +307,7 @@ CONFIGURE_ARGS += \
 			--http-fastcgi-temp-path=/var/lib/nginx/fastcgi \
 			--with-cc="$(TARGET_CC)" \
 			--with-cc-opt="$(TARGET_CPPFLAGS) $(TARGET_CFLAGS)" \
-			--with-ld-opt="$(TARGET_LDFLAGS) $(EXTRA_LD_OPT)" \
+			--with-ld-opt="$(TARGET_LDFLAGS)" \
 			--without-http_upstream_zone_module
 
 define Package/nginx-mod-luci/install
@@ -334,7 +332,7 @@ define Package/nginx/install
 	$(INSTALL_BIN) ./files/nginx.init $(1)/etc/init.d/nginx
 ifeq ($(CONFIG_NGINX_NAXSI),y)
 	$(INSTALL_DIR) $(1)/etc/nginx
-	$(INSTALL_CONF) $(PKG_BUILD_DIR)/nginx-naxsi/naxsi_config/naxsi_core.rules $(1)/etc/nginx
+	$(INSTALL_CONF) ./files/naxsi_core.rules $(1)/etc/nginx
 	$(INSTALL_CONF) ./files/naxsi.rules $(1)/etc/nginx
 	chmod 0640 $(1)/etc/nginx/naxsi_core.rules
 	chmod 0640 $(1)/etc/nginx/naxsi.rules
@@ -414,11 +412,11 @@ define Prepare/nginx-naxsi
 endef
 
 define Download/lua-nginx
-  VERSION:=v0.10.22
+  VERSION:=e94f2e5d64daa45ff396e262d8dab8e56f5f10e0
   SUBDIR:=lua-nginx
   FILE:=lua-nginx-module-$$(VERSION).tar.xz
   URL:=https://github.com/openresty/lua-nginx-module.git
-  MIRROR_HASH:=390eb316af72fe5aa49dcf43327de2ed5b028e4adde7d1a93272df31da078aed
+  MIRROR_HASH:=27729921964f066d97e99c263da153b34622a2f4b811114e4c3ee61c6fc71395
   PROTO:=git
 endef
 
