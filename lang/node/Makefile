@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=node
-PKG_VERSION:=v14.21.3
+PKG_VERSION:=v16.19.1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://nodejs.org/dist/$(PKG_VERSION)
-PKG_HASH:=458ec092e60ad700ddcf079cb63d435c15da4c7bb3d3f99b9a8e58a99e54075e
+PKG_HASH:=17fb716406198125b30c94dd3d1756207b297705626afe16d8dc479a65a1d8b5
 
 PKG_MAINTAINER:=Hirokazu MORIKAWA <morikw2@gmail.com>, Adrian Panella <ianchi74@outlook.com>
 PKG_LICENSE:=MIT
@@ -48,7 +48,7 @@ define Package/node/description
   an event-driven, non-blocking I/O model that makes it lightweight and efficient. Node.js'
    package ecosystem, npm, is the largest ecosystem of open source libraries in the world.
   *** The following preparations must be made on the host side. ***
-      1. gcc 6.3 or higher is required.
+      1. gcc 8.3 or higher is required.
       2. To build a 32-bit target, gcc-multilib, g++-multilib are required.
       3. Requires libatomic package. (If necessary, install the 32-bit library at the same time.)
      ex) sudo apt-get install gcc-multilib g++-multilib
@@ -96,10 +96,11 @@ endif
 
 MAKE_VARS+= \
 	DESTCPU=$(NODEJS_CPU) \
-	NO_LOAD='cctest.target.mk embedtest.target.mk node_mksnapshot.target.mk' \
+	NO_LOAD='cctest.target.mk embedtest.target.mk node_mksnapshot.target.mk overlapped-checker.target.mk \
+		mkcodecache.target.mk tools/v8_gypfiles/torque_base.target.mk tools/v8_gypfiles/v8_init.target.mk' \
 	LD_LIBRARY_PATH=$(STAGING_DIR_HOSTPKG)/share/icu/current/lib
 
-HOST_MAKE_VARS+=NO_LOAD='cctest.target.mk embedtest.target.mk'
+HOST_MAKE_VARS+=NO_LOAD='cctest.target.mk embedtest.target.mk overlapped-checker.target.mk'
 
 CONFIGURE_VARS:= \
 	CC="$(TARGET_CC) $(TARGET_OPTIMIZATION)" \
@@ -144,13 +145,18 @@ define Package/node-npm/install
 	$(INSTALL_DIR) $(1)/usr/lib/node_modules/npm
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/node_modules/npm/{package.json,LICENSE} \
 		$(1)/usr/lib/node_modules/npm/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/node_modules/npm/{AUTHORS,*.md} \
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/node_modules/npm/README.md \
 		$(1)/usr/lib/node_modules/npm/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/node_modules/npm/{node_modules,bin,lib} \
 		$(1)/usr/lib/node_modules/npm/
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(LN) ../lib/node_modules/npm/bin/npm-cli.js $(1)/usr/bin/npm
 	$(LN) ../lib/node_modules/npm/bin/npx-cli.js $(1)/usr/bin/npx
+endef
+
+define Host/Install
+	$(RM) -rf $(1)/lib/node_modules/npm
+	$(call Host/Install/Default)
 endef
 
 $(eval $(call HostBuild))
