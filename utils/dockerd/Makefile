@@ -43,6 +43,7 @@ define Package/dockerd
     +KERNEL_SECCOMP:libseccomp \
     +kmod-ipt-nat \
     +kmod-ipt-physdev \
+    +iptables-mod-ipvs \
     +kmod-nf-ipvs \
     +kmod-veth \
     +libnetwork \
