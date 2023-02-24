@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libwebsockets
 PKG_VERSION:=4.3.2
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
@@ -64,6 +64,7 @@ define Package/libwebsockets-mbedtls
 	DEPENDS += +libmbedtls
 	VARIANT:=mbedtls
 	PROVIDES:=libwebsockets
+	CONFLICTS:=libwebsockets-openssl
 endef
 
 define Package/libwebsockets-full
