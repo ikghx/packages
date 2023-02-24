@@ -306,7 +306,6 @@ fi
 get_seconds CHECK_SECONDS ${check_interval:-10} ${check_unit:-"minutes"} # default 10 min
 get_seconds FORCE_SECONDS ${force_interval:-72} ${force_unit:-"hours"}	 # default 3 days
 get_seconds RETRY_SECONDS ${retry_interval:-60} ${retry_unit:-"seconds"} # default 60 sec
-[ $CHECK_SECONDS -lt 300 ] && CHECK_SECONDS=300		# minimum 5 minutes
 [ $FORCE_SECONDS -gt 0 -a $FORCE_SECONDS -lt $CHECK_SECONDS ] && FORCE_SECONDS=$CHECK_SECONDS	# FORCE_SECONDS >= CHECK_SECONDS or 0
 write_log 7 "check interval: $CHECK_SECONDS seconds"
 write_log 7 "force interval: $FORCE_SECONDS seconds"
