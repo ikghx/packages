@@ -38,16 +38,12 @@ ifeq ($(PKG_VERSION),8.4.0)
 	PKG_HASH:=e30a6e52d10e1f27ed55104ad233c30bd1e99cfb5ff98ab022dc941edd1b2dd4
 endif
 
-ifeq ($(PKG_VERSION),10.3.0)
-	PKG_HASH:=64f404c1a650f27fc33da242e1f2df54952e3963a49e06e73f6940f3223ac344
+ifeq ($(PKG_VERSION),9.3.0)
+	PKG_HASH:=71e197867611f6054aa1119b13a0c0abac12834765fe2d81f35ac57f84f742d1
 endif
 
-ifeq ($(PKG_VERSION),11.3.0)
-	PKG_HASH:=b47cf2818691f5b1e21df2bb38c795fac2cfbd640ede2d0a5e1c89e338a3ac39
-endif
-
-ifeq ($(PKG_VERSION),12.2.0)
-	PKG_HASH:=e549cf9cf3594a00e27b6589d4322d70e0720cdd213f39beb4181e06926230ff
+ifeq ($(PKG_VERSION),10.2.0)
+	PKG_HASH:=b8dd4368bb9c7f0b98188317ee0254dd8cc99d1e3a18d0ff146c855fe16c1d8c
 endif
 
 PATCH_DIR=./patches/$(GCC_VERSION)
@@ -58,8 +54,8 @@ define Package/gcc
   SECTION:=devel
   CATEGORY:=Development
   TITLE:=gcc
-  MAINTAINER:=W. Michael Petullo <mike@flyn.org>
-  DEPENDS:= +binutils +libstdcpp +libzstd @!arc
+  MAINTAINER:=Noble Pepper <gccmaintain@noblepepper.com>
+  DEPENDS:= +binutils +libstdcpp @!arc
   MENU:=1
 endef
 
@@ -234,7 +230,6 @@ define Package/gcc/install
 	chmod +x $(1)/usr/bin/gcc_env.sh
 endef
 
-ifeq ($(CONFIG_INCLUDE_STATIC_LINK_SPEC),y)
 define Package/gcc/postinst
 #!/bin/sh
 
@@ -246,6 +241,5 @@ define Package/gcc/postrm
 
 $(REMOVE_STATIC_SPEC)
 endef
-endif
 
 $(eval $(call BuildPackage,gcc))
