@@ -7,7 +7,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=clash_dev
-PKG_VERSION:=v1.13.0-5-gf78a7cb
+PKG_VERSION:=v1.13.0-6-g71f8f06
 PKG_RELEASE:=1
 
 ifeq ($(ARCH),i386)
