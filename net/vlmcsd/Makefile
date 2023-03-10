@@ -33,6 +33,10 @@ define Package/vlmcsd/description
 	Solaris, Minix, Mac OS, iOS, Windows with or without Cygwin)
 endef
 
+MAKE_FLAGS += \
+	CC=$(TARGET_CC_NOCACHE) \
+	CXX=$(TARGET_CXX_NOCACHE)
+
 define Package/vlmcsd/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/bin/vlmcsd $(1)/usr/bin/vlmcsd

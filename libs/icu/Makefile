@@ -79,8 +79,8 @@ endef
 CONFIGURE_CMD:= ./runConfigureICU
 CONFIGURE_ARGS:= \
 	Linux/gcc \
-	CC="$(TARGET_CC)" \
-	CXX="$(TARGET_CXX)" \
+	CC="$(TARGET_CC_NOCACHE)" \
+	CXX="$(TARGET_CXX_NOCACHE)" \
 	--target=$(GNU_TARGET_NAME) \
 	--host=$(GNU_TARGET_NAME) \
 	--build=$(GNU_HOST_NAME) \
