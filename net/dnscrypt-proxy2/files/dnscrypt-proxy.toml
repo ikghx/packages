@@ -422,7 +422,7 @@ cache = true
 
 
 ## Cache size
-## 缓存大小（KB）
+## 缓存大小（条目数）
 cache_size = 4096
 
 
