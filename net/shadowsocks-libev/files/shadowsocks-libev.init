@@ -83,6 +83,7 @@ ss_xxx() {
 	procd_open_instance "$cfgtype.$cfg"
 	procd_set_param command "$bin" -c "$confjson"
 	[ "$verbose" = 0 ] || procd_append_param command -v
+	[ -z "$acl" ] || procd_append_param command --acl "$acl"
 	if [ -n "$bind_address" ]; then
 		echo "$cfgtype $cfg: uci option bind_address deprecated, please switch to local_address" >&2
 		procd_append_param command -b "$bind_address"
@@ -289,7 +290,8 @@ validate_ss_server_section() {
 		'local_address:ipaddr' \
 		'local_ipv4_address:ip4addr' \
 		'local_ipv6_address:ip6addr' \
-		'bind_address:ipaddr'
+		'bind_address:ipaddr' \
+		'acl:string'
 }
 
 validate_ss_tunnel_section() {
