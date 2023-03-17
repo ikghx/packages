@@ -6,14 +6,14 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=v2rayA
 PKG_VERSION:=2.0.1
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/v2rayA/v2rayA.git
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)/service
-PKG_SOURCE_VERSION:=58a6cf270e43ec3eaeef7d1c65de76278dd6d349
-PKG_MIRROR_HASH:=a06e60c36abfbbf589067d36009351057f0d145030d8ff228e6c6fa62c539e1f
+PKG_SOURCE_VERSION:=fc71a155af2c729bbfd51174241503aac5e09785
+PKG_MIRROR_HASH:=f124ea054e2731092c3792cba15b8dbf41aec7d298110f91c7e086c85c956e07
 
 PKG_LICENSE:=AGPL-3.0-only
 PKG_LICENSE_FILES:=LICENSE
@@ -45,8 +45,7 @@ define Package/v2raya
     +iptables-mod-extra \
     +iptables-mod-filter \
     +iptables-mod-tproxy \
-    +kmod-ipt-nat6 \
-    +xray-core
+    +kmod-ipt-nat6
   URL:=https://v2raya.org
 endef
 
