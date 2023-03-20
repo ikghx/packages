@@ -84,6 +84,14 @@ proto_yggdrasil_add_string() {
 	json_add_string "" $1
 }
 
+proto_yggdrasil_generate_keypair() {
+	json_load "$(yggdrasil -genconf -json)"
+	json_get_vars PublicKey PrivateKey
+	json_cleanup
+	private_key=$PrivateKey
+	public_key=$PublicKey
+}
+
 proto_yggdrasil_setup() {
 	local config="$1"
 	local device="$2"
@@ -107,10 +115,23 @@ proto_yggdrasil_setup() {
 	config_get node_info "${config}" "node_info"
 	config_get node_info_privacy "${config}" "node_info_privacy"
 
-	# Generate config file
+	if [ -z $private_key ]; then
+		proto_yggdrasil_generate_keypair
+	fi;
+
 	umask 077
 	mkdir -p "${ygg_dir}"
 
+	if [ $private_key = "auto" ]; then
+		proto_yggdrasil_generate_keypair
+		uci -t ${ygg_dir}/.uci.${config} batch <<EOF
+			set network.${config}.private_key='${private_key}'
+			set network.${config}.public_key='${public_key}'
+EOF
+		uci -t ${ygg_dir}/.uci.${config} commit;
+	fi;
+
+	# Generate config file
 	json_init
 	json_add_string "IfName" ${config}
 	json_add_string "AdminListen" ${ygg_sock}

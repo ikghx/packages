@@ -46,10 +46,6 @@ define Package/yggdrasil/description
  interfaces simultaneously with much greater throughput.
 endef
 
-define Package/yggdrasil/conffiles
-/etc/config/yggdrasil
-endef
-
 define Package/yggdrasil/install
 	$(INSTALL_DIR) \
 		$(1)/lib/netifd/proto \
