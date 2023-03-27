@@ -22,7 +22,8 @@ PKG_INSTALL:=1
 
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_PACKAGE_libopenssl \
-	CONFIG_PACKAGE_libstdcpp
+	CONFIG_PACKAGE_libstdcpp \
+	CONFIG_PACKAGE_libatomic
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -41,21 +42,20 @@ define Package/libsrt
   CATEGORY:=Libraries
   TITLE:=secure reliable transport
   URL:=https://github.com/Haivision/srt
-  DEPENDS:=+libstdcpp +libatomic $(CRYPTO_DEPENDS)
+  DEPENDS:=+libstdcpp +libatomic +LIBSRT_OPENSSL_SUPPORT:libopenssl
 endef
 
 define Package/libsrt/description
  This package contains a library for srt streaming.
 endef
 
+ifdef CONFIG_LIBSRT_OPENSSL_SUPPORT
+	CMAKE_OPTIONS += -DENABLE_ENCRYPTION=ON
+endif
+
 define Package/libsrt/config
         source "$(SOURCE)/Config.in"
 endef
-
-ifdef CONFIG_LIBSRT_OPENSSL_SUPPORT
-	CMAKE_OPTIONS += -DENABLE_ENCRYPTION=ON
-	CRYPTO_DEPENDS := +libopenssl
-endif
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
