@@ -96,7 +96,7 @@
 #       -z1|-z2
 #        compress outgoing data packets, -z1 = lzo1x, -z2 = zstd, disabled by default
 #        压缩传出数据包，-z1 = lzo1x，-z2 = zstd，默认禁用。
--z2
+#-z2
 #
 #       --select-rtt
 #        select supernode by round trip time if several to choose from (federation).
