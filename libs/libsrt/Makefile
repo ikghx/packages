@@ -9,9 +9,9 @@ PKG_VERSION:=1.5.1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/Haivision/srt/archive/refs/tags/v$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://codeload.github.com/Haivision/srt/tar.gz/v$(PKG_VERSION)?
 PKG_HASH:=af891e7a7ffab61aa76b296982038b3159da690f69ade7c119f445d924b3cf53
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
+PKG_BUILD_DIR:=$(BUILD_DIR)/srt-$(PKG_VERSION)
 
 PKG_MAINTAINER:=Koen Vandeputte <koen.vandeputte@citymesh.com>
 PKG_LICENSE:=MPL-2.0
