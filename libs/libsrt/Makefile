@@ -8,15 +8,14 @@ PKG_NAME:=libsrt
 PKG_VERSION:=1.5.1
 PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/Haivision/srt.git
-PKG_SOURCE_VERSION:=0bc3b03202b3159fc9b085b3ae6d66ec071c25d6
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_MIRROR_HASH:=665cc238a774e0d938195276e1cbff26950ed216606e69e94d192c522337219c
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://github.com/Haivision/srt/archive/refs/tags/v$(PKG_VERSION).tar.gz
+PKG_HASH:=af891e7a7ffab61aa76b296982038b3159da690f69ade7c119f445d924b3cf53
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 
 PKG_MAINTAINER:=Koen Vandeputte <koen.vandeputte@citymesh.com>
-PKG_LICENSE:=BSD-3-Clause
-PKG_LICENSE_FILES:=COPYING
+PKG_LICENSE:=MPL-2.0
+PKG_LICENSE_FILES:=LICENSE
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
@@ -49,13 +48,13 @@ define Package/libsrt/description
  This package contains a library for srt streaming.
 endef
 
+define Package/libsrt/config
+	source "$(SOURCE)/Config.in"
+endef
+
 ifdef CONFIG_LIBSRT_OPENSSL_SUPPORT
 	CMAKE_OPTIONS += -DENABLE_ENCRYPTION=ON
 endif
-
-define Package/libsrt/config
-        source "$(SOURCE)/Config.in"
-endef
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
