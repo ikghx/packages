@@ -397,6 +397,24 @@ proto_modemmanager_setup() {
 		cliauth="${cliauth}${cliauth:+|}$auth"
 	done
 
+	if [ -n "$pincode" ]; then
+		mmcli --modem="${device}" -i any --pin=${pincode} || {
+			proto_notify_error "${interface}" MM_WRONG_PIN
+			proto_block_restart "${interface}"
+			return 1
+		}
+	fi
+
+	mmcli --modem="${device}" --timeout 120 --enable || {
+		proto_notify_error "${interface}" MM_MODEM_DISABLED
+		return 1
+	}
+
+	mmcli --modem="${device}" --3gpp-register-home || {
+		proto_notify_error "${interface}" MM_NOT_REGISTERED
+		return 1
+	}
+
 	if [ -n "$plmn" ]; then
 		echo "registering to network '${plmn}'..."
 		mmcli --modem="${ctl_device}" --3gpp-register-in-operator="$plmn"
@@ -414,7 +432,7 @@ proto_modemmanager_setup() {
 		allow_roaming="yes"
 	fi
 
-	connectargs="apn=${apn}${iptype:+,ip-type=${iptype}}${plmn:+,operator-id=${plmn}}${cliauth:+,allowed-auth=${cliauth}}${username:+,user=${username}}${password:+,password=${password}}${pincode:+,pin=${pincode}},allow-roaming=${allow_roaming}"
+	connectargs="apn=${apn}${iptype:+,ip-type=${iptype}}${plmn:+,operator-id=${plmn}}${cliauth:+,allowed-auth=${cliauth}}${username:+,user=${username}}${password:+,password=${password}},allow-roaming=${allow_roaming}"
 	mmcli --modem="${ctl_device}" --timeout 120 --simple-connect="${connectargs}" || {
 		proto_notify_error "${interface}" MM_CONNECT_FAILED
 		proto_block_restart "${interface}"
@@ -445,6 +463,8 @@ proto_modemmanager_setup() {
 	else
 		echo "modem RAT not setting"
 	fi
+
+	proto_run_command "$interface" mmcli --modem="${device}" --track-state
 
 	# check if Signal refresh rate is set
 	if [ -n "${signalrate}" ] && [ "${signalrate}" -eq "${signalrate}" ] 2>/dev/null; then
