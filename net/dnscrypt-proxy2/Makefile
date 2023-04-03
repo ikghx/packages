@@ -50,6 +50,10 @@ define Package/dnscrypt-proxy2/install
 	$(INSTALL_DIR) $(1)/etc/dnscrypt-proxy2
 	$(INSTALL_CONF) ./files/dnscrypt-proxy.toml $(1)/etc/dnscrypt-proxy2/dnscrypt-proxy.toml
 	$(INSTALL_CONF) ./files/blocked-names.txt $(1)/etc/dnscrypt-proxy2/blocked-names.txt
+	$(INSTALL_CONF) ./files/public-resolvers.md $(1)/etc/dnscrypt-proxy2/public-resolvers.md
+	$(INSTALL_CONF) ./files/public-resolvers.md.minisig $(1)/etc/dnscrypt-proxy2/public-resolvers.md.minisig
+	$(INSTALL_CONF) ./files/relays.md $(1)/etc/dnscrypt-proxy2/relays.md
+	$(INSTALL_CONF) ./files/relays.md.minisig $(1)/etc/dnscrypt-proxy2/relays.md.minisig
 
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/dnscrypt-proxy.init $(1)/etc/init.d/dnscrypt-proxy
