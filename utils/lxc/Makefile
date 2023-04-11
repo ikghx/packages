@@ -10,7 +10,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=lxc
 PKG_VERSION:=5.0.2
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://linuxcontainers.org/downloads/lxc/
@@ -34,6 +34,7 @@ MESON_ARGS += \
 	-Dseccomp=$(if $(CONFIG_LXC_SECCOMP),true,false) \
 	-Dexamples=false \
 	-Db_pie=true \
+	-Druntime-path=/var/run \
 	-Ddistrosysconfdir=/etc/lxc
 
 LXC_APPLETS_BIN += \
