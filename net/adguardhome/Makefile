@@ -6,13 +6,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=adguardhome
-PKG_VERSION:=0.107.27
+PKG_VERSION:=0.107.28
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_VERSION:=v$(PKG_VERSION)
 PKG_SOURCE_URL:=https://github.com/AdguardTeam/AdGuardHome
-PKG_MIRROR_HASH:=16dc48fbd24dc1d5d37594b75ac9e48fcad63ff56c6e4d087dd6e1666089f57e
+PKG_MIRROR_HASH:=c45bbc2503122dee349be2c8d4a98664c0e0fdcfc9fa96e46e75b618afb43e85
 
 PKG_LICENSE:=GPL-3.0-only
 PKG_LICENSE_FILES:=LICENSE.txt
@@ -56,7 +56,7 @@ endef
 define Build/Compile
 	( \
 		pushd $(PKG_BUILD_DIR) ; \
-		make js-deps js-build ; \
+		NODE_OPTIONS=--openssl-legacy-provider make js-deps js-build ; \
 		popd ; \
 		$(call GoPackage/Build/Compile) ; \
 	)

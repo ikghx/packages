@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=openssh
-PKG_VERSION:=9.0p1
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_VERSION:=9.3p1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/ \
 		https://ftp.spline.de/pub/OpenBSD/OpenSSH/portable/
-PKG_HASH:=03974302161e9ecce32153cfa10012f1e65c8f3750f573a73ab1befd5972a28a
+PKG_HASH:=e9baba7701a76a51f3d85a62c383a3c9dcd97fa900b859bc7db114c1868af8a8
 
 PKG_LICENSE:=BSD ISC
 PKG_LICENSE_FILES:=LICENCE
@@ -36,7 +36,6 @@ define Package/openssh/Default
 	MAINTAINER:=Peter Wagner <tripolar@gmx.at>
 	URL:=http://www.openssh.com/
 	SUBMENU:=SSH
-	VARIANT:=without-pam
 endef
 
 define Package/openssh-moduli
@@ -89,6 +88,7 @@ define Package/openssh-server
 	DEPENDS+= +openssh-keygen +OPENSSH_LIBFIDO2:libfido2
 	TITLE+= server
 	USERID:=sshd=22:sshd=22
+	VARIANT:=without-pam
 endef
 
 define Package/openssh-server/config
@@ -105,6 +105,7 @@ define Package/openssh-server/conffiles
 /etc/ssh/ssh_host_ed25519_key.pub
 /etc/ssh/ssh_host_rsa_key
 /etc/ssh/ssh_host_rsa_key.pub
+/root/.ssh/authorized_keys
 endef
 
 define Package/openssh-server-pam

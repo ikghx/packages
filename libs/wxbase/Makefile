@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=wxbase
-PKG_VERSION:=3.0.5.1
+PKG_VERSION:=3.2.2.1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=wxWidgets-$(PKG_VERSION).tar.bz2
-PKG_SOURCE_URL:=https://github.com/wxWidgets/wxWidgets/releases/download/v3.0.5.1/
-PKG_HASH:=440f6e73cf5afb2cbf9af10cec8da6cdd3d3998d527598a53db87099524ac807
+PKG_SOURCE_URL:=https://github.com/wxWidgets/wxWidgets/releases/download/v$(PKG_VERSION)
+PKG_HASH:=dffcb6be71296fff4b7f8840eb1b510178f57aa2eb236b20da41182009242c02
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/wxWidgets-$(PKG_VERSION)
 PKG_CHECK_FORMAT_SECURITY:=0
@@ -27,15 +27,15 @@ define Package/libwxbase
   CATEGORY:=Libraries
   TITLE:=Cross-platform C++ framework
   URL:=http://www.wxwidgets.org/
-  DEPENDS:=+libexpat +libstdcpp +zlib +libpthread
+  DEPENDS:=+libexpat +libstdcpp +zlib +libpthread +libcurl
 endef
 
 define Package/libwxbase/description
- wxBase contains most of the non-GUI classes from the wxWindows cross-
- -platform C++ framework. There are 2 categories: generally useful portable
- code (date/time handling, command line parsing, regular expression support)
- and wrappers for the OS objects (files, directories, sockets, threads,
- etc.) allowing you to write portable programs easily.
+  wxBase contains most of the non-GUI classes from the wxWindows cross-
+  -platform C++ framework. There are 2 categories: generally useful portable
+  code (date/time handling, command line parsing, regular expression support)
+  and wrappers for the OS objects (files, directories, sockets, threads,
+  etc.) allowing you to write portable programs easily.
 endef
 
 TARGET_CFLAGS += $(FPIC)
@@ -43,18 +43,15 @@ TARGET_CFLAGS += $(FPIC)
 CONFIGURE_ARGS+= \
 	--enable-shared \
 	--disable-rpath \
-	--with-gnu-ld \
 	--disable-gui \
 	--disable-monolithic \
 	--enable-plugins \
 	--disable-universal \
 	--disable-nanox \
-	--disable-gtk2 \
 	--disable-gpe \
-	--disable-optimise \
+	--enable-optimise \
 	--disable-debug \
 	--disable-stl \
-	--disable-omf \
 	--disable-debug_flag \
 	--disable-mediactrl \
 	--disable-debug_info \
@@ -64,55 +61,61 @@ CONFIGURE_ARGS+= \
 	--disable-profile \
 	--disable-no_rtti \
 	--disable-no_exceptions \
-	--disable-compat22 \
-	--disable-compat24 \
+	--disable-compat28 \
+	--disable-compat30 \
 	--enable-intl \
 	--enable-ipv6 \
 	--disable-backtrace \
 	--enable-exceptions \
 	--disable-sound \
 	--enable-largefile \
-	--enable-unicode \
 	\
 	--without-gtk \
 	--without-motif \
 	--without-mac \
+	--without-msw \
 	--without-cocoa \
 	--without-wine \
-	--without-msw \
-	--without-pm \
-	--without-mgl \
-	--without-microwin \
 	--without-x11 \
 	--without-libpng \
 	--without-libjpeg \
 	--without-libtiff \
+	--without-libjbig \
 	--without-libxpm \
 	--without-libmspack \
 	--without-sdl \
-	--without-gnomeprint \
 	--without-opengl \
 	--without-dmalloc \
 	--with-regex="sys" \
 	--with-zlib="sys" \
-	--without-odbc \
 	--with-expat="sys" \
 	--without-gtk-prefix \
 	--without-x \
 	--without-libiconv-prefix \
 	--without-sdl-prefix \
-	--without-cppunit-prefix \
 	--disable-precomp-headers
+
+CONFIGURE_ARGS := $(filter-out --disable-nls, $(CONFIGURE_ARGS))
+
+UNICODE=yes
+
+ifeq ($(UNICODE),yes)
+  CONFIGURE_ARGS+= --enable-unicode
+  LIB_PFX:=u
+else
+  CONFIGURE_ARGS+= --disable-unicode
+  LIB_PFX:=
+endif
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wx-config $(1)/usr/bin/
 	$(SED) "s,$(PKG_BUILD_DIR),$(STAGING_DIR)/usr,g" $(1)/usr/bin/wx-config
-	$(SED) 's,-I$$$${includedir}/wx-3.0,-I$(STAGING_DIR)/usr/include/wx-3.0,g' $(1)/usr/bin/wx-config
+	$(SED) 's,-I$$$${includedir}/wx-3.2,-I$(STAGING_DIR)/usr/include/wx-3.2,g' $(1)/usr/bin/wx-config
 	$(SED) 's,-I$$$${libdir}/wx/include,-I$(STAGING_DIR)/usr/lib/wx/include,g' $(1)/usr/bin/wx-config
 
 	$(INSTALL_DIR) $(1)/usr/include
-	$(CP) $(PKG_INSTALL_DIR)/usr/include/wx-3.0 $(1)/usr/include/
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/wx-3.2 $(1)/usr/include/
 
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libwx_*.so* $(1)/usr/lib/

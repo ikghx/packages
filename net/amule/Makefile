@@ -46,8 +46,8 @@ TARGET_LDFLAGS+= $(if $(ICONV_FULL),-liconv)
 CONFIGURE_ARGS+= \
 	--disable-static \
 	--disable-rpath \
-	--disable-ccache \
-	--disable-optimize \
+	--enable-ccache \
+	--enable-optimize \
 	--disable-profile \
 	--disable-monolithic \
 	--enable-amule-daemon \
@@ -56,17 +56,19 @@ CONFIGURE_ARGS+= \
 	--disable-amule-gui \
 	--disable-cas \
 	--disable-wxcas \
-	--disable-ed2k \
+	--disable-xas \
+	--enable-ed2k \
 	--disable-alc \
 	--disable-alcc \
 	--disable-debug \
 	--disable-fileview \
 	--enable-mmap \
 	--disable-plasmamule \
-	--disable-geoip \
+	--without-wxdebug \
 	--disable-nls \
 	--enable-dlp \
 	--enable-upnp \
+	--without-gnu-malloc \
 	--with-gnu-ld \
 	--with-zlib="$(STAGING_DIR)/usr" \
 	--with-gdlib-prefix="$(STAGING_DIR)/usr" \
@@ -77,18 +79,26 @@ CONFIGURE_ARGS+= \
 	--with-libintl-prefix="$(INTL_PREFIX)" \
 	--with-libupnp-prefix="$(STAGING_DIR)/usr" \
 	--with-boost="$(STAGING_DIR)/usr" \
-	--without-gnu-malloc \
-	--without-wxdebug
-
-MAKE_FLAGS += HOSTCC="$(HOSTCC)"
+	--disable-debug
 
 define Build/Configure
-	( cd $(PKG_BUILD_DIR); $(SHELL) autogen.sh; )
+	cd $(PKG_BUILD_DIR); $(SHELL) autogen.sh
 	$(call Build/Configure/Default)
+endef
+
 ifeq ($(CONFIG_AMULE_CRYPTOPP_STATIC_LINKING),y)
-	$(SED) 's;^CRYPTOPP_LIBS.*;CRYPTOPP_LIBS \= "$(STAGING_DIR)/usr/lib/libcryptopp.a";g' \
-		$(PKG_BUILD_DIR)/src/Makefile
+	SED_CMD:=sed
+else
+	SED_CMD:=true
 endif
+
+define Build/Compile
+	$(SED_CMD) -i 's;^CRYPTOPP_LIBS.*;CRYPTOPP_LIBS \= "$(STAGING_DIR)/usr/lib/libcryptopp.a";g' \
+		$(PKG_BUILD_DIR)/src/Makefile
+	$(MAKE) -C $(PKG_BUILD_DIR) \
+		HOSTCC="$(HOSTCC)" \
+		DESTDIR="$(PKG_INSTALL_DIR)" \
+		all
 endef
 
 define Package/amule/install
