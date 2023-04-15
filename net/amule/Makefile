@@ -31,7 +31,7 @@ define Package/amule
   URL:=http://www.amule.org/
   DEPENDS:=+libpng +libpthread +libncurses +libreadline +libwxbase +libupnp +libbfd +libintl-full \
 	$(ICONV_DEPENDS) $(INTL_DEPENDS) +!AMULE_CRYPTOPP_STATIC_LINKING:libcryptopp \
-	+boost-system +antileech +ca-bundle
+	+boost-system +antileech
   USERID:=amule=4662:amule=4662
 endef
 
@@ -46,8 +46,8 @@ TARGET_LDFLAGS+= $(if $(ICONV_FULL),-liconv)
 CONFIGURE_ARGS+= \
 	--disable-static \
 	--disable-rpath \
-	--enable-ccache \
-	--enable-optimize \
+	--disable-ccache \
+	--disable-optimize \
 	--disable-profile \
 	--disable-monolithic \
 	--enable-amule-daemon \
@@ -57,13 +57,14 @@ CONFIGURE_ARGS+= \
 	--disable-cas \
 	--disable-wxcas \
 	--disable-xas \
-	--enable-ed2k \
+	--disable-ed2k \
 	--disable-alc \
 	--disable-alcc \
 	--disable-debug \
 	--disable-fileview \
 	--enable-mmap \
 	--disable-plasmamule \
+	--disable-geoip \
 	--without-wxdebug \
 	--disable-nls \
 	--enable-dlp \
