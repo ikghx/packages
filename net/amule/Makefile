@@ -83,7 +83,7 @@ CONFIGURE_ARGS+= \
 	--disable-debug
 
 define Build/Configure
-	cd $(PKG_BUILD_DIR); $(SHELL) autogen.sh
+	( cd $(PKG_BUILD_DIR); $(SHELL) autogen.sh; )
 	$(call Build/Configure/Default)
 endef
 
