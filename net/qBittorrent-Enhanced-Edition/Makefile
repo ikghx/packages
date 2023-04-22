@@ -1,8 +1,6 @@
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# Copyright (C) 2017-2021
-#
-# This is free software, licensed under the GNU General Public License v2.
-#
+# Copyright (C) 2017-2023 bishuiwuhen
 
 include $(TOPDIR)/rules.mk
 
@@ -19,7 +17,9 @@ PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-release-$(PKG_VERSION)
 PKG_LICENSE:=GPL-2.0+
 PKG_LICENSE_FILES:=COPYING
 
-PKG_BUILD_DEPENDS:=qttools/host boost
+PKG_BUILD_DEPENDS:=\
+	boost  qttools/host libtorrent-rasterbar \
+	openssl qtbase zlib
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1

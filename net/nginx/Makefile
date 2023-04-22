@@ -26,6 +26,7 @@ PKG_INSTALL:=1
 
 PKG_CONFIG_DEPENDS := \
 	CONFIG_NGINX_DAV \
+	CONFIG_NGINX_DAV_EXT \
 	CONFIG_NGINX_FLV \
 	CONFIG_NGINX_UBUS \
 	CONFIG_NGINX_STUB_STATUS \
@@ -217,7 +218,10 @@ ADDITIONAL_MODULES:= --with-http_ssl_module
     ADDITIONAL_MODULES += --with-http_flv_module
   endif
   ifeq ($(CONFIG_NGINX_DAV),y)
-    ADDITIONAL_MODULES += --with-http_dav_module --add-module=$(PKG_BUILD_DIR)/nginx-dav-ext-module
+    ADDITIONAL_MODULES += --with-http_dav_module
+  endif
+  ifeq ($(CONFIG_NGINX_DAV_EXT),y)
+    ADDITIONAL_MODULES += --add-module=$(PKG_BUILD_DIR)/nginx-dav-ext-module
   endif
   ifeq ($(CONFIG_NGINX_UBUS),y)
     ADDITIONAL_MODULES += --add-module=$(PKG_BUILD_DIR)/nginx-ubus-module
@@ -470,7 +474,7 @@ endef
 define Build/Patch
 	$(if $(QUILT),rm -rf $(PKG_BUILD_DIR)/patches; mkdir -p $(PKG_BUILD_DIR)/patches)
 	$(call PatchDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/nginx,nginx/)
-ifneq "$(or $(CONFIG_NGINX_DAV),$(QUILT))" ""
+ifneq "$(or $(CONFIG_NGINX_DAV_EXT),$(QUILT))" ""
 	$(call PatchDir,$(PKG_BUILD_DIR),$(PATCH_DIR)/dav-nginx,dav-nginx/)
 endif
 ifneq "$(or $(CONFIG_NGINX_LUA),$(QUILT))" ""
@@ -524,7 +528,7 @@ ifeq ($(CONFIG_NGINX_TS_MODULE),y)
   $(Prepare/nginx-ts)
 endif
 
-ifneq "$(or $(CONFIG_NGINX_DAV),$(QUILT))" ""
+ifneq "$(or $(CONFIG_NGINX_DAV_EXT),$(QUILT))" ""
   $(eval $(call Download,nginx-dav-ext-module))
   $(Prepare/nginx-dav-ext-module)
 endif
