@@ -27,7 +27,7 @@ define Package/libwxbase
   CATEGORY:=Libraries
   TITLE:=Cross-platform C++ framework
   URL:=http://www.wxwidgets.org/
-  DEPENDS:=+libexpat +libstdcpp +zlib +libpthread +libcurl +libpcre2-32
+  DEPENDS:=+libexpat +libstdcpp +zlib +libpcre2-32 +libcurl
 endef
 
 define Package/libwxbase/description

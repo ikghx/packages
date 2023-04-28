@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=acme-common
-PKG_VERSION:=1.0.2
+PKG_VERSION:=1.0.3
 
 PKG_MAINTAINER:=Toke Høiland-Jørgensen <toke@toke.dk>
 PKG_LICENSE:=GPL-3.0-only
@@ -44,12 +44,6 @@ define Package/acme-common/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/acme.init $(1)/etc/init.d/acme
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/acme
-endef
-
-define Package/acme-common/postinst
-#!/bin/sh
-grep -q '/etc/init.d/acme' /etc/crontabs/root 2>/dev/null && exit 0
-echo "0 0 * * * /etc/init.d/acme start" >> /etc/crontabs/root
 endef
 
 define Package/acme-common/prerm
