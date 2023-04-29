@@ -34,6 +34,7 @@ define Package/qbittorrent
 	CATEGORY:=Network
 	SUBMENU:=BitTorrent
 	DEPENDS:= \
+		+@PACKAGE_boost +@PACKAGE_boost-system \
 		+libgcc +libstdcpp \
 		+libtorrent-rasterbar \
 		+libopenssl \
@@ -82,7 +83,7 @@ ifdef CONFIG_USE_GLIBC
   TARGET_LDFLAGS += -ldl -lrt -lpthread
 endif
 
-TARGET_CFLAGS += -ffunction-sections -fdata-sections
+TARGET_CFLAGS += -fPIE -ffunction-sections -fdata-sections
 TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 
 define Package/qbittorrent/conffiles
