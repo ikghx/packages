@@ -25,7 +25,7 @@ procd_lock
 
 config_load mwan3
 config_get enabled $INTERFACE enabled 0
-[ "$enabled" == "1" ] || {
+[ "$enabled" = "1" ] || {
 	exit 0
 }
 
@@ -44,7 +44,7 @@ mwan3_add_failover_metric() {
 
 	config_get family $iface family ipv4
 
-	if [ "$family" == "ipv4" ]; then
+	if [ "$family" = "ipv4" ]; then
 		if ubus call network.interface.${iface}_4 status 1>/dev/null 2>&1; then
 			network_get_gateway route_args ${iface}_4
 		else
@@ -66,7 +66,7 @@ mwan3_add_failover_metric() {
 		fi
 	fi
 
-	if [ "$family" == "ipv6" ]; then
+	if [ "$family" = "ipv6" ]; then
 		if ubus call network.interface.${iface}_6 status 1>/dev/null 2>&1; then
 			network_get_gateway6 route_args ${iface}_6
 		else
@@ -95,11 +95,11 @@ mwan3_del_failover_metric() {
 
 	config_get family $iface family ipv4
 
-	if [ "$family" == "ipv4" ]; then
+	if [ "$family" = "ipv4" ]; then
 		$IP4 route del default dev $device proto static metric $metric 1>/dev/null 2>&1
 	fi
 
-	if [ "$family" == "ipv6" ]; then
+	if [ "$family" = "ipv6" ]; then
 		$IP6 route del default dev $device proto static metric $metric 1>/dev/null 2>&1
 	fi
 }

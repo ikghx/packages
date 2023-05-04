@@ -264,6 +264,7 @@ mwan3_set_general_iptables()
 		if [ -n "${current##*-N mwan3_ifaces_in*}" ]; then
 			mwan3_push_update -N mwan3_ifaces_in
 		fi
+
 		if [ "$IPT" = "$IPT6" ]; then
 			if [ -n "${current##*-N mwan3_ifaces_pre*}" ]; then
 				mwan3_push_update -N mwan3_ifaces_pre
@@ -346,6 +347,16 @@ mwan3_set_general_iptables()
 			done
 		fi
 
+		if [ -n "${current##*-N mwan3_pre*}" ]; then
+			mwan3_push_update -N mwan3_pre
+			mwan3_push_update -A mwan3_pre \
+					  -m mark ! --mark "0x0/$MMX_MASK" \
+					  -j MARK --set-xmark "0x0/$MMX_MASK"
+		fi
+
+		if [ -n "${current##*-A PREROUTING -j mwan3_pre*}" ]; then
+			mwan3_push_update -A PREROUTING -j mwan3_pre
+		fi
 		if [ -n "${current##*-A PREROUTING -j mwan3_hook*}" ]; then
 			mwan3_push_update -A PREROUTING -j mwan3_hook
 		fi
@@ -956,7 +967,7 @@ mwan3_set_user_iptables_rule()
 		fi
 
 		mwan3_push_update -F "mwan3_rule_$1"
-		config_foreach mwan3_set_sticky_iptables interface "$rule" $ipv "$policy"
+		config_foreach mwan3_set_sticky_iptables interface "$rule" "$ipv" "$policy"
 
 
 		mwan3_push_update -A "mwan3_rule_$1" \
