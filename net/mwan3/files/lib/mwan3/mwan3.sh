@@ -350,7 +350,12 @@ mwan3_set_general_iptables()
 		if [ -n "${current##*-N mwan3_pre*}" ]; then
 			mwan3_push_update -N mwan3_pre
 			mwan3_push_update -A mwan3_pre \
-					  -m mark ! --mark "0x0/$MMX_MASK" \
+					  -j MARK --set-xmark "0x0/$MMX_MASK"
+		fi
+
+		if [ -n "${current##*-N mwan3_post*}" ]; then
+			mwan3_push_update -N mwan3_post
+			mwan3_push_update -A mwan3_post \
 					  -j MARK --set-xmark "0x0/$MMX_MASK"
 		fi
 
@@ -362,6 +367,9 @@ mwan3_set_general_iptables()
 		fi
 		if [ -n "${current##*-A OUTPUT -j mwan3_hook*}" ]; then
 			mwan3_push_update -A OUTPUT -j mwan3_hook
+		fi
+		if [ -n "${current##*-A POSTROUTING -j mwan3_post*}" ]; then
+			mwan3_push_update -A POSTROUTING -j mwan3_post
 		fi
 		mwan3_push_update COMMIT
 		mwan3_push_update ""
