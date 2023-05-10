@@ -449,7 +449,7 @@ proto_modemmanager_setup() {
 		allow_roaming="yes"
 	fi
 
-	connectargs="apn=${apn}${iptype:+,ip-type=${iptype}}${cliauth:+,allowed-auth=${cliauth}}${username:+,user=${username}}${password:+,password=${password}}"
+	connectargs="apn=${apn}${iptype:+,ip-type=${iptype}}${plmn:+,operator-id=${plmn}}${cliauth:+,allowed-auth=${cliauth}}${username:+,user=${username}}${password:+,password=${password}},allow-roaming=${allow_roaming}"
 	mmcli --modem="${ctl_device}" --timeout 120 --simple-connect="${connectargs}" || {
 		proto_notify_error "${interface}" MM_CONNECT_FAILED
 		proto_block_restart "${interface}"
