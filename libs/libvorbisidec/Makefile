@@ -35,8 +35,7 @@ endef
 
 define Package/libvorbisidec/description
   libvorbisidec is "tremor", a fixed-point implementation of libvorbis.
-  It also has libogg built-in. It is suitable as a replacement for
-  libvorbis and libogg in tremor-aware applications.
+  It is suitable as a replacement for libvorbis in tremor-aware applications.
   Tremor is a decoder only.
 endef
 
