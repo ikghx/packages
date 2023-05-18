@@ -9,7 +9,7 @@ HOOK=/usr/lib/acme/hook
 LOG_TAG=acme
 
 # shellcheck source=net/acme/files/functions.sh
-. /usr/lib/acme/functions.sh
+. "$IPKG_INSTROOT/usr/lib/acme/functions.sh"
 
 cleanup() {
 	log debug "cleaning up"
@@ -39,7 +39,7 @@ load_options() {
 	export domains
 	export main_domain
 	main_domain="$(first_arg $domains)"
-	config_get keylength "$section" keylength ec-256
+	config_get keylength "$section" keylength
 	if [ "$keylength" ]; then
 		log warn "Option \"keylength\" is deprecated, please use key_type (e.g., ec256, rsa2048) instead."
 		case $keylength in
