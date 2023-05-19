@@ -26,7 +26,7 @@ define Package/ttyd
 	SECTION:=utils
 	CATEGORY:=Utilities
 	TITLE:=Command-line tool for sharing terminal over the web
-	DEPENDS:=+libopenssl +libjson-c +libuv +zlib +libwebsockets-full
+	DEPENDS:=+libcap +libopenssl +libjson-c +libuv +zlib +libwebsockets-full
 	URL:=https://github.com/tsl0922/ttyd
 	SUBMENU:=Terminal
 endef
