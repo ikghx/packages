@@ -7,7 +7,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=webd
-PKG_VERSION:=20220512
+PKG_VERSION:=20230531
 PKG_RELEASE:=1
 
 ifeq ($(ARCH),x86_64)
