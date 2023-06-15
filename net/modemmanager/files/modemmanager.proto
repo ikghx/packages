@@ -371,12 +371,6 @@ proto_modemmanager_setup() {
 		proto_set_available "${interface}" 0
 		return 1
 	}
-	# "qcom-soc" is a special case on devices where modem is part of the SoC.
-	[ -e "${ctl_device}" ] || [ "${ctl_device}" = "qcom-soc" ] || {
-		echo "Device not found in sysfs"
-		proto_set_available "${interface}" 0
-		return 1
-	}
 
 	# validate that ModemManager is handling the modem at the sysfs path
 	modemstatus=$(mmcli --modem="${ctl_device}" --output-keyvalue)

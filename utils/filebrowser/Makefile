@@ -1,8 +1,6 @@
+# SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright (C) 2021 ImmortalWrt
-# This is free software, licensed under the GNU General Public License v3.
-# See /LICENSE.txt for more information.
-#
+# Copyright (C) 2021 ImmortalWrt.org
 
 include $(TOPDIR)/rules.mk
 
@@ -10,7 +8,7 @@ PKG_NAME:=filebrowser
 PKG_VERSION:=2.23.0
 PKG_RELEASE:=1
 
-PKG_SOURCE:=filebrowser-$(PKG_VERSION).tar.gz
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/filebrowser/filebrowser/tar.gz/v$(PKG_VERSION)?
 PKG_HASH:=9a99f0c51114ff7e3df89190729a8ca1c0ed48c491a5c6f9d9e266eb6657898d
 
@@ -45,11 +43,15 @@ define Package/filebrowser/description
   It can be used as a standalone app or as a middleware.
 endef
 
+define Package/filebrowser/conffiles
+/etc/filebrowser/
+/etc/config/filebrowser
+endef
+
 define Build/Compile
 	( \
 		pushd "$(PKG_BUILD_DIR)/frontend" ; \
 		npm ci; \
-		npm run lint ; \
 		npm run build ; \
 		popd ; \
 		$(call GoPackage/Build/Compile) ; \
