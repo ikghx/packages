@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=rp-pppoe
-PKG_VERSION:=3.15
+PKG_VERSION:=4.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://dianne.skoll.ca/projects/rp-pppoe/download
-PKG_HASH:=b1f318bc7e4e5b0fd8a8e23e8803f5e6e43165245a5a10a7162a92a6cf17829a
+PKG_HASH:=41ac34e5db4482f7a558780d3b897bdbb21fae3fef4645d2852c3c0c19d81cea
 
 PKG_MAINTAINER:=
 PKG_LICENSE:=LGPL-2.0-or-later
@@ -29,7 +29,7 @@ define Package/rp-pppoe/Default
   SECTION:=net
   CATEGORY:=Network
   TITLE:=PPPoE (PPP over Ethernet)
-  URL:=https://github.com/dfskoll/rp-pppoe
+  URL:=https://dianne.skoll.ca/projects/rp-pppoe/
   SUBMENU:=Dial-in/up
 endef
 
@@ -106,7 +106,7 @@ endef
 TARGET_CFLAGS += -I$(PKG_BUILD_DIR)/src/libevent -isystem $(PKG_BUILD_DIR)/missing-headers -D_BSD_SOURCE
 CONFIGURE_PATH := ./src
 CONFIGURE_ARGS += ac_cv_path_PPPD=/usr/sbin/pppd --enable-plugin=$(STAGING_DIR)/usr/include/
-MAKE_FLAGS := DESTDIR="$(PKG_INSTALL_DIR)" PLUGIN_PATH=pppoe.so install
+MAKE_FLAGS := DESTDIR="$(PKG_INSTALL_DIR)" PLUGIN_PATH=rp-pppoe.so install
 MAKE_PATH := ./src
 
 define Build/Prepare
@@ -121,16 +121,23 @@ define Package/rp-pppoe-common/install
 endef
 
 define Package/rp-pppoe-relay/install
+	$(INSTALL_DIR) $(1)/etc/init.d $(1)/etc/uci-defaults
+	$(INSTALL_BIN) ./files/pppoe-relay.init $(1)/etc/init.d/pppoe-relay
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(CP) $(PKG_INSTALL_DIR)/usr/sbin/pppoe-relay $(1)/usr/sbin/
+	$(INSTALL_DATA) ./files/pppoe-relay.default $(1)/etc/uci-defaults/
 endef
 
 define Package/rp-pppoe-server/install
+	$(INSTALL_DIR) $(1)/etc/init.d $(1)/etc/uci-defaults
+	$(INSTALL_BIN) ./files/pppoe-server.init $(1)/etc/init.d/pppoe-server
 	$(INSTALL_DIR) $(1)/etc/ppp
 	$(INSTALL_CONF) ./files/ppp/{options,pap-secrets,pppoe-server-options} $(1)/etc/ppp/
 	$(INSTALL_DIR) $(1)/etc/ppp/plugins
 	$(INSTALL_DIR) $(1)/usr/sbin
+	$(CP) $(PKG_INSTALL_DIR)/etc/ppp/plugins/rp-pppoe.so $(1)/etc/ppp/plugins/
 	$(CP) $(PKG_INSTALL_DIR)/usr/sbin/pppoe-server $(1)/usr/sbin/
+	$(INSTALL_DATA) ./files/pppoe-server.default $(1)/etc/uci-defaults/
 endef
 
 define Package/rp-pppoe-sniff/install

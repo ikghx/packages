@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sstp-client
-PKG_VERSION:=1.0.13
+PKG_VERSION:=1.0.18
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/sstp-client/$(PKG_VERSION)
-PKG_HASH:=961258fca0795d8ad60b047942cf7cb53d025d353fd1e4ba08c2b75799f5321b
+PKG_HASH:=d879f4f35ab7eae87486edc48b50f99a9af65f5eb6fb4427993ca578bb0e0dc8
 
 PKG_MAINTAINER:=Federico Di Marco <fededim@gmail.com>
 PKG_LICENSE:=GPL-2.0-or-later
