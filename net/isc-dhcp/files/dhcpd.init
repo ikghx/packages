@@ -274,6 +274,7 @@ static_srvhosts() {
 static_host_add() {
 	local cfg="$1"
 	local broadcast hostid macn macs mac name ip ips revip leasetime
+	local force_send extra_options option
 
 	config_get macs "$cfg" "mac"
 	[ -n "$macs" ] || return 0
@@ -295,6 +296,23 @@ static_host_add() {
 	if [ -n "$hostid" ] ; then
 		hex_to_hostid hostid "$hostid" || return 1
 	fi
+
+	config_get force_send "$cfg" "force_send"
+	extra_options=
+	local _IFS="$IFS" IFS=','
+	for option in $force_send; do
+		case "$option" in
+		hostname)
+			extra_options="$extra_options${extra_options:+ }0c" ;;
+		domain-name)
+			extra_options="$extra_options${extra_options:+ }0f" ;;
+		fqdn)
+			extra_options="$extra_options${extra_options:+ }51" ;;
+		*)
+			echo "unknown option: $option" >&2 ;;
+		esac
+	done
+	IFS="$_IFS"
 
 	macn=0
 	for mac in $macs; do
@@ -328,6 +346,9 @@ static_host_add() {
 		fi
 		config_list_foreach "$cfg" "routes" append_routes
 		config_list_foreach "$cfg" "dhcp_option" append_dhcp_options
+		if [ -n "$extra_options" ]; then
+			echo -e " if exists dhcp-parameter-request-list {\n  option dhcp-parameter-request-list = concat(option dhcp-parameter-request-list, $extra_options);\n }"
+		fi
 		echo "}"
 	done
 
@@ -348,7 +369,9 @@ gen_dhcp_subnet() {
 	local cfg="$1"
 
 	echo "subnet $NETWORK netmask $NETMASK {"
-	echo " range $START $END;"
+	if [ -n "$START" ] && [ -n "$END" ]; then
+		echo " range $START $END;"
+	fi
 	echo " option subnet-mask $netmask;"
 	if [ "$BROADCAST" != "0.0.0.0" ] ; then
 		echo " option broadcast-address $BROADCAST;"
@@ -364,7 +387,7 @@ gen_dhcp_subnet() {
 		echo " default-lease-time $leasetime;"
 		echo " max-lease-time $leasetime;"
 	fi
-	if [ "$nodefault" -eq 0 ] ; then
+	if [ "$defaultroute" -eq 1 ] ; then
 		echo " option routers $gateway;"
 	fi
 	echo " option domain-name-servers $DNS;"
@@ -376,7 +399,7 @@ gen_dhcp_subnet() {
 dhcpd_add() {
 	local cfg="$1" synthesize="$2"
 	local dhcp6range="::"
-	local dynamicdhcp nodefault end gateway ifname ignore leasetime limit net netmask
+	local dynamicdhcp defaultroute end gateway ifname ignore leasetime limit net netmask
 	local proto networkid start subnet
 	local IP NETMASK BROADCAST NETWORK PREFIX DNS START END
 
@@ -387,10 +410,13 @@ dhcpd_add() {
 	[ -n "$net" ] || return 0
 
 	config_get start "$cfg" "start"
-	[ -n "$start" ] || return 0
-
 	config_get limit "$cfg" "limit"
-	[ -n "$limit" ] || return 0
+
+	case "$start:$limit" in
+	":*"|"*:")
+		echo "dhcpd: start/limit must be used together in $cfg" >&2
+		return 0
+	esac
 
 	network_get_subnet subnet "$net" || return 0
 	network_get_device ifname "$net" || return 0
@@ -406,7 +432,7 @@ dhcpd_add() {
 
 	config_get_bool dynamicdhcp "$cfg" "dynamicdhcp" 1
 
-	config_get_bool nodefault "$cfg" "nodefault" 0
+	config_get_bool defaultroute "$cfg" "default_route" 1
 
 	dhcp_ifs="$dhcp_ifs $ifname"
 
