@@ -7,8 +7,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=openclash-dev
-PKG_VERSION:=v1.15.1-17
-PKG_RELEASE:=g6ecd96e
+PKG_VERSION:=v1.16.0-24
+PKG_RELEASE:=ge26bed4
 
 ifeq ($(ARCH),mipsel)
 	OPENCLASH_ARCH:=mipsle-softfloat
@@ -60,7 +60,7 @@ openclash is a cross-platform proxy software
 endef
 
 define Build/Prepare
-	[ ! -f $(PKG_BUILD_DIR)/clash-linux-$(OPENCLASH_ARCH).tar.gz ] && wget https://github.com/vernesong/OpenClash/raw/core/master/dev/clash-linux-$(OPENCLASH_ARCH).tar.gz -O $(PKG_BUILD_DIR)/clash-linux-$(OPENCLASH_ARCH).tar.gz
+	[ ! -f $(PKG_BUILD_DIR)/clash-linux-$(OPENCLASH_ARCH).tar.gz ] && wget https://github.com/vernesong/OpenClash/raw/core/dev/dev/clash-linux-$(OPENCLASH_ARCH).tar.gz -O $(PKG_BUILD_DIR)/clash-linux-$(OPENCLASH_ARCH).tar.gz
 	tar -xzvf $(PKG_BUILD_DIR)/clash-linux-$(OPENCLASH_ARCH).tar.gz -C $(PKG_BUILD_DIR)
 	upx -d $(PKG_BUILD_DIR)/clash
 endef
