@@ -284,6 +284,7 @@ mwan3_set_general_iptables()
 				mwan3_push_update -N mwan3_${chain}_${family}
 				mwan3_push_update -A mwan3_${chain}_${family} \
 					-m set --match-set mwan3_${chain}_${family} dst \
+					-m set --match-set mwan3_${chain}_${family} src \
 					-j MARK --set-xmark $MMX_DEFAULT/$MMX_MASK
 			fi
 		done
@@ -324,6 +325,12 @@ mwan3_set_general_iptables()
 			mwan3_push_update -A mwan3_hook \
 					  -m mark --mark 0x0/$MMX_MASK \
 					  -j CONNMARK --restore-mark --nfmask "$MMX_MASK" --ctmask "$MMX_MASK"
+			mwan3_push_update -A mwan3_hook \
+					  -m mark --mark $MMX_UNREACHABLE/$MMX_MASK \
+					  -j MARK --set-xmark 0/$MMX_MASK
+			mwan3_push_update -A mwan3_hook \
+					  -m mark --mark $MMX_BLACKHOLE/$MMX_MASK \
+					  -j MARK --set-xmark 0/$MMX_MASK
 			mwan3_push_update -A mwan3_hook \
 					  -m mark --mark 0x0/$MMX_MASK \
 					  -j mwan3_ifaces_in
