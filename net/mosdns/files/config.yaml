@@ -1,0 +1,148 @@
+# 日志设置
+# 日志级别。可选 "debug" "info" "warn" "error"。默认 "info"。
+log:
+  level: error
+
+# 插件设置
+plugins:
+
+# 匹配白名单
+  - tag: whitelist_domain
+    type: domain_set
+    args:
+      files:
+        - "./rule/whitelist.txt"
+
+# 匹配黑名单
+  - tag: blacklist_domain
+    type: domain_set
+    args:
+      files:
+        - "./rule/blocklist.txt"
+
+# 匹配本地域名
+  - tag: local_domain
+    type: domain_set
+    args:
+      files:
+        - "./rule/direct-list.txt"
+
+# 匹配代理域名
+  - tag: proxy_domain
+    type: domain_set
+    args:
+      files:
+        - "./rule/proxy-list.txt"
+
+# 匹配广告域名
+  - tag: ad_domain
+    type: domain_set
+    args:
+      files:
+        - "./rule/reject-list.txt"
+
+# 匹配本地 IP
+  - tag: local_ip
+    type: ip_set
+    args:
+      files:
+        - "./rule/CN-ip-cidr.txt"
+
+# DNS 应答缓存
+# DNS 缓存大小。单位: 条。
+# 惰性缓存生存时间。单位: 秒。
+  - tag: lazy_cache
+    type: cache
+    args:
+      size: 10000
+      lazy_cache_ttl: 86400
+
+# 转发至本地服务器
+# 建议优先使用网络运营商提供的默认 DNS 服务器。
+  - tag: forward_local
+    type: forward
+    args:
+      upstreams:
+        - addr: 119.29.29.29
+        - addr: 223.5.5.5
+
+# 转发至远程服务器
+  - tag: forward_remote
+    type: forward
+    args:
+      upstreams:
+        - addr: https://1.1.1.1/dns-query
+        - addr: https://208.67.222.222/dns-query
+        - addr: https://8.8.8.8/dns-query
+
+  # fallback 用本地服务器 sequence
+  # 返回不包含本地 ip 则 reject
+  - tag: local_ip_sequence
+    type: sequence
+    args:
+      - exec: $forward_local
+      - matches: resp_ip $local_ip
+        exec: accept
+      - exec: reject
+
+  # fallback 用远程服务器 sequence
+  - tag: remote_sequence
+    type: sequence
+    args:
+      - exec: $forward_remote
+      - exec: accept
+
+  # fallback 用远程服务器 sequence
+  - tag: fallback
+    type: fallback
+    args:
+      primary: local_ip_sequence
+      secondary: remote_sequence
+      threshold: 200
+      always_standby: true
+
+  # 主要的运行逻辑插件
+  # sequence 插件中调用的插件 tag 必须在 sequence 前定义，
+  # 否则 sequence 找不到对应插件。
+  - tag: main_sequence
+    type: sequence
+    args:
+      - matches: qname { $ad_domain | $blacklist_domain }
+        exec: reject
+      - exec: $lazy_cache
+      - matches: has_resp
+        exec: accept
+      - matches: qname { $local_domain | $whitelist_domain }
+        exec: $forward_local
+      - matches: has_resp
+        exec: accept
+      - matches: qname $proxy_domain
+        exec: $forward_remote
+      - matches: has_resp
+        exec: accept
+      - exec: $fallback
+
+# 服务器设置
+  - tag: udp_server
+    type: udp_server
+    args:
+        entry: main_sequence
+        listen: 127.0.0.1:5335
+
+  - tag: tcp_server
+    type: tcp_server
+    args:
+        entry: main_sequence
+        listen: 127.0.0.1:5335
+
+  - tag: udp_server_v6
+    type: udp_server
+    args:
+        entry: main_sequence
+        listen: "[::1]:5335"
+
+  - tag: tcp_server_v6
+    type: tcp_server
+    args:
+        entry: main_sequence
+        listen: "[::1]:5335"

@@ -1,0 +1,65 @@
+#
+#       -p
+#        listen on this fixed local UDP port, defaults to 7654
+#        监听这个固定的本地 UDP 端口，默认为 7654
+#        需要设置防火墙规则允许此端口通信。
+-p=7654
+#
+#       -F
+#        name of the supernode's federation, defaults to '*Federation'
+#        超级节点联盟的名称，默认为 '*Federation'
+-F=*Federation
+#
+#       -l
+#        Specifies the supernode IP and port.
+#        设置超级节点 IP 地址和端口，也可以使用域名:端口。
+#-l=127.0.0.1:7654
+#
+#       -m
+#        Specified the MAC address for the TAP interface (random otherwise).
+#        设置固定的 MAC 地址，默认使用随机 MAC 地址。
+#-m=10:20:30:40:50:60
+#
+#       -M
+#        disable MAC and IP address spoofing protection for all non-username-password-authenticating communities.
+#        为所有非用户名密码验证的网络组禁用 MAC 和 IP 地址欺骗保护。
+#-M
+#
+#       -V
+#        modify the supernode version string which is distributed to the edges and shown at their management port output,
+#        up to 19 characters.
+#        修改分发到节点并显示在其管理端口输出的超级节点版本字符串，最多 19 个字符。
+#-V=supernodes 3.0
+#
+#       -c|--communities
+#        Specify in supernodes.list the list of allowed communities
+#        设置允许接入服务器的 N2N 网络组列表文件。
+-c=/etc/n2n/communities.list
+#
+#       -a|--autoip
+#        subnet range for auto ip address service.
+#        defaults to '10.128.255.0-10.255.255.0/24'
+#        自动 IP 地址服务的子网范围。
+#        由超级节点提供 DHCP 服务，为其指定一个网段范围。
+#-a=10.0.0.0-10.0.0.0/24
+#
+#       -f|--foreground
+#        do not fork and run as a daemon, rather run in foreground.
+#        禁用守护进程模式，并在前台运行。
+-f
+#
+#       -t|--mgmt-port
+#        management UDP port, for multiple supernodes on a machine, defaults to 5645
+#        管理 UDP 端口，用于一台机器上运行多个超级节点，默认为 5645
+#-t=5645
+#
+#       --management-password
+#        sets the password for access to JSON API at the management port, defaults to 'n2n'.
+#        设置在管理端口访问 JSON API 的密码，默认为“n2n”。
+#--management-password=n2n
+#
+#       -v|--verbose
+#        use verbose logging.
+#        使用详细日志记录。
+#-v
+#
