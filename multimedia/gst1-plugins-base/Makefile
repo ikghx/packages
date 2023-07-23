@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gst1-plugins-base
-PKG_VERSION:=1.20.6
+PKG_VERSION:=1.22.4
 PKG_RELEASE:=1
 
 PKG_SOURCE:=gst-plugins-base-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://gstreamer.freedesktop.org/src/gst-plugins-base
-PKG_HASH:=54eac357d6cd66f183b94a26e493bf4d5781bc76bc60cad122742626caf8f1a3
+PKG_HASH:=292424e82dea170528c42b456f62a89532bcabc0508f192e34672fb86f68e5b8
 PKG_BUILD_DIR:=$(BUILD_DIR)/gst-plugins-base-$(PKG_VERSION)
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org> \
@@ -40,9 +40,8 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_PACKAGE_gst1-mod-tcp \
 	CONFIG_PACKAGE_gst1-mod-theora \
 	CONFIG_PACKAGE_gst1-mod-typefind \
-	CONFIG_PACKAGE_gst1-mod-videoconvert \
+	CONFIG_PACKAGE_gst1-mod-videoconvertscale \
 	CONFIG_PACKAGE_gst1-mod-videorate \
-	CONFIG_PACKAGE_gst1-mod-videoscale \
 	CONFIG_PACKAGE_gst1-mod-videotestsrc \
 	CONFIG_PACKAGE_gst1-mod-volume \
 	CONFIG_PACKAGE_gst1-mod-vorbis \
@@ -138,9 +137,8 @@ MESON_ARGS += \
 	$(call GST_COND_SELECT,subparse) \
 	$(call GST_COND_SELECT,tcp) \
 	-Dtypefind=$(if $(CONFIG_PACKAGE_gst1-mod-typefindfunctions),en,dis)abled \
-	$(call GST_COND_SELECT,videoconvert) \
+	$(call GST_COND_SELECT,videoconvertscale) \
 	$(call GST_COND_SELECT,videorate) \
-	$(call GST_COND_SELECT,videoscale) \
 	$(call GST_COND_SELECT,videotestsrc) \
 	$(call GST_COND_SELECT,volume) \
 	\
@@ -302,9 +300,8 @@ $(eval $(call GstBuildPlugin,subparse,subparse,video,,))
 $(eval $(call GstBuildPlugin,rawparse,parse raw media,audio video,,))
 $(eval $(call GstBuildPlugin,tcp,TCP,net,,))
 $(eval $(call GstBuildPlugin,typefindfunctions,'typefind' functions,audio pbutils tag video,,))
-$(eval $(call GstBuildPlugin,videoconvert,video format conversion,video,,))
+$(eval $(call GstBuildPlugin,videoconvertscale,video format conversion and scaling,video,,))
 $(eval $(call GstBuildPlugin,videorate,Adjusts video frames,video,,))
-$(eval $(call GstBuildPlugin,videoscale,Resizes video,video,,))
 $(eval $(call GstBuildPlugin,videotestsrc,video test,video,,))
 $(eval $(call GstBuildPlugin,volume,volume,audio controller,,))
 

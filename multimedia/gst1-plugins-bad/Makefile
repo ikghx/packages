@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gst1-plugins-bad
-PKG_VERSION:=1.20.6
+PKG_VERSION:=1.22.4
 PKG_RELEASE:=1
 
 PKG_SOURCE:=gst-plugins-bad-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://gstreamer.freedesktop.org/src/gst-plugins-bad/
-PKG_HASH:=d98c73fa5cdddb372a91199464515cfc80c89bbe05e3d4387ea4381e4224483a
+PKG_HASH:=eaaf53224565eaabd505ca39c6d5769719b45795cf532ce1ceb60e1b2ebe99ac
 PKG_BUILD_DIR:=$(BUILD_DIR)/gst-plugins-bad-$(PKG_VERSION)
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org> \
@@ -228,7 +228,7 @@ MESON_ARGS += \
 	$(call GST_COND_SELECT,sndfile) \
 	-Dsoundtouch=disabled \
 	-Dspandsp=disabled \
-	$(call GST_COND_SELECT,srt) \
+	-Dsrt=disabled \
 	-Dsrtp=disabled \
 	-Dteletext=disabled \
 	-Dtinyalsa=disabled \
@@ -374,7 +374,7 @@ $(eval $(call GstBuildPlugin,interlace,interlace support,,,))
 $(eval $(call GstBuildPlugin,ivfparse,ivfparse support,,,))
 $(eval $(call GstBuildPlugin,ivtc,ivtc support,,,))
 $(eval $(call GstBuildPlugin,jp2kdecimator,jp2kdecimator support,,,))
-$(eval $(call GstBuildPlugin,jpegformat,jpegformat support,tag,,))
+$(eval $(call GstBuildPlugin,jpegformat,jpegformat support,tag codecparsers,,))
 $(eval $(call GstBuildPlugin,legacyrawparse,rawparse support,audio video,,))
 $(eval $(call GstBuildPlugin,midi,midi support,audio,,))
 $(eval $(call GstBuildPlugin,mpegpsdemux,mpegpsdemux support,pbutils,,))
@@ -415,7 +415,6 @@ $(eval $(call GstBuildPlugin,opusparse,OPUS streams library,pbutils,,+libopus))
 $(eval $(call GstBuildPlugin,sbc,sbc support,audio,,+sbc))
 $(eval $(call GstBuildPlugin,shm,POSIX shared memory source and sink,,,+librt))
 $(eval $(call GstBuildPlugin,sndfile,sndfile support,audio,,+libsndfile))
-$(eval $(call GstBuildPlugin,srt,srt support,,,+libsrt))
 #$(eval $(call GstBuildPlugin,srtp,srtp support,rtp,,+libsrtp))
 $(eval $(call GstBuildPlugin,webp,webp support,,,+libwebp))
 #$(eval $(call GstBuildPlugin,yadif,yadif support,,,))

@@ -23,7 +23,7 @@ PKG_CPE_ID:=cpe:/a:nginx:nginx
 PKG_FIXUP:=autoreconf
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
-PKG_BUILD_FLAGS:=gc-sections
+PKG_BUILD_FLAGS:=gc-sections no-lto
 
 # 3rd-party modules
 PKG_MOD_EXTRA := \
@@ -142,10 +142,12 @@ define Package/nginx-ssl/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/nginx $(1)/usr/sbin/
 	$(INSTALL_DIR) $(1)/etc/nginx/module.d
 	$(INSTALL_DIR) $(1)/etc/nginx/conf.d
+	$(INSTALL_DIR) $(1)/etc/nginx/module.d
 	$(INSTALL_DATA) $(addprefix $(PKG_INSTALL_DIR)/etc/nginx/,$(config_files)) $(1)/etc/nginx/
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_CONF) ./files/nginx.conf $(1)/etc/nginx/
 	$(INSTALL_CONF) ./files/conf.d/* $(1)/etc/nginx/conf.d/
+	$(INSTALL_CONF) ./files/module.d/* $(1)/etc/nginx/module.d/
 	$(INSTALL_BIN) ./files/nginx.init $(1)/etc/init.d/nginx
 endef
 
