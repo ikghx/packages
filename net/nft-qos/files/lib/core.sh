@@ -84,8 +84,8 @@ qosdef_init_header() { # add header for nft script
 
 qosdef_init_env() {
 	# check interface type of lan
-	local lt="$(uci_get "network.lan.type")"
-	[ "$lt" = "bridge" ] && export NFT_QOS_HAS_BRIDGE="y"
+	local lt="$(uci_get "network.lan.device")"
+	[ "$lt" = "br-lan" ] && export NFT_QOS_HAS_BRIDGE="y"
 
 	# check if ipv6 support
 	[ -e /proc/sys/net/ipv6 ] && export NFT_QOS_INET_FAMILY="inet"
