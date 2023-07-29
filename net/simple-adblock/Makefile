@@ -17,7 +17,7 @@ define Package/simple-adblock
 	CATEGORY:=Network
 	TITLE:=Simple AdBlock Service
 	URL:=https://docs.openwrt.melmac.net/simple-adblock/
-	DEPENDS:=+jshn +wget
+	DEPENDS:=+jshn +wget-ssl
 	PKGARCH:=all
 endef
 
