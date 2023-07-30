@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=miniupnpc
-PKG_VERSION:=2.2.4
+PKG_VERSION:=2.2.5
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://miniupnp.tuxfamily.org/files
-PKG_HASH:=481a5e4aede64e9ef29895b218836c3608d973e77a35b4f228ab1f3629412c4b
+PKG_HASH:=38acd5f4602f7cf8bcdc1ec30b2d58db2e9912e5d9f5350dd99b06bfdffb517c
 
 PKG_MAINTAINER:=
 PKG_LICENSE:=BSD-3-Clause
