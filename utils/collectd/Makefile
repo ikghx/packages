@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=collectd
 PKG_VERSION:=5.12.0
-PKG_RELEASE:=43
+PKG_RELEASE:=46
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=https://collectd.org/files/ \
@@ -31,7 +31,7 @@ PKG_CONFIG_DEPENDS:= \
 
 COLLECTD_PLUGINS_DISABLED:= \
 	amqp \
-	ampq1 \
+	amqp1 \
 	apple_sensors \
 	aquaero \
 	barometer \
@@ -341,8 +341,6 @@ ifneq ($(CONFIG_PACKAGE_collectd-mod-smart),)
   CONFIGURE_ARGS+= \
 	--with-libatasmart="$(STAGING_DIR)/usr" \
 	--with-libudev="$(STAGING_DIR)/usr"
-else
-  CONFIGURE_ARGS+= --without-libudev
 endif
 
 define Package/collectd/conffiles
@@ -459,7 +457,7 @@ $(eval $(call BuildPlugin,chrony,chrony status input,chrony,))
 $(eval $(call BuildPlugin,conntrack,connection tracking table size input,conntrack,))
 $(eval $(call BuildPlugin,contextswitch,context switch input,contextswitch,))
 $(eval $(call BuildPlugin,cpu,CPU input,cpu,))
-$(eval $(call BuildPlugin,cpufreq,CPU Freq input,cpufreq,@(TARGET_x86||TARGET_x86_64||TARGET_mvebu||TARGET_ipq806x||TARGET_armsr||TARGET_ipq40xx||TARGET_bcm27xx_bcm2709||TARGET_rockchip||TARGET_mediatek||TARGET_ipq807x))) # Only enable on targets with CPUs supporting frequency scaling
+$(eval $(call BuildPlugin,cpufreq,CPU Freq input,cpufreq,@(TARGET_x86||TARGET_x86_64||TARGET_mvebu||TARGET_ipq806x||TARGET_armsr||TARGET_ipq40xx||TARGET_bcm27xx_bcm2709||TARGET_rockchip||TARGET_mediatek||TARGET_qualcommax))) # Only enable on targets with CPUs supporting frequency scaling
 $(eval $(call BuildPlugin,csv,CSV output,csv,))
 $(eval $(call BuildPlugin,curl,cURL input,curl,+PACKAGE_collectd-mod-curl:libcurl))
 #$(eval $(call BuildPlugin,dbi,relational database input,dbi,+PACKAGE_collectd-mod-dbi:libdbi))

@@ -9,12 +9,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=memcached
-PKG_VERSION:=1.6.18
+PKG_VERSION:=1.6.21
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://memcached.org/files
-PKG_HASH:=cbdd6ab8810649ac5d92fcd0fcb0ca931d8a9dbd0ad8cc575b47222eedd64158
+PKG_HASH:=c788980efc417dd5d93c442b1c8b8769fb2018896c29de3887d22a2f143da2ee
 
 PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de>
 PKG_LICENSE:=BSD-3-Clause
