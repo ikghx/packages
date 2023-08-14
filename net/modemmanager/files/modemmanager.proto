@@ -100,12 +100,12 @@ modemmanager_cleanup_connection() {
 	# do nothing if no bearers reported
 	[ -n "${bearercount}" ] && [ "$bearercount" -ge 1 ] && {
 		# explicitly disconnect just in case
-		mmcli --modem="${ctl_device}" --simple-disconnect >/dev/null 2>&1
+		mmcli --modem="${device}" --simple-disconnect >/dev/null 2>&1
 		# and remove all bearer objects, if any found
 		idx=1
 		while [ $idx -le "$bearercount" ]; do
 			bearerpath=$(modemmanager_get_field "${modemstatus}" "modem.generic.bearers.value\[$idx\]")
-			mmcli --modem "${ctl_device}" --delete-bearer="${bearerpath}" >/dev/null 2>&1
+			mmcli --modem "${device}" --delete-bearer="${bearerpath}" >/dev/null 2>&1
 			idx=$((idx + 1))
 		done
 	}
@@ -327,7 +327,6 @@ modemmanager_disconnected_method_common() {
 	local interface="$1"
 
 	echo "running disconnection (common)"
-	proto_notify_error "${interface}" MM_DISCONNECT_IN_PROGRESS
 
 	proto_init_update "*" 0
 	proto_send_update "${interface}"
@@ -336,16 +335,17 @@ modemmanager_disconnected_method_common() {
 proto_modemmanager_init_config() {
 	available=1
 	no_device=1
-	proto_config_add_string	 ctl_device
-	proto_config_add_string	 apn
-	proto_config_add_string	 'allowedauth:list(string)'
-	proto_config_add_string	 username
-	proto_config_add_string	 password
-	proto_config_add_string	 pincode
-	proto_config_add_string	 iptype
-	proto_config_add_string	 rat
-	proto_config_add_string	 plmn
-	proto_config_add_int	 signalrate
+	proto_config_add_string device
+	proto_config_add_string apn
+	proto_config_add_string 'allowedauth:list(string)'
+	proto_config_add_string username
+	proto_config_add_string password
+	proto_config_add_string allowedmode
+	proto_config_add_string preferredmode
+	proto_config_add_string pincode
+	proto_config_add_string iptype
+	proto_config_add_string plmn
+	proto_config_add_int signalrate
 	proto_config_add_boolean lowpower
 	proto_config_add_boolean allow_roaming
 	proto_config_add_defaults
@@ -360,21 +360,68 @@ append_param() {
 	connectargs="${connectargs}${param}"
 }
 
+modemmanager_set_allowed_mode() {
+	local device="$1"
+	local interface="$2"
+	local allowedmode="$3"
+
+	echo "setting allowed mode to '${allowedmode}'"
+	mmcli --modem="${device}" --set-allowed-modes="${allowedmode}" || {
+		proto_notify_error "${interface}" MM_INVALID_ALLOWED_MODES_LIST
+		proto_block_restart "${interface}"
+		return 1
+	}
+}
+
+modemmanager_set_preferred_mode() {
+	local device="$1"
+	local interface="$2"
+	local allowedmode="$3"
+	local preferredmode="$4"
+
+	[ -z "${preferredmode}" ] && {
+		echo "no preferred mode configured"
+		proto_notify_error "${interface}" MM_NO_PREFERRED_MODE_CONFIGURED
+		proto_block_restart "${interface}"
+		return 1
+	}
+
+	[ -z "${allowedmode}" ] && {
+		echo "no allowed mode configured"
+		proto_notify_error "${interface}" MM_NO_ALLOWED_MODE_CONFIGURED
+		proto_block_restart "${interface}"
+		return 1
+	}
+
+	echo "setting preferred mode to '${preferredmode}' (${allowedmode})"
+	mmcli --modem="${device}" \
+		--set-preferred-mode="${preferredmode}" \
+		--set-allowed-modes="${allowedmode}" || {
+		proto_notify_error "${interface}" MM_FAILED_SETTING_PREFERRED_MODE
+		proto_block_restart "${interface}"
+		return 1
+	}
+}
+
 proto_modemmanager_setup() {
 	local interface="$1"
 
 	local modempath modemstatus bearercount bearerpath connectargs bearerstatus beareriface
-	local bearermethod_ipv4 bearermethod_ipv6 auth cliauth state
+	local bearermethod_ipv4 bearermethod_ipv6 auth cliauth
 	local operatorname operatorid registration accesstech signalquality
+	local allowedmode preferredmode
 
-	local device apn allowedauth username password pincode iptype plmn metric signalrate rat allow_roaming
+	local device apn allowedauth username password pincode
+	local iptype plmn metric signalrate allow_roaming
 
 	local address prefix gateway mtu dns1 dns2
 
-	json_get_vars ctl_device apn allowedauth username password pincode iptype plmn metric signalrate rat allow_roaming
+	json_get_vars device apn allowedauth username password
+	json_get_vars pincode iptype plmn metric signalrate allow_roaming
+	json_get_vars allowedmode preferredmode
 
 	# validate sysfs path given in config
-	[ -n "${ctl_device}" ] || {
+	[ -n "${device}" ] || {
 		echo "No device specified"
 		proto_notify_error "${interface}" NO_DEVICE
 		proto_set_available "${interface}" 0
@@ -382,7 +429,7 @@ proto_modemmanager_setup() {
 	}
 
 	# validate that ModemManager is handling the modem at the sysfs path
-	modemstatus=$(mmcli --modem="${ctl_device}" --output-keyvalue)
+	modemstatus=$(mmcli --modem="${device}" --output-keyvalue)
 	modempath=$(modemmanager_get_field "${modemstatus}" "modem.dbus-path")
 	[ -n "${modempath}" ] || {
 		echo "Device not managed by ModemManager"
@@ -392,21 +439,32 @@ proto_modemmanager_setup() {
 	}
 	echo "modem available at ${modempath}"
 
-	state="$(modemmanager_get_field "${modemstatus}" "state")"
-	state="${state%% *}"
-	if [ "$state" = "locked" ]; then
-		if [ -n "$pincode" ]; then
-			mmcli --modem="${device}" -i any --pin=${pincode} || {
-				proto_notify_error "${interface}" MM_WRONG_PIN
-				proto_block_restart "${interface}"
-				return 1
-			}
-		else
-			proto_notify_error "${interface}" MM_PIN_REQUIRED
-			proto_block_restart "${interface}"
-			return 1
-		fi
-	fi
+	[ -z "${allowedmode}" ] || {
+		case "$allowedmode" in
+			"2g")
+				modemmanager_set_allowed_mode "$device" \
+					"$interface" "2g"
+				;;
+			"3g")
+				modemmanager_set_allowed_mode "$device" \
+					"$interface" "3g"
+				;;
+			"4g")
+				modemmanager_set_allowed_mode "$device" \
+					"$interface" "4g"
+				;;
+			"5g")
+				modemmanager_set_allowed_mode "$device" \
+					"$interface" "5g"
+				;;
+			*)
+				modemmanager_set_preferred_mode "$device" \
+					"$interface" "${allowedmode}" "${preferredmode}"
+				;;
+		esac
+		# check error for allowed_mode and preferred_mode function call
+		[ "$?" -ne "0" ] && return 1
+	}
 
 	# always cleanup before attempting a new connection, just in case
 	modemmanager_cleanup_connection "${modemstatus}"
@@ -415,30 +473,6 @@ proto_modemmanager_setup() {
 	for auth in $allowedauth; do
 		cliauth="${cliauth}${cliauth:+|}$auth"
 	done
-
-
-	mmcli --modem="${device}" --timeout 120 --enable || {
-		proto_notify_error "${interface}" MM_MODEM_DISABLED
-		return 1
-	}
-
-	mmcli --modem="${device}" --3gpp-register-home || {
-		proto_notify_error "${interface}" MM_NOT_REGISTERED
-		return 1
-	}
-
-	if [ -n "$pincode" ]; then
-		mmcli --modem="${device}" -i any --pin=${pincode} || {
-			proto_notify_error "${interface}" MM_WRONG_PIN
-			proto_block_restart "${interface}"
-			return 1
-		}
-	fi
-
-	if [ -n "$plmn" ]; then
-		echo "registering to network '${plmn}'..."
-		mmcli --modem="${ctl_device}" --3gpp-register-in-operator="$plmn"
-	fi
 
 	# setup connect args; APN mandatory (even if it may be empty)
 	echo "starting connection with apn '${apn}'..."
@@ -462,49 +496,22 @@ proto_modemmanager_setup() {
 	append_param "${password:+password=${password}}"
 	append_param "${pincode:+pin=${pincode}}"
 
-	mmcli --modem="${ctl_device}" --timeout 120 --simple-connect="${connectargs}" || {
+	mmcli --modem="${device}" --timeout 120 --simple-connect="${connectargs}" || {
 		proto_notify_error "${interface}" MM_CONNECT_FAILED
 		proto_block_restart "${interface}"
 		return 1
 	}
 
-	proto_run_command "$interface" mmcli --modem="${device}" --track-state
-
-	# set the RAT
-	if [ -n "${rat}" ]; then
-		if [ "${rat}" == "automatic" ]; then
-			echo "setting modem RAT to automatic mode"
-			if [ "$(mmcli --modem="${device}" | grep supported | grep 5gnr)" ]; then
-				mmcli --modem="${device}" --set-preferred-mode=5G --set-allowed-modes='3G|4G|5G'
-			elif [ "$(mmcli --modem="${device}" | grep supported | grep lte)" ]; then
-				mmcli --modem="${device}" --set-preferred-mode=4G --set-allowed-modes='3G|4G'
-			elif [ "$(mmcli --modem="${device}" | grep supported | grep gsm-umts)" ]; then
-				mmcli --modem="${device}" --set-allowed-modes='3G'
-			fi
-		elif [ "${rat}" == "5G" ]; then
-			echo "setting modem RAT to 5G mode"
-			mmcli --modem="${device}" --set-preferred-mode=5G --set-allowed-modes='4G|5G'
-		elif [ "${rat}" == "4G" ]; then
-			echo "setting modem RAT to 4G mode"
-			mmcli --modem="${device}" --set-preferred-mode=4G --set-allowed-modes='4G|3G'
-		elif [ "${rat}" == "3G" ]; then
-			echo "setting modem RAT to 3G mode"
-			mmcli --modem="${device}" --set-preferred-mode=none --set-allowed-modes=3G
-		fi
-	else
-		echo "modem RAT not setting"
-	fi
-
 	# check if Signal refresh rate is set
 	if [ -n "${signalrate}" ] && [ "${signalrate}" -eq "${signalrate}" ] 2>/dev/null; then
 		echo "setting signal refresh rate to ${signalrate} seconds"
-		mmcli --modem="${ctl_device}" --signal-setup="${signalrate}"
+		mmcli --modem="${device}" --signal-setup="${signalrate}"
 	else
 		echo "signal refresh rate is not set"
 	fi
 
 	# log additional useful information
-	modemstatus=$(mmcli --modem="${ctl_device}" --output-keyvalue)
+	modemstatus=$(mmcli --modem="${device}" --output-keyvalue)
 	operatorname=$(modemmanager_get_field "${modemstatus}" "modem.3gpp.operator-name")
 	[ -n "${operatorname}" ] && echo "network operator name: ${operatorname}"
 	operatorid=$(modemmanager_get_field "${modemstatus}" "modem.3gpp.operator-code")
@@ -596,13 +603,13 @@ proto_modemmanager_teardown() {
 	local modemstatus bearerpath errorstring
 	local bearermethod_ipv4 bearermethod_ipv6
 
-	local ctl_device lowpower iptype
-	json_get_vars ctl_device lowpower iptype
+	local device lowpower iptype
+	json_get_vars device lowpower iptype
 
 	echo "stopping network"
 
 	# load connected bearer information, just the first one should be ok
-	modemstatus=$(mmcli --modem="${ctl_device}" --output-keyvalue)
+	modemstatus=$(mmcli --modem="${device}" --output-keyvalue)
 	bearerpath=$(modemmanager_get_field "${modemstatus}" "modem.generic.bearers.value\[1\]")
 	[ -n "${bearerpath}" ] || {
 		echo "couldn't load bearer path: disconnecting anyway"
@@ -624,16 +631,15 @@ proto_modemmanager_teardown() {
 	modemmanager_disconnected_method_common "${interface}"
 
 	# disconnect
-	mmcli --modem="${ctl_device}" --simple-disconnect ||
+	mmcli --modem="${device}" --simple-disconnect ||
 		proto_notify_error "${interface}" DISCONNECT_FAILED
 
 	# disable
-	mmcli --modem="${ctl_device}" --disable
-	proto_notify_error "${interface}" MM_MODEM_DISABLED
+	mmcli --modem="${device}" --disable
 
 	# low power, only if requested
 	[ "${lowpower:-0}" -lt 1 ] ||
-		mmcli --modem="${ctl_device}" --set-power-state-low
+		mmcli --modem="${device}" --set-power-state-low
 
 	proto_init_update "*" 0
 	proto_send_update "$interface"
