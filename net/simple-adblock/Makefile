@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=simple-adblock
 PKG_VERSION:=1.9.5
-PKG_RELEASE:=4
+PKG_RELEASE:=5
 PKG_MAINTAINER:=Stan Grishin <stangri@melmac.ca>
 PKG_LICENSE:=GPL-3.0-or-later
 
@@ -17,7 +17,7 @@ define Package/simple-adblock
 	CATEGORY:=Network
 	TITLE:=Simple AdBlock Service
 	URL:=https://docs.openwrt.melmac.net/simple-adblock/
-	DEPENDS:=+jshn +wget-ssl
+	DEPENDS:=+jshn +wget
 	PKGARCH:=all
 endef
 
