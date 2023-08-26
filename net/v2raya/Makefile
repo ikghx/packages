@@ -5,14 +5,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=v2rayA
-PKG_VERSION:=2.1.3
-PKG_RELEASE:=2
+PKG_VERSION:=2.2.1
+PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/v2rayA/v2rayA.git
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)/service
-PKG_SOURCE_VERSION:=8738f8110793da609fd98254db084590280a41ad
-PKG_MIRROR_HASH:=d8ee48696ed8d03e1dba2a7cb087344e77bc26f991dd284f4f73faf413b99a1e
+PKG_SOURCE_VERSION:=54b94cc081e196de602664c2f2c7f12d6f01d06a
+PKG_MIRROR_HASH:=36ab31b37189498e4c9ff72d4b18c41316e7eae4f46e0a08155e407ee17bc4fb
 
 PKG_LICENSE:=AGPL-3.0-only
 PKG_LICENSE_FILES:=LICENSE
@@ -54,7 +54,8 @@ define Package/v2raya/conffiles
 /etc/config/v2raya
 endef
 
-WEB_FILE:=$(PKG_NAME)-web-$(PKG_VERSION).tar.gz
+WEB_PKG_VERSION:=2.1.3
+WEB_FILE:=$(PKG_NAME)-web-$(WEB_PKG_VERSION).tar.gz
 define Download/v2raya-web
 	URL:=https://codeload.github.com/v2rayA/v2raya-web/tar.gz/v$(PKG_VERSION)?
 	URL_FILE:=$(WEB_FILE)

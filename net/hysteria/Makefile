@@ -1,6 +1,9 @@
-# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-License-Identifier: MIT
 #
-# Copyright (C) 2022 ImmortalWrt.org
+# Copyright (C) 2021-2021  sirpdboy  <herboy2008@gmail.com>
+# 
+# This is free software, licensed under the Apache License, Version 2.0 .
+#
 
 include $(TOPDIR)/rules.mk
 
@@ -8,46 +11,62 @@ PKG_NAME:=hysteria
 PKG_VERSION:=1.3.5
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/apernet/hysteria/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=9b3b5fca069d215a1f4c9cf3aa0a7b4e9b1fe21216fddb483a20ab42eb4a4dd7
+ifeq ($(ARCH),mipsel)
+	HYSTERIA_ARCH:=mipsle
+endif
+ifeq ($(ARCH),x86_64)
+	HYSTERIA_ARCH:=amd64
+endif
+ifeq ($(ARCH),arm)
+	HYSTERIA_ARCH:=arm
+endif
+ifeq ($(BOARD),bcm53xx)
+	HYSTERIA_ARCH:=arm
+ifeq ($(word 2,$(subst +,$(space),$(call qstrip,$(CONFIG_CPU_TYPE)))),)
+	HYSTERIA_ARCH:=armv5
+endif
+endif
+ifeq ($(BOARD),kirkwood)
+	HYSTERIA_ARCH:=armv5
+endif
+ifeq ($(ARCH),aarch64)
+	HYSTERIA_ARCH:=arm64
+endif
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=Tianling Shen <cnsztl@immortalwrt.org>
+PKG_MAINTAINER:=ZXLHHYCCC <zxlhhy@gmail.com>
 
-PKG_BUILD_DEPENDS:=golang/host
-PKG_BUILD_PARALLEL:=1
-PKG_BUILD_FLAGS:=no-mips16
-
-GO_PKG:=github.com/apernet/hysteria
-GO_PKG_BUILD_PKG:=$(GO_PKG)/app/cmd
-GO_PKG_LDFLAGS_X:=main.appVersion=$(PKG_VERSION)
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
+PKG_SOURCE_VERSION:=57c5164854d6cfe00bead730cce731da2babe406
 
 include $(INCLUDE_DIR)/package.mk
-include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
 
-define Package/hysteria
-  SECTION:=net
-  CATEGORY:=Network
-  SUBMENU:=Web Servers/Proxies
-  TITLE:=A feature-packed network utility optimized for networks of poor quality
-  URL:=https://github.com/apernet/hysteria
-  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle
+define Package/$(PKG_NAME)
+	SECTION:=net
+	CATEGORY:=Network
+	SUBMENU:=Web Servers/Proxies
+	TITLE:=Hysteria is a feature-packed network utility optimized for networks of poor quality (e.g. satellite connections, congested public Wi-Fi, connecting from China to servers abroad)
+	DEPENDS:=@(x86_64||arm||aarch64||mipsel)
+	URL:=https://github.com/apernet/hysteria
 endef
 
-define Package/hysteria/description
-  Hysteria is a feature-packed network utility optimized for networks
-  of poor quality (e.g. satellite connections, congested public Wi-Fi,
-  connecting from China to servers abroad) powered by a custom version
-  of QUIC protocol.
+define Package/$(PKG_NAME)/description
+  Hysteria is a feature-packed network utility optimized for networks of poor quality (e.g. satellite connections, congested public Wi-Fi, connecting from China to servers abroad)
 endef
 
-define Package/hysteria/install
-	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
+define Build/Prepare
+	[ ! -f $(PKG_BUILD_DIR)/$(PKG_NAME)-linux-$(HYSTERIA_ARCH) ] && wget https://github.com/apernet/hysteria/releases/download/v$(PKG_VERSION)/$(PKG_NAME)-linux-$(HYSTERIA_ARCH) -O $(PKG_BUILD_DIR)/$(PKG_NAME)-linux-$(HYSTERIA_ARCH)
+	chmod +x $(PKG_BUILD_DIR)/$(PKG_NAME)-linux-$(HYSTERIA_ARCH)
+endef
+
+define Build/Compile
+	true
+endef
+
+define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/cmd $(1)/usr/bin/hysteria
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/$(PKG_NAME)-linux-$(HYSTERIA_ARCH) $(1)/usr/bin/hysteria
 endef
 
-$(eval $(call GoBinPackage,hysteria))
-$(eval $(call BuildPackage,hysteria))
+$(eval $(call BuildPackage,$(PKG_NAME)))
