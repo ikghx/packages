@@ -4,9 +4,11 @@ PKG_NAME:=libtorrent-rasterbar
 PKG_VERSION:=2.0.9
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/arvidn/libtorrent/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=b1edfda1e91c5c93cbffbe26773e7ea0928b2074f9057d943fb519b22b33b5ed
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_DATE:=2023-08-27
+PKG_SOURCE_URL:=https://github.com/arvidn/libtorrent.git
+PKG_SOURCE_VERSION:=3a44a5a78ef4e09df203492276895d3c52b65225
+PKG_MIRROR_HASH:=55ea166fd26db5d034652d0571413ef0acb73986c797171f149b4f3f1e219866
 
 PKG_MAINTAINER:=David Yang <mmyangfl@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
