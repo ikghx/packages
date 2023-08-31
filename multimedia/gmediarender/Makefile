@@ -24,7 +24,8 @@ define Package/gmediarender
   SECTION:=multimedia
   CATEGORY:=Multimedia
   TITLE:=A Headless UPnP media Renderer
-  DEPENDS:=+glib2 +gstreamer1 +gstreamer1-plugins-base +gst1-plugins-base +gst1-plugins-good +gst1-plugins-bad +libupnp
+  DEPENDS:=+glib2 +gstreamer1 +gstreamer1-utils +gstreamer1-plugins-bad +gstreamer1-plugins-good \
+	+gst1-plugins-base +gst1-plugins-good +gst1-plugins-bad +libupnp
 endef
 
 define Package/gmediarender/description
