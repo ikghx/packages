@@ -58,7 +58,7 @@ define Download/try_signal
 endef
 $(eval $(call Download,try_signal))
 
-PKG_UNPACK:=$(HOST_TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xzf $(DL_DIR)/$(PKG_SOURCE)
+PKG_UNPACK:=$(HOST_TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xf $(DL_DIR)/$(PKG_SOURCE)
 
 define Build/Prepare
 	$(Build/Prepare/Default)
