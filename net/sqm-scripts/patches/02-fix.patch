@@ -1,0 +1,8 @@
+--- a/platform/openwrt/sqm-hotplug
++++ b/platform/openwrt/sqm-hotplug
+@@ -1,4 +1,4 @@
+-#!/bin.sh
++#!/bin/sh
+ 
+ . /lib/functions.sh
+ 
