@@ -1,3 +1,3 @@
 #!/bin/sh
 
-sing-box version | grep -F "$PKG_VERSION"
+sing-box version | grep "$PKG_VERSION"
