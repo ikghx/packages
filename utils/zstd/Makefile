@@ -64,12 +64,6 @@ endif
 MESON_ARGS += \
 	-Dlegacy_level=7 \
 	-Ddebug_level=0 \
-	-Dbacktrace=disabled \
-	-Dstatic_runtime=false \
-	-Dbin_programs=true \
-	-Dbin_tests=false \
-	-Dbin_contrib=false \
-	-Dmulti_thread=enabled \
 	-Dzlib=disabled \
 	-Dlzma=disabled \
 	-Dlz4=disabled \

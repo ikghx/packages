@@ -45,7 +45,7 @@ define Package/transmission/template
   DEPENDS:=+libatomic +libcurl +libdeflate +libdht +libevent2 \
 	   +libevent2-pthreads +libminiupnpc +libnatpmp +libpthread +libpsl \
 	   +librt +libutp +zlib +LIBCURL_NOSSL:libmbedtls \
-	   +LIBCURL_GNUTLS:libmbedtls
+	   +LIBCURL_GNUTLS:libmbedtls +LIBCURL_MBEDTLS:libmbedtls
 endef
 
 define Package/transmission-daemon

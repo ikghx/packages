@@ -67,7 +67,7 @@ endef
 define Package/jool/Default
   SECTION:=net
   CATEGORY:=Network
-  URL:=https://www.jool.mx
+  URL:=https://nicmx.github.io/Jool/
 endef
 
 define Package/jool/Default/description

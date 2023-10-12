@@ -23,16 +23,13 @@ PKG_BUILD_DEPENDS:=qtbase/host
 
 HOST_BUILD_PARALLEL:=1
 PKG_BUILD_PARALLEL:=1
-PKG_BUILD_FLAGS:=gc-sections no-mips16
+PKG_BUILD_FLAGS:=no-mips16
 
 PKG_LICENSE:=LGPL-3.0-only
 PKG_LICENSE_FILES:=LICENSES/LGPL-3.0-only.txt
 PKG_CPE_ID:=cpe:/a:qt:qt
 
 CMAKE_INSTALL:=1
-
-# Force to use strip instead of sstrip
-STRIP:=$(TARGET_CROSS)strip $(call qstrip,$(CONFIG_STRIP_ARGS))
 
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
@@ -82,23 +79,14 @@ menu "qtbase"
 endmenu
 endef
 
-#LBITS = $(shell $(TARGET_CC) -dM -E - </dev/null | grep -q "__LP64__" && echo 64 || echo 32)
-#
-#ifeq ($(LBITS),64)
-#    export USE_64=1
-#endif
-
-ifeq ($(CONFIG_CPU_TYPE),"xscale")
-  TARGET_CFLAGS+= -mfloat-abi=softfp
-endif
-
 # Can be removed if glibc version> 2.34
 ifdef CONFIG_USE_GLIBC
   TARGET_LDFLAGS += -ldl -lrt -lpthread
 endif
 
-TARGET_CFLAGS += $(FPIC)
 TARGET_LDFLAGS += -Wl,--as-needed
+
+CMAKE_SHARED_LDFLAGS:=$(filter-out -Wl$(comma)-Bsymbolic-functions,$(CMAKE_SHARED_LDFLAGS))
 
 CMAKE_HOST_OPTIONS += \
 	-DQT_FORCE_MIN_CMAKE_VERSION_FOR_BUILDING_QT=3.19 \
