@@ -218,7 +218,7 @@ endef
 
 define Package/nginx-mod-lua-resty-lrucache
   $(call Package/nginx/default)
-  DEPENDS:=+luajit2
+  DEPENDS:=@HAS_LUAJIT_ARCH +luajit2
   TITLE:=Nginx Lua OpenResty lrucache module
 endef
 
@@ -252,9 +252,9 @@ endef
 
 
 define Download/nginx-mod-brotli
-  VERSION:=63ca02abdcf79c9e788d2eedcc388d2335902e52
+  VERSION:=25f86f0bac1101b6512135eac5f93c49c63609e3
   URL:=https://github.com/google/ngx_brotli.git
-  MIRROR_HASH:=skip
+  MIRROR_HASH:=c85cdcfd76703c95aa4204ee4c2e619aa5b075cac18f428202f65552104add3b
   PROTO:=git
 endef
 
