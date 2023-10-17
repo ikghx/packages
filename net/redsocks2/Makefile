@@ -5,14 +5,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=redsocks2
-PKG_VERSION:=0.67
-PKG_RELEASE:=5
+PKG_VERSION:=test4
+PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/semigodking/redsocks.git
-PKG_SOURCE_DATE:=2020-05-10
-PKG_SOURCE_VERSION:=d94c245ea47859cda5b4b7373308589206b97bdc
-PKG_MIRROR_HASH:=5ca32b2f849af7ebda2cab90bbe286bfd97a69de1a85dac09c8df2fbdd8c947c
+PKG_SOURCE_DATE:=2023-10-11
+PKG_SOURCE_VERSION:=840a24d5eb08779cef4d394e2ab5e323320b2ac8
+PKG_MIRROR_HASH:=90768f916866ace9961c54b2bd9c1ef305098cf1b1bf626fd6b59a626613b822
 
 PKG_MAINTAINER:=semigodking <semigodking@gmail.com>
 PKG_LICENSE:=Apache-2.0
@@ -26,17 +26,25 @@ define Package/redsocks2
   SECTION:=net
   CATEGORY:=Network
   SUBMENU:=Web Servers/Proxies
-  TITLE:=Redirect TCP connection to proxy server
+  TITLE:=Redirect any TCP connection to a SOCKS or HTTPS proxy server
   URL:=https://github.com/semigodking/redsocks
   DEPENDS:=+libevent2 +libopenssl
 endef
 
 define Package/redsocks2/description
-  This is a modified version of original redsocks.
-  Transparent redirector of any TCP/UDP connection to proxy.
+This is a modified version of original redsocks. \
+The name is changed to be REDSOCKS2 since this release to distinguish with original redsocks. \
+This variant is useful for anti-GFW (Great Fire Wall).
 endef
 
-MAKE_VARS += DISABLE_SHADOWSOCKS=true
+# MAKE_VARS += DISABLE_SHADOWSOCKS=true
+define Package/redsocks2/conffiles
+/etc/config/redsocks2
+endef
+
+define Build/Compile
+	$(call Build/Compile/Default,DISABLE_SHADOWSOCKS=true)
+endef
 
 define Package/redsocks2/install
 	$(INSTALL_DIR) $(1)/usr/sbin
