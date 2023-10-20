@@ -29,6 +29,8 @@
 
 	## map unknow users to guest
 	map to guest = Never
+	#map to guest = Bad User
+	#map to guest = Bad Password
 
 	## allow client access to accounts that have null passwords. 
 	null passwords = yes
