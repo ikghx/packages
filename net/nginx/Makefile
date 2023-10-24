@@ -462,8 +462,8 @@ CONFIGURE_ARGS += \
 	$(if $(call IsEnabled,NGINX_HTTP_SECURE_LINK),--with-http_secure_link_module) \
 	$(if $(call IsEnabled,NGINX_HTTP_SUB),--with-http_sub_module) \
 	$(if $(CONFIG_PACKAGE_nginx-mod-stream),--with-stream=dynamic --with-stream_ssl_module --with-stream_ssl_preread_module) \
-	$(if $(CONFIG_PACKAGE_nginx-mod-naxsi),--add-dynamic-module=$(PKG_BUILD_DIR)/nginx-mod-naxsi/naxsi_src) \
 	$(if $(call IsEnabled,NGINX_STREAM_REAL_IP),--with-stream_realip_module) \
+	$(if $(CONFIG_PACKAGE_nginx-mod-naxsi),--add-dynamic-module=$(PKG_BUILD_DIR)/nginx-mod-naxsi/naxsi_src) \
 	$(foreach m,$(filter-out lua-resty-core lua-resty-lrucache naxsi,$(PKG_MOD_EXTRA)), \
 		$(if $(CONFIG_PACKAGE_nginx-mod-$(m)),--add-dynamic-module=$(PKG_BUILD_DIR)/nginx-mod-$(m)))
 
