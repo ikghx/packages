@@ -1,14 +1,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=https-dns-proxy
-PKG_VERSION:=2023-05-25
-PKG_RELEASE:=7
+PKG_VERSION:=2023-10-25
+PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/aarond10/https_dns_proxy/
 PKG_SOURCE_DATE:=$(PKG_VERSION)
-PKG_SOURCE_VERSION:=d03e11572562f008f68df217a7378628f1bb7b79
-PKG_MIRROR_HASH:=5af3683c48bc9e493ca2761a6f7ee756431692a695d6008f61b8b92431036dca
+PKG_SOURCE_VERSION:=977341a4e35a37ee454e97e82caf4276b1b4961a
+PKG_MIRROR_HASH:=8622846f1038ac05436a48d9b36a07c516cbb6504ce68e7ee8c5529788fac39b
 PKG_MAINTAINER:=Stan Grishin <stangri@melmac.ca>
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
@@ -47,8 +47,6 @@ define Package/https-dns-proxy/install
 	$(SED) "s|^\(readonly PKG_VERSION\).*|\1='$(PKG_VERSION)-$(PKG_RELEASE)'|" $(1)/etc/init.d/https-dns-proxy
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/etc/config/https-dns-proxy $(1)/etc/config/https-dns-proxy
-	$(INSTALL_DIR) $(1)/etc/hotplug.d/iface
-	$(INSTALL_DATA) ./files/etc/hotplug.d/iface/90-https-dns-proxy $(1)/etc/hotplug.d/iface/90-https-dns-proxy
 endef
 
 $(eval $(call BuildPackage,https-dns-proxy))
