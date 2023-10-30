@@ -1,13 +1,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=tvheadend
-PKG_VERSION:=2023-09-06
+PKG_VERSION:=2023-10-27
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/tvheadend/tvheadend.git
-PKG_MIRROR_HASH:=a437ab38ddca7635ef1bae307ecdc25489309c2f5ff1e0ea5e65f96971f4d38b
-PKG_SOURCE_VERSION:=fe4df311d1209ba86d514a34abc0b9c694d53b5f
+PKG_MIRROR_HASH:=fc9968ab450fdc426888fe762a88a9db3e564ff95b1fc15f1a29386967e17919
+PKG_SOURCE_VERSION:=62adbebfd062d7b97829268274aad92df2033784
 
 PKG_LICENSE:=GPL-3.0
 PKG_LICENSE_FILES:=LICENSE.md
@@ -37,7 +37,6 @@ define Package/tvheadend
 	+zlib \
 	+liburiparser \
 	+TVHEADEND_AVAHI_SUPPORT:libavahi-client \
-	+TVHEADEND_REGEX_PCRE:libpcre \
 	+TVHEADEND_REGEX_PCRE2:libpcre2 \
 	+BUILD_PATENTED&&TVHEADEND_CSA:libdvbcsa
 
@@ -78,15 +77,12 @@ ifeq ($(CONFIG_TVHEADEND_TRACE),)
 	CONFIGURE_ARGS += --disable-trace
 endif
 
+CONFIGURE_ARGS += --disable-pcre
 ifneq ($(CONFIG_TVHEADEND_REGEX_PCRE2),)
-	CONFIGURE_ARGS += --disable-pcre --enable-pcre2
-else
-ifneq ($(CONFIG_TVHEADEND_REGEX_PCRE),)
-	CONFIGURE_ARGS += --enable-pcre --disable-pcre2
+	CONFIGURE_ARGS += --enable-pcre2
 else
 ifneq ($(CONFIG_TVHEADEND_REGEX_POSIX),)
-	CONFIGURE_ARGS += --disable-pcre --disable-pcre2
-endif
+	CONFIGURE_ARGS += --disable-pcre2
 endif
 endif
 

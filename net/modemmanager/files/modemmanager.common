@@ -245,7 +245,7 @@ mm_cleanup_interfaces() {
 		status=$(echo "${sysfs_cache_line}" | awk '{print $2}')
 
 		if [ "${status}" = "processed" ]; then
-			mm_log "info" "call cleanup for: ${sysfs_path}"
+			mm_log "debug" "call cleanup for: ${sysfs_path}"
 			mm_cleanup_interface_by_sysfspath "${sysfs_path}"
 		fi
 	done < ${MODEMMANAGER_SYSFS_CACHE}
