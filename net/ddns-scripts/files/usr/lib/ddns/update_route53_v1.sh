@@ -11,10 +11,9 @@
 ENDPOINT="route53.amazonaws.com"
 RECORD_TTL=300
 RECORD_NAME="${lookup_host}."
+RECORD_VALUE="${__IP}"
 [ ${use_ipv6} -eq 0 ] && RECORD_TYPE="A"
-[ ${use_ipv6} -eq 0 ] && RECORD_VALUE="${__IP}"
 [ ${use_ipv6} -eq 1 ] && RECORD_TYPE="AAAA"
-[ ${use_ipv6} -eq 1 ] && RECORD_VALUE="${__IPV6}"
 
 HOSTED_ZONE_ID="${domain}"
 API_PATH="/2013-04-01/hostedzone/${HOSTED_ZONE_ID}/rrset/"

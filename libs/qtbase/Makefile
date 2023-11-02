@@ -5,8 +5,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qtbase
-PKG_BASE:=6.5
-PKG_BUGFIX:=2
+PKG_BASE:=6.6
+PKG_BUGFIX:=0
 PKG_VERSION:=$(PKG_BASE).$(PKG_BUGFIX)
 PKG_RELEASE:=1
 
@@ -14,7 +14,7 @@ PKG_SOURCE:=$(PKG_NAME)-everywhere-src-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:= \
 		https://download.qt.io/official_releases/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules/ \
 		https://master.qt.io/archive/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules/
-PKG_HASH:=3db4c729b4d80a9d8fda8dd77128406353baff4755ca619177eda4cddae71269
+PKG_HASH:=039d53312acb5897a9054bd38c9ccbdab72500b71fdccdb3f4f0844b0dd39e0e
 
 HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)
@@ -142,6 +142,7 @@ CMAKE_OPTIONS += \
 	-DFEATURE_glib=OFF \
 	-DFEATURE_icu=OFF \
 	-DFEATURE_mimetype=ON \
+	-DFEATURE_permissions=OFF \
 	-DFEATURE_opensslv30=OFF \
 	\
 	-DFEATURE_network=ON \
@@ -157,6 +158,7 @@ CMAKE_OPTIONS += \
 	-DFEATURE_sql_oci=OFF \
 	-DFEATURE_sql_odbc=OFF \
 	-DFEATURE_sql_psql=OFF \
+	-DFEATURE_sql_mimer=OFF \
 	\
 	-DFEATURE_xml=ON \
 	\
