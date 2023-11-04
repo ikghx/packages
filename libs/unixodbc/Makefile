@@ -21,8 +21,7 @@ PKG_LICENSE_FILES:=COPYING exe/COPYING
 PKG_CPE_ID:=cpe:/a:unixodbc:unixodbc
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/unixODBC-$(PKG_VERSION)
-HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/unixODBC-$(PKG_VERSION)
-HOST_BUILD_DEPENDS:=unixodbc
+HOST_BUILD_DIR:=$(BUILD_DIR)/host/unixODBC-$(PKG_VERSION)
 
 PKG_BUILD_PARALLEL:=1
 PKG_FIXUP:=autoreconf
@@ -208,8 +207,8 @@ define Host/Compile
 endef
 
 define Host/Install
-	$(INSTALL_DIR) $(STAGING_DIR_HOST)/bin
-	$(INSTALL_BIN) $(HOST_BUILD_DIR)/exe/odbc_config $(STAGING_DIR_HOST)/bin
+	$(INSTALL_DIR) $(STAGING_DIR)/host/bin
+	$(INSTALL_BIN) $(HOST_BUILD_DIR)/exe/odbc_config $(STAGING_DIR)/host/bin/
 endef
 
 $(eval $(call BuildPackage,libodbc))
