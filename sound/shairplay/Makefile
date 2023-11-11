@@ -10,7 +10,7 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=shairplay
 PKG_SOURCE_DATE:=2018-08-24
 PKG_SOURCE_VERSION:=096b61ad14c90169f438e690d096e3fcf87e504e
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_SOURCE_DATE).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/juhovh/shairplay/tar.gz/$(PKG_SOURCE_VERSION)?
@@ -29,7 +29,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/shairplay
   SECTION:=sound
   CATEGORY:=Sound
-  DEPENDS:=+libao +libavahi-compat-libdnssd +libltdl +libpthread
+  DEPENDS:=+libao +libltdl +mdnsd
   TITLE:=Shairplay
 endef
 
