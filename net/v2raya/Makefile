@@ -53,20 +53,20 @@ define Package/v2raya/conffiles
 /etc/config/v2raya
 endef
 
-WEB_FILE:=$(PKG_NAME)-web-$(PKG_VERSION).zip
+WEB_FILE:=$(PKG_NAME)-web-$(PKG_VERSION).tar.gz
 define Download/v2raya-web
 	URL:=https://github.com/v2rayA/v2rayA/releases/download/v$(PKG_VERSION)/
-	URL_FILE:=web.zip
+	URL_FILE:=web.tar.gz
 	FILE:=$(WEB_FILE)
-	HASH:=a4c9aff5e1d85e5e58f0ca0c4cc5dfecb918406c28b37f75a461afea86ce681a
+	HASH:=da31287e02a03d31c812d6e1b56d5c91935188e65577dbf71bc1929f6f589b5d
 endef
 
 define Build/Prepare
 	$(call Build/Prepare/Default)
 
 	( \
-		mkdir -p $(PKG_BUILD_DIR)/server/router/web ; \
-		unzip -q -d $(PKG_BUILD_DIR)/server/router/web $(DL_DIR)/$(WEB_FILE) ; \
+		mkdir -p $(PKG_BUILD_DIR)/server/router ; \
+		tar -xzvf $(DL_DIR)/$(WEB_FILE) -C $(PKG_BUILD_DIR)/server/router ; \
 	)
 endef
 
