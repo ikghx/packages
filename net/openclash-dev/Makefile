@@ -60,8 +60,8 @@ openclash is a cross-platform proxy software
 endef
 
 define Build/Prepare
-	[ ! -f $(PKG_BUILD_DIR)/clash-linux-$(OPENCLASH_ARCH).tar.gz ] && wget https://github.com/vernesong/OpenClash/raw/core/dev/dev/clash-linux-$(OPENCLASH_ARCH).tar.gz -O $(PKG_BUILD_DIR)/clash-linux-$(OPENCLASH_ARCH).tar.gz
-	tar -xzvf $(PKG_BUILD_DIR)/clash-linux-$(OPENCLASH_ARCH).tar.gz -C $(PKG_BUILD_DIR)
+	[ ! -f $(DL_DIR)/clash-linux-$(OPENCLASH_ARCH).tar.gz ] && wget https://github.com/vernesong/OpenClash/raw/core/dev/dev/clash-linux-$(OPENCLASH_ARCH).tar.gz -O $(DL_DIR)/clash-linux-$(OPENCLASH_ARCH).tar.gz
+	tar -xzvf $(DL_DIR)/clash-linux-$(OPENCLASH_ARCH).tar.gz -C $(PKG_BUILD_DIR)
 	upx -d $(PKG_BUILD_DIR)/clash
 endef
 
