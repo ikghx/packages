@@ -6,13 +6,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=adguardhome
-PKG_VERSION:=0.107.40
+PKG_VERSION:=0.107.41
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/AdguardTeam/AdGuardHome/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=926fc08866a7670a73f413e91672587f73c3e112a912364730ea3df31b783141
-PKG_BUILD_DIR:=$(BUILD_DIR)/AdGuardHome-$(PKG_VERSION)
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_VERSION:=v$(PKG_VERSION)
+PKG_SOURCE_URL:=https://github.com/AdguardTeam/AdGuardHome
+PKG_MIRROR_HASH:=ddcfce1bdd19d01a07e7e8eb2218fb3b2d07268a8596fd2a038f3b469a233be5
 
 PKG_LICENSE:=GPL-3.0-only
 PKG_LICENSE_FILES:=LICENSE.txt
@@ -26,12 +26,12 @@ GO_PKG:=github.com/AdguardTeam/AdGuardHome
 GO_PKG_BUILD_PKG:=$(GO_PKG)
 
 AGH_BUILD_TIME:=$(shell date -d @$(SOURCE_DATE_EPOCH) +%FT%TZ%z)
-GO_PKG_LDFLAGS_X:= \
-	$(GO_PKG)/internal/version.channel=release \
-	$(GO_PKG)/internal/version.version=v$(PKG_VERSION) \
-	$(GO_PKG)/internal/version.buildtime=$(AGH_BUILD_TIME) \
-	$(GO_PKG)/internal/version.goarm=$(GO_ARM) \
-	$(GO_PKG)/internal/version.gomips=$(GO_MIPS)
+AGH_VERSION_PKG:=github.com/AdguardTeam/AdGuardHome/internal/version
+GO_PKG_LDFLAGS_X:=$(AGH_VERSION_PKG).channel=release \
+	$(AGH_VERSION_PKG).version=$(PKG_SOURCE_VERSION) \
+	$(AGH_VERSION_PKG).buildtime=$(AGH_BUILD_TIME) \
+	$(AGH_VERSION_PKG).goarm=$(GO_ARM) \
+	$(AGH_VERSION_PKG).gomips=$(GO_MIPS)
 
 include $(INCLUDE_DIR)/package.mk
 include ../../lang/golang/golang-package.mk
@@ -53,18 +53,17 @@ define Package/adguardhome/description
 Free and open source, powerful network-wide ads and trackers blocking DNS server.
 endef
 
-FRONTEND_FILE:=$(PKG_NAME)-frontend-$(PKG_VERSION).tar.gz
-define Download/adguardhome-frontend
-	URL:=https://github.com/AdguardTeam/AdGuardHome/releases/download/v$(PKG_VERSION)/
-	URL_FILE:=AdGuardHome_frontend.tar.gz
-	FILE:=$(FRONTEND_FILE)
-	HASH:=d35761babf56e834454bc4779efbca6a0006509dd66d12c5c676ba5b6e63f1b7
-endef
-
-define Build/Prepare
-	$(call Build/Prepare/Default)
-
-	gzip -dc $(DL_DIR)/$(FRONTEND_FILE) | $(HOST_TAR) -C $(PKG_BUILD_DIR)/ $(TAR_OPTIONS)
+define Build/Compile
+	( \
+		pushd $(PKG_BUILD_DIR) ; \
+		$(GO_GENERAL_BUILD_CONFIG_VARS) \
+		$(GO_PKG_BUILD_CONFIG_VARS) \
+		$(GO_PKG_BUILD_VARS) \
+		go mod tidy; \
+		NODE_OPTIONS=--openssl-legacy-provider make js-deps js-build ; \
+		popd ; \
+		$(call GoPackage/Build/Compile) ; \
+	)
 endef
 
 define Package/adguardhome/install
@@ -73,6 +72,5 @@ define Package/adguardhome/install
 	$(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/AdGuardHome $(1)/usr/bin/AdGuardHome
 endef
 
-$(eval $(call Download,adguardhome-frontend))
 $(eval $(call GoBinPackage,adguardhome))
 $(eval $(call BuildPackage,adguardhome))
