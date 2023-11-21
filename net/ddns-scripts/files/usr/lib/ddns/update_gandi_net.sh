@@ -13,6 +13,21 @@ local __STATUS
 
 [ $use_ipv6 -ne 0 ] && __RRTYPE="AAAA" || __RRTYPE="A"
 
+local _pat
+local _head
+local _auth
+local _apipassword
+_apipassword=$password
+head=`echo $password | cut -c 1-4`
+if [ "$head" = "PAT:" ]; then
+    pat=1
+    _apipassword=`echo $password | cut -c 5-`
+fi;
+_auth="Authorization: Apikey "
+if [ "$pat" -gt "0" ]; then
+    _auth="Authorization: Bearer "
+fi;
+
 # Construct JSON payload
 json_init
 json_add_int rrset_ttl "$__TTL"
@@ -22,13 +37,13 @@ json_close_array
 
 # Log the curl command
 write_log 7 "curl -s -X PUT \"$__ENDPOINT/domains/$domain/records/$username/$__RRTYPE\" \
-	-H \"Authorization: Apikey $password\" \
+	-H \"$_auth $password\" \
 	-H \"Content-Type: application/json\" \
 	-d \"$(json_dump)\" \
 	--connect-timeout 30"
 
 __STATUS=$(curl -s -X PUT "$__ENDPOINT/domains/$domain/records/$username/$__RRTYPE" \
-	-H "Authorization: Apikey $password" \
+	-H "$_auth $_apipassword" \
 	-H "Content-Type: application/json" \
 	-d "$(json_dump)" \
 	--connect-timeout 30 \
