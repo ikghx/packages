@@ -66,7 +66,7 @@ define Build/Prepare
 
 	( \
 		mkdir -p $(PKG_BUILD_DIR)/server/router ; \
-		gzip -dc $(DL_DIR)/$(WEB_FILE) | $(HOST_TAR) -C $(PKG_BUILD_DIR)/server/router/web $(TAR_OPTIONS) ; \
+		$(HOST_TAR) -xzvf $(DL_DIR)/$(WEB_FILE) -C $(PKG_BUILD_DIR)/server/router ; \
 	)
 endef
 
