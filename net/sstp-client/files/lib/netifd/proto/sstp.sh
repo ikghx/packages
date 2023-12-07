@@ -86,7 +86,7 @@ proto_sstp_setup() {
 		--save-server-route \
 		--ipparam $config \
 		$sstp_options \
-		$server:$port \
+		$server${port:+:$port} \
 		ifname $ifname \
 		require-mschap-v2 \
 		${ipv6:++ipv6} \
