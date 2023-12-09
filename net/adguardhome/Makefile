@@ -56,10 +56,6 @@ endef
 define Build/Compile
 	( \
 		pushd $(PKG_BUILD_DIR) ; \
-		$(GO_GENERAL_BUILD_CONFIG_VARS) \
-		$(GO_PKG_BUILD_CONFIG_VARS) \
-		$(GO_PKG_BUILD_VARS) \
-		go mod tidy; \
 		NODE_OPTIONS=--openssl-legacy-provider make js-deps js-build ; \
 		popd ; \
 		$(call GoPackage/Build/Compile) ; \
