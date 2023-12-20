@@ -79,7 +79,8 @@ CONFIGURE_ARGS += \
 	--with-alsa \
 	--with-apple-alac \
 	--with-libdaemon \
-	--with-metadata
+	--with-metadata \
+	--with-pipe
 
 ifeq ($(BUILD_VARIANT),openssl)
   CONFIGURE_ARGS+= --with-ssl=openssl
