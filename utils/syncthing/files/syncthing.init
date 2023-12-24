@@ -59,7 +59,7 @@ start_service() {
 
 	config_load "syncthing"
 
-	local group=$(get_group $user)
+	local group=$(id -gn $user)
 
 	# Some of the default values below might not match the defaults
 	#   in /etc/config/syncthing: the reason is to remain backwards

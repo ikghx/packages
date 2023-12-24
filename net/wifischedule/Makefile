@@ -54,7 +54,7 @@ define Package/wifischedule/install
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DATA) ./net/etc/config/wifi_schedule $(1)/etc/config/wifi_schedule
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_DATA) ./net/etc/init.d/wifi_schedule $(1)/etc/init.d/wifi_schedule
+	$(INSTALL_BIN) ./net/etc/init.d/wifi_schedule $(1)/etc/init.d/wifi_schedule
 endef
 
 define Package/wifischedule/postinst
