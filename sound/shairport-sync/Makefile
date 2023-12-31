@@ -15,7 +15,8 @@ PKG_SOURCE_URL:=https://codeload.github.com/mikebrady/shairport-sync/tar.gz/$(PK
 PKG_HASH:=dfb485c0603398032a00e51f84b874749bbf155b257adda3d270d5989de08bfd
 
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>, \
-		Mike Brady <mikebrady@eircom.net>
+		Mike Brady <mikebrady@eircom.net>, \
+		Ben Klang <bklang@wirehack.net>
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=COPYING LICENSES shairport.c
 
@@ -29,7 +30,7 @@ define Package/shairport-sync/default
   SECTION:=sound
   CATEGORY:=Sound
   TITLE:=AirPlay compatible audio player
-  DEPENDS:=@AUDIO_SUPPORT +libpthread +alsa-lib +libalac +libconfig +libdaemon +libpopt
+  DEPENDS:=@AUDIO_SUPPORT +libpthread +alsa-lib +libalac +libconfig +libdaemon +libpopt +libstdcpp +libplist +libsodium +libgcrypt +libffmpeg-full +libuuid +nqptp
   PROVIDES:=shairport-sync
   URL:=https://github.com/mikebrady/shairport-sync
 endef
@@ -79,6 +80,7 @@ CONFIGURE_ARGS += \
 	--with-alsa \
 	--with-apple-alac \
 	--with-libdaemon \
+	--with-airplay-2 \
 	--with-metadata \
 	--with-pipe
 
