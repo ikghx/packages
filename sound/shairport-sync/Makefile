@@ -81,8 +81,8 @@ CONFIGURE_ARGS += \
 	--with-apple-alac \
 	--with-libdaemon \
 	--with-airplay-2 \
-	--with-metadata \
-	--with-pipe
+	--with-pipe \
+	--with-metadata
 
 ifeq ($(BUILD_VARIANT),openssl)
   CONFIGURE_ARGS+= --with-ssl=openssl
