@@ -26,26 +26,7 @@ PKG_BUILD_PARALLEL:=1
 include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 
-CONFIGURE_ARGS += --with-zlib --with-zstd
-
-HOST_CONFIGURE_VARS += ./configure --with-zlib --with-zstd
-
-define Host/Compile
-	$(MAKE) -C $(HOST_BUILD_DIR) tools/kmod
-endef
-
-define Host/Install
-	$(INSTALL_BIN) $(HOST_BUILD_DIR)/tools/kmod $(STAGING_DIR_HOST)/bin/kmod
-	ln -sf kmod $(STAGING_DIR_HOST)/bin/depmod
-	ln -sf kmod $(STAGING_DIR_HOST)/bin/modinfo
-endef
-
-define Host/Clean
-	$(Host/Clean/Default)
-	rm -f $(STAGING_DIR_HOST)/bin/kmod
-	rm -f $(STAGING_DIR_HOST)/bin/depmod
-	rm -f $(STAGING_DIR_HOST)/bin/modinfo
-endef
+CONFIGURE_ARGS += --with-zlib
 
 HOST_CONFIGURE_VARS += ./configure --with-zlib
 
@@ -71,7 +52,7 @@ define Package/kmod/Default
   CATEGORY:=Utilities
   TITLE:=Linux kernel module handling
   URL:=https://www.kernel.org/pub/linux/utils/kernel/kmod/
-  DEPENDS:=+zlib +libzstd
+  DEPENDS:=+zlib
 endef
 
 
