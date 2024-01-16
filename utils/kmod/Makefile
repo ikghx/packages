@@ -23,29 +23,9 @@ PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
 
-include $(INCLUDE_DIR)/host-build.mk
 include $(INCLUDE_DIR)/package.mk
 
 CONFIGURE_ARGS += --with-zlib
-
-HOST_CONFIGURE_VARS += ./configure --with-zlib
-
-define Host/Compile
-	$(MAKE) -C $(HOST_BUILD_DIR) tools/kmod
-endef
-
-define Host/Install
-	$(INSTALL_BIN) $(HOST_BUILD_DIR)/tools/kmod $(STAGING_DIR_HOST)/bin/kmod
-	ln -sf kmod $(STAGING_DIR_HOST)/bin/depmod
-	ln -sf kmod $(STAGING_DIR_HOST)/bin/modinfo
-endef
-
-define Host/Clean
-	$(Host/Clean/Default)
-	rm -f $(STAGING_DIR_HOST)/bin/kmod
-	rm -f $(STAGING_DIR_HOST)/bin/depmod
-	rm -f $(STAGING_DIR_HOST)/bin/modinfo
-endef
 
 define Package/kmod/Default
   SECTION:=utils
@@ -107,6 +87,5 @@ define Build/InstallDev
 endef
 
 
-$(eval $(call HostBuild))
 $(eval $(call BuildPackage,kmod))
 $(eval $(call BuildPackage,libkmod))
