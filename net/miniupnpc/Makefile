@@ -59,7 +59,7 @@ endef
 define Package/miniupnpc/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/upnpc-shared $(1)/usr/bin/upnpc
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/listdevices $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/upnp-listdevices-shared $(1)/usr/bin/
 endef
 
 define Package/libminiupnpc/install
