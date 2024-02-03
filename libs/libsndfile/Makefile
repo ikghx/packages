@@ -28,6 +28,7 @@ define Package/libsndfile
   CATEGORY:=Libraries
   TITLE:=Library for reading/writing audio files
   URL:=https://libsndfile.github.io/libsndfile/
+  DEPENDS:=+lame-lib +libmpg123
 endef
 
 define Package/libsndfile/description
@@ -36,6 +37,7 @@ define Package/libsndfile/description
 endef
 
 CMAKE_OPTIONS += \
+	-DENABLE_MPEG=ON \
 	-DBUILD_SHARED_LIBS=ON \
 	-DENABLE_EXTERNAL_LIBS=OFF
 
@@ -44,6 +46,8 @@ TARGET_CFLAGS += $(FPIC)
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)
 	$(CP) $(PKG_INSTALL_DIR)/* $(1)/
+	$(SED) 's,/usr/include,$$$${prefix}/include,g' $(1)/usr/lib/pkgconfig/sndfile.pc
+	$(SED) 's,/usr/lib,$$$${exec_prefix}/lib,g' $(1)/usr/lib/pkgconfig/sndfile.pc
 endef
 
 define Package/libsndfile/install

@@ -8,17 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libmariadb
-PKG_VERSION:=3.1.18
-PKG_RELEASE:=2
+PKG_VERSION:=3.1.23
+PKG_RELEASE:=1
 
-PKG_SOURCE:=mariadb-connector-c-$(PKG_VERSION)-src.tar.gz
-PKG_SOURCE_URL := \
-	https://mirror.netcologne.de/mariadb/connector-c-$(PKG_VERSION) \
-	https://mirror.lstn.net/mariadb/connector-c-$(PKG_VERSION) \
-	https://ftp.yz.yamagata-u.ac.jp/pub/dbms/mariadb/connector-c-$(PKG_VERSION) \
-	https://downloads.mariadb.org/interstitial/connector-c-$(PKG_VERSION)
-PKG_HASH:=b01ecacf7531c2f36d90708845488e66462bf63627c58cb5986bd1c0833e4d9c
-PKG_BUILD_DIR:=$(BUILD_DIR)/mariadb-connector-c-$(PKG_VERSION)-src
+PKG_SOURCE:=v$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL := https://github.com/mariadb-corporation/mariadb-connector-c/archive/refs/tags
+PKG_HASH:=bd99e82420563324775477844c673e26a9e858adbd431435b2b888264795be8d
+PKG_BUILD_DIR:=$(BUILD_DIR)/mariadb-connector-c-$(PKG_VERSION)
 
 PKG_MAINTAINER:=Michal Hrusecky <Michal@Hrusecky.net>
 PKG_LICENSE:=LGPL-2.1-or-later
@@ -47,8 +43,7 @@ include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
 include $(INCLUDE_DIR)/cmake.mk
 
-# Pass CPPFLAGS in the CFLAGS as otherwise the build system will
-# ignore them.
+# Pass CPPFLAGS in the CFLAGS as otherwise the build system will ignore them.
 TARGET_CFLAGS+=$(TARGET_CPPFLAGS)
 
 define Package/$(PKG_NAME)/install/plugin
@@ -87,9 +82,6 @@ endef
 
 # We won't need unit tests
 CMAKE_OPTIONS += -DWITH_UNIT_TESTS=0
-
-# Make it explicit that we are cross-compiling
-CMAKE_OPTIONS += -DCMAKE_CROSSCOMPILING=1
 
 CMAKE_OPTIONS += \
 	-DDEFAULT_CHARSET=utf8 \
