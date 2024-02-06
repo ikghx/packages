@@ -12,7 +12,7 @@ PKG_VERSION:=1.4
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/xiph/opus/releases/download/v$(PKG_VERSION)
+PKG_SOURCE_URL:=https://downloads.xiph.org/releases/opus
 PKG_HASH:=c9b32b4253be5ae63d1ff16eea06b94b5f0f2951b7a02aceef58e3a3ce49c51f
 
 PKG_MAINTAINER:=Ted Hess <thess@kitchensync.net>, Ian Leonard <antonlacon@gmail.com>
