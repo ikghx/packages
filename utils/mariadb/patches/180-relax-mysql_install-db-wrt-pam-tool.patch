@@ -24,7 +24,7 @@
 +# we can revisit.
 +if test -n ""
  then
-   if test -z "$srcdir" -a "$in_rpm" -eq 0
+   if test -z "$srcdir" -a "$in_rpm" -eq 0 -a -d "$pamtooldir/auth_pam_tool_dir"
    then
 @@ -524,6 +534,10 @@ then
          echo

@@ -11,16 +11,17 @@ PKG_NAME:=libid3tag
 PKG_VERSION:=0.16.3
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeberg.org/tenacityteam/libid3tag/archive
-PKG_HASH:=0561009778513a95d91dac33cee8418d6622f710450a7cb56a74636d53b588cb
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://codeberg.org/tenacityteam/libid3tag.git
+PKG_SOURCE_VERSION:=$(PKG_VERSION)
+PKG_MIRROR_HASH:=4007a88feaae11925ce96e4c020f0c7332e50d46e9b4f8f7fa77e856e1500959
+
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
 
 PKG_LICENSE:=GPL-2
 PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:media-libs:libid3tag
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)
 CMAKE_BINARY_SUBDIR:=openwrt-build
 
 include $(INCLUDE_DIR)/package.mk

@@ -11,10 +11,14 @@ PKG_NAME:=libmariadb
 PKG_VERSION:=3.1.23
 PKG_RELEASE:=1
 
-PKG_SOURCE:=v$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL := https://github.com/mariadb-corporation/mariadb-connector-c/archive/refs/tags
-PKG_HASH:=bd99e82420563324775477844c673e26a9e858adbd431435b2b888264795be8d
-PKG_BUILD_DIR:=$(BUILD_DIR)/mariadb-connector-c-$(PKG_VERSION)
+PKG_SOURCE:=mariadb-connector-c-$(PKG_VERSION)-src.tar.gz
+PKG_SOURCE_URL:=\
+	https://mirror.netcologne.de/mariadb/connector-c-$(PKG_VERSION) \
+	https://mirror.lstn.net/mariadb/connector-c-$(PKG_VERSION) \
+	https://ftp.yz.yamagata-u.ac.jp/pub/dbms/mariadb/connector-c-$(PKG_VERSION) \
+	https://dlm.mariadb.com/3677044/Connectors/c/connector-c-$(PKG_VERSION)
+PKG_HASH:=43642ff0f104a1f79ec530ac81716bab52040016f6ad7cdec56f4ce30be19f6a
+PKG_BUILD_DIR:=$(BUILD_DIR)/mariadb-connector-c-$(PKG_VERSION)-src
 
 PKG_MAINTAINER:=Michal Hrusecky <Michal@Hrusecky.net>
 PKG_LICENSE:=LGPL-2.1-or-later

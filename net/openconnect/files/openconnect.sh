@@ -16,7 +16,6 @@ append_args() {
 proto_openconnect_init_config() {
 	proto_config_add_string "server"
 	proto_config_add_int "port"
-	proto_config_add_string "request"
 	proto_config_add_int "mtu"
 	proto_config_add_int "juniper"
 	proto_config_add_int "reconnect_timeout"
@@ -47,6 +46,7 @@ proto_openconnect_add_form_entry() {
 
 proto_openconnect_setup() {
 	local config="$1"
+	local tmpfile="/tmp/openconnect-server.$$.tmp"
 
 	json_get_vars \
 		authgroup \
@@ -64,7 +64,6 @@ proto_openconnect_setup() {
 		port \
 		proxy \
 		reconnect_timeout \
-		request \
 		server \
 		serverhash \
 		token_mode \
@@ -78,18 +77,28 @@ proto_openconnect_setup() {
 	logger -t openconnect "initializing..."
 
 	[ -n "$interface" ] && {
+		local trials=10
+
 		logger -t "openconnect" "adding host dependency for $server at $config"
-		for ip in $(resolveip -t 10 "$server"); do
-			logger -t "openconnect" "adding host dependency for $ip at $config"
-			proto_add_host_dependency "$config" "$ip" "$interface"
+		resolveip -t "$server" >"$tmpfile"
+		while [ $? != 0 ] && [ $trials -gt 0 ]; do
+			sleep 5
+			let trials-=1
+			resolveip -t "$server" >"$tmpfile"
 		done
+
+		if [ -s "$tmpfile" ];then
+			for ip in $(cat "$tmpfile"); do
+				logger -t "openconnect" "adding host dependency for $ip at $config"
+				proto_add_host_dependency "$config" "$ip" "$interface"
+			done
+		fi
+		rm -f "$tmpfile"
 	}
 
 	[ -n "$port" ] && port=":$port"
 
-	[ -n "$request" ] && request="/$request"
-
-	append_args "$server$port$request" -i "$ifname" --non-inter --syslog --script /lib/netifd/vpnc-script
+	append_args "$server$port" -i "$ifname" --non-inter --syslog --script /lib/netifd/vpnc-script
 	[ "$pfs" = 1 ] && append_args --pfs
 	[ "$no_dtls" = 1 ] && append_args --no-dtls
 	[ -n "$mtu" ] && append_args --mtu "$mtu"
@@ -170,3 +179,4 @@ proto_openconnect_teardown() {
 [ -n "$INCLUDE_ONLY" ] || {
 	add_protocol openconnect
 }
+
