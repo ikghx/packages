@@ -3,17 +3,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=softethervpn5
+PKG_VERSION:=5.02.5181
 PKG_RELEASE:=1
 
-PKG_MAINTAINER:=Andy Walsh <andy.walsh44+github@gmail.com>
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=COPYING
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/SoftEtherVPN/SoftEtherVPN.git
-PKG_SOURCE_DATE:=2023-10-15
-PKG_SOURCE_VERSION:=895c16e3e8d043511fd8ae730a44eacfc7bffe4d
-PKG_MIRROR_HASH:=2bfa5ee0b4c5aae3b4d2c8f0eb6bd00e787594d65375e9e9071e5f3a90bee494
+PKG_SOURCE_URL:=https://github.com/SoftEtherVPN/SoftEtherVPN/releases/download/$(PKG_VERSION)/
+PKG_SOURCE:=SoftEtherVPN-$(PKG_VERSION).tar.xz
+PKG_HASH:=2222ef48b3f9102265ef7d27e496ad40a1bd1eaba8093bc5e696b48402c52441
+
+HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/SoftEtherVPN-$(PKG_VERSION)
+PKG_BUILD_DIR:=$(BUILD_DIR)/SoftEtherVPN-$(PKG_VERSION)
 
 HOST_BUILD_DEPENDS:=ncurses/host readline/host
 PKG_BUILD_DEPENDS:=softethervpn5/host

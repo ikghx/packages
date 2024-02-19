@@ -4,7 +4,7 @@ PKG_NAME:=redis
 PKG_VERSION:=6.2.14
 PKG_RELEASE:=1
 
-PKG_SOURCE_URL:=http://download.redis.io/releases/
+PKG_SOURCE_URL:=https://download.redis.io/releases/
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_HASH:=34e74856cbd66fdb3a684fb349d93961d8c7aa668b06f81fd93ff267d09bc277
 
