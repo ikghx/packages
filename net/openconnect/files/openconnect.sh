@@ -77,17 +77,15 @@ proto_openconnect_setup() {
 	logger -t openconnect "initializing..."
 
 	[ -n "$interface" ] && {
-		local trials=10
+		local trials=5
 
 		logger -t "openconnect" "adding host dependency for $server at $config"
-		resolveip -t "$server" >"$tmpfile"
-		while [ $? != 0 ] && [ $trials -gt 0 ]; do
+		while resolveip -t 10 "$server" > "$tmpfile" && [ "$trials" -gt 0 ]; do
 			sleep 5
-			let trials-=1
-			resolveip -t "$server" >"$tmpfile"
+			trials=$((trials - 1))
 		done
 
-		if [ -s "$tmpfile" ];then
+		if [ -s "$tmpfile" ]; then
 			for ip in $(cat "$tmpfile"); do
 				logger -t "openconnect" "adding host dependency for $ip at $config"
 				proto_add_host_dependency "$config" "$ip" "$interface"
@@ -179,4 +177,3 @@ proto_openconnect_teardown() {
 [ -n "$INCLUDE_ONLY" ] || {
 	add_protocol openconnect
 }
-
