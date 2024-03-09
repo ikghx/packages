@@ -98,6 +98,8 @@ else
   CONFIGURE_ARGS+= --with-avahi --with-soxr
 endif
 
+TARGET_LDFLAGS += -Wl,--as-needed
+
 define Package/shairport-sync/default/conffiles
 /etc/config/shairport-sync
 /etc/shairport-sync.conf
