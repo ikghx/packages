@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nginx
 PKG_VERSION:=1.24.0
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=nginx-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://nginx.org/download/
@@ -416,7 +416,6 @@ CONFIGURE_ARGS += \
 	--http-proxy-temp-path=/var/lib/nginx/proxy \
 	--http-fastcgi-temp-path=/var/lib/nginx/fastcgi \
 	--with-cc="$(TARGET_CC)" \
-	--with-cc-opt="$(TARGET_CPPFLAGS) $(TARGET_CFLAGS)" \
 	--with-ld-opt="$(TARGET_LDFLAGS)" \
 	--without-http_upstream_zone_module \
 	--with-compat \
