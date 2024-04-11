@@ -122,11 +122,14 @@ start_instance() {
 		printf "};\n\n"
 
 		# Diagnostics
+		config_get log_verbosity "$cfg" log_verbosity
+		config_get statistics "$cfg" statistics
+
 		printf "diagnostics =\n"
 		printf "{\n"
-		append_str "$cfg" diagnostics_statistics "statistics"
+		append_str "$cfg" diagnostics_statistics "statistics" "${statistics}"
 		append_str "$cfg" diagnostics_log_output_to "log_output_to"
-		append_num "$cfg" diagnostics_log_verbosity "log_verbosity"
+		append_num "$cfg" diagnostics_log_verbosity "log_verbosity" "${log_verbosity}"
 		printf "};\n\n"
 	} > "$conf_file"
 
