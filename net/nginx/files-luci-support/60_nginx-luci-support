@@ -15,8 +15,8 @@ if [ -f "/etc/nginx/luci_nginx.conf" ] && [ -f "/etc/nginx/nginx.conf" ]; then
 fi
 
 if nginx -V 2>&1 | grep -q ubus && [ -f /usr/lib/nginx/modules/ngx_http_ubus_module.so ]; then
-        if [ ! -f "/etc/nginx/module.d/luci.module" ]; then
-		cat <<EOT >> /etc/nginx/module.d/luci.module
+        if [ ! -f "/etc/nginx/module.d/ngx_http_ubus.module" ]; then
+		cat <<EOT > /etc/nginx/module.d/ngx_http_ubus.module
 load_module /usr/lib/nginx/modules/ngx_http_brotli_filter_module.so;
 load_module /usr/lib/nginx/modules/ngx_http_brotli_static_module.so;
 load_module /usr/lib/nginx/modules/ngx_http_dav_ext_module.so;

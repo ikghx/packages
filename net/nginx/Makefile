@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nginx
 PKG_VERSION:=1.24.0
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE:=nginx-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://nginx.org/download/
@@ -196,6 +196,15 @@ endef
 
 define Package/nginx-mod-luci/description
  Support file for LuCI in nginx. Include custom nginx configuration, autostart script for uwsgi.
+endef
+
+define Package/nginx-mod-luci/preinst
+#!/bin/sh
+grep -r -l ngx_http_ubus_module.so /etc/nginx/module.d | grep -v ngx_http_ubus.module | while read file; do
+  echo "Removing old LuCI module load file for 'ngx_http_ubus.so' in $$file."
+  rm -f $$file
+done
+exit 0
 endef
 
 define Package/nginx-mod-luci/install
@@ -385,8 +394,10 @@ define BuildModule
 
   define Package/nginx-mod-$(1)/install
 	$(INSTALL_DIR) $$(1)/usr/lib/nginx/modules
+	$(INSTALL_DIR) $$(1)/etc/nginx/module.d
 	$(foreach m,$(3),
-	  $(CP) $$(PKG_INSTALL_DIR)/usr/lib/nginx/modules/$(m)_module.so $$(1)/usr/lib/nginx/modules
+	  $(CP) $$(PKG_INSTALL_DIR)/usr/lib/nginx/modules/$(m)_module.so $$(1)/usr/lib/nginx/modules && \
+	  echo "load_module /usr/lib/nginx/modules/$(m)_module.so;" > $$(1)/etc/nginx/module.d/$(m).module
 	)
 	$(call Module/nginx-mod-$(1)/install,$$(1))
   endef
@@ -489,7 +500,7 @@ $(eval $(call BuildModule,brotli,,ngx_http_brotli_filter ngx_http_brotli_static,
 	Add support for brotli compression module.))
 $(eval $(call BuildModule,naxsi,,ngx_http_naxsi, \
 	Enable NAXSI module.))
-$(eval $(call BuildModule,geoip2,+@NGINX_STREAM_CORE_MODULE +libmaxminddb,ngx_http_geoip2 ngx_stream_geoip2, \
+$(eval $(call BuildModule,geoip2,+@NGINX_STREAM_CORE_MODULE +nginx-mod-stream +libmaxminddb,ngx_http_geoip2 ngx_stream_geoip2, \
 	Enable MaxMind GeoIP2 module.))
 
 # TODO: remove after a transition period (together with pkg nginx-util):
