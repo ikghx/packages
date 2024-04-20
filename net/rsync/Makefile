@@ -31,7 +31,7 @@ define Package/rsync
   CATEGORY:=Network
   SUBMENU:=File Transfer
   TITLE:=rsync is an open source utility that provides fast incremental file transfer
-  DEPENDS:=+libpopt +zlib +RSYNC_xattr:libattr +RSYNC_acl:libacl +RSYNC_zstd:libzstd +RSYNC_xxhash:libxxhash +RSYNC_lz4:liblz4  $(ICONV_DEPENDS)
+  DEPENDS:=+libpopt +zlib +RSYNC_xattr:libattr +RSYNC_acl:libacl +RSYNC_zstd:libzstd +RSYNC_xxhash:libxxhash +RSYNC_lz4:liblz4 $(ICONV_DEPENDS)
   URL:=https://rsync.samba.org/
   MENU:=1
 endef
