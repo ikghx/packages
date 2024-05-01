@@ -8,16 +8,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libmbim
-PKG_SOURCE_VERSION:=1.30.0
-PKG_RELEASE:=1
+PKG_VERSION:=1.30.0
+PKG_RELEASE:=2
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://gitlab.freedesktop.org/mobile-broadband/libmbim.git
+PKG_SOURCE_VERSION:=$(PKG_VERSION)
 PKG_MIRROR_HASH:=8fc4e2d78d6a1003bf89303d3ce779283b176d74e84a241ba8efb0d468605268
 
 PKG_BUILD_FLAGS:=gc-sections
 
 PKG_MAINTAINER:=Nicholas Smith <nicholas@nbembedded.com>
+PKG_CPE_ID:=cpe:/a:freedesktop:libmbim
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
