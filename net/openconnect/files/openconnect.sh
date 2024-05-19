@@ -16,6 +16,7 @@ append_args() {
 proto_openconnect_init_config() {
 	proto_config_add_string "server"
 	proto_config_add_int "port"
+	proto_config_add_string "uri"
 	proto_config_add_int "mtu"
 	proto_config_add_int "juniper"
 	proto_config_add_int "reconnect_timeout"

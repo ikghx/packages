@@ -1,6 +1,6 @@
 --- a/auto/make
 +++ b/auto/make
-@@ -622,7 +622,7 @@ END
+@@ -623,7 +623,7 @@ END
  modules:	$ngx_obj
  
  $ngx_obj:	$ngx_deps$ngx_spacer
