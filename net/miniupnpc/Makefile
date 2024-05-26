@@ -12,7 +12,7 @@ PKG_VERSION:=2.2.7
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://miniupnp.tuxfamily.org/files
+PKG_SOURCE_URL:=http://miniupnp.free.fr/files
 PKG_HASH:=b0c3a27056840fd0ec9328a5a9bac3dc5e0ec6d2e8733349cf577b0aa1e70ac1
 
 PKG_MAINTAINER:=
@@ -25,7 +25,7 @@ include $(INCLUDE_DIR)/cmake.mk
 
 define Package/miniupnpc/Default
   TITLE:=Lightweight UPnP
-  URL:=https://miniupnp.tuxfamily.org
+  URL:=http://miniupnp.free.fr/
 endef
 
 define Package/miniupnpc
