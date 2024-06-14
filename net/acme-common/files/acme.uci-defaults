@@ -1,7 +1,7 @@
 #!/bin/sh
 # Create a symlink to webroot
-if [ -e /www/ ] && [ ! -L /www/.well-known/acme-challenge ]; then
-	mkdir /www/.well-known/
+if [ -d /www/ ] && [ ! -L /www/.well-known/acme-challenge ] && [ ! -d /www/.well-known/acme-challenge/ ]; then
+	mkdir -p /www/.well-known/
 	ln -s /var/run/acme/challenge/ /www/.well-known/acme-challenge
 fi
 

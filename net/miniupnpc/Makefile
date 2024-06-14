@@ -18,14 +18,14 @@ PKG_HASH:=b0c3a27056840fd0ec9328a5a9bac3dc5e0ec6d2e8733349cf577b0aa1e70ac1
 PKG_MAINTAINER:=
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE
-PKG_CPE_ID:=cpe:/a:miniupnp_project:miniupnp
+PKG_CPE_ID:=cpe:/a:miniupnp_project:miniupnpc
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
 
 define Package/miniupnpc/Default
   TITLE:=Lightweight UPnP
-  URL:=http://miniupnp.free.fr/
+  URL:=https://miniupnp.tuxfamily.org
 endef
 
 define Package/miniupnpc

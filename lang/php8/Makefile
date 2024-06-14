@@ -6,8 +6,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=php
-PKG_VERSION:=8.3.7
-PKG_RELEASE:=1
+PKG_VERSION:=8.3.8
+PKG_RELEASE:=2
 
 PKG_MAINTAINER:=Michael Heimpold <mhei@heimpold.de>
 PKG_LICENSE:=PHP-3.01
@@ -16,7 +16,7 @@ PKG_CPE_ID:=cpe:/a:php:php
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://www.php.net/distributions/
-PKG_HASH:=d53433c1ca6b2c8741afa7c524272e6806c1e895e5912a058494fea89988570a
+PKG_HASH:=aea358b56186f943c2bbd350c9005b9359133d47e954cfc561385319ae5bb8d7
 
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_FLAGS:=no-mips16
@@ -259,8 +259,7 @@ endif
 ifneq ($(SDK)$(CONFIG_PACKAGE_php8-mod-gd),)
   CONFIGURE_ARGS+= \
 	--enable-gd=shared,"$(STAGING_DIR)/usr" \
-	--with-jpeg \
-	--with-webp
+	--with-external-gd
 else
   CONFIGURE_ARGS+= --disable-gd
 endif
@@ -648,7 +647,7 @@ $(eval $(call BuildModule,exif,EXIF))
 $(eval $(call BuildModule,fileinfo,Fileinfo))
 $(eval $(call BuildModule,filter,Filter))
 $(eval $(call BuildModule,ftp,FTP,+PACKAGE_php8-mod-ftp:libopenssl))
-$(eval $(call BuildModule,gd,GD graphics,+PACKAGE_php8-mod-gd:libjpeg-turbo +PACKAGE_php8-mod-gd:libwebp +PACKAGE_php8-mod-gd:libpng))
+$(eval $(call BuildModule,gd,GD graphics,+PACKAGE_php8-mod-gd:libgd-full))
 $(eval $(call BuildModule,gettext,Gettext,+PACKAGE_php8-mod-gettext:libintl-full))
 $(eval $(call BuildModule,gmp,GMP,+PACKAGE_php8-mod-gmp:libgmp))
 $(eval $(call BuildModule,iconv,iConv,$(ICONV_DEPENDS)))

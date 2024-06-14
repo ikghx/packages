@@ -36,7 +36,7 @@ define Package/miniupnpd/Default
   PROVIDES:=miniupnpd
   TITLE:=Lightweight UPnP IGD, NAT-PMP & PCP daemon
   SUBMENU:=Firewall
-  URL:=http://miniupnp.free.fr/
+  URL:=https://miniupnp.tuxfamily.org/
 endef
 
 define Package/miniupnpd-iptables
