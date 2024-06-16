@@ -35,10 +35,6 @@ supports multiple methods for accessing block storage. Tgt consists of
 user-space daemon and tools.
 endef
 
-ifneq ($(CONFIG_USE_MUSL),)
-  TARGET_CFLAGS += -D_LARGEFILE64_SOURCE
-endif
-
 define Build/Compile
 	$(call Build/Compile/Default,programs)
 endef

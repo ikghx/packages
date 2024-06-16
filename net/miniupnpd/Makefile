@@ -11,7 +11,7 @@ PKG_NAME:=miniupnpd
 PKG_VERSION:=2.3.6
 PKG_RELEASE:=1
 
-PKG_SOURCE_URL:=http://miniupnp.free.fr/files
+PKG_SOURCE_URL:=https://miniupnp.tuxfamily.org/files
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_HASH:=11ca7bf4d4ba6c6ba12c70c3041807f516f4d9f6b6697bea04e837626b9d679c
 
@@ -34,7 +34,7 @@ define Package/miniupnpd/Default
 	+libmnl \
 	+libuuid
   PROVIDES:=miniupnpd
-  TITLE:=Lightweight UPnP IGD, NAT-PMP & PCP daemon
+  TITLE:=Lightweight UPnP IGD & PCP/NAT-PMP daemon
   SUBMENU:=Firewall
   URL:=https://miniupnp.tuxfamily.org/
 endef
