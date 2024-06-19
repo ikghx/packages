@@ -68,6 +68,12 @@ define Build/Prepare
 		mkdir -p $(PKG_BUILD_DIR)/server/router ; \
 		$(HOST_TAR) -xzvf $(DL_DIR)/$(WEB_FILE) -C $(PKG_BUILD_DIR)/server/router ; \
 	)
+
+	( \
+		cd $(PKG_BUILD_DIR) ; \
+		go mod tidy ; \
+		go mod download ; \
+	)
 endef
 
 define Package/v2raya/install

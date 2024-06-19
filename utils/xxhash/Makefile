@@ -17,7 +17,7 @@ PKG_RELEASE:=2
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_VERSION:=v$(PKG_VERSION)
 PKG_SOURCE_URL:=https://github.com/Cyan4973/xxHash
-PKG_MIRROR_HASH:=0602a12e9ecd009f97a2a845fb5e46af69a60f96547952e5b00228f33bed5cdd
+PKG_MIRROR_HASH:=1532e2c83539d77435583af80c8ea8747c809b7302e96286c84d44472f863c7d
 
 # The source for the library (xxhash.c and xxhash.h) is BSD
 # The source for the command line tool (xxhsum.c) is GPLv2+
