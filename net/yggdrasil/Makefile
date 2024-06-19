@@ -38,12 +38,6 @@ endef
 
 define Package/yggdrasil/description
  Yggdrasil builds end-to-end encrypted networks with IPv6.
- Beyond the similarities with cjdns is a different routing
- algorithm. This globally-agreed spanning tree uses greedy
- routing in a metric space. Back-pressure routing techniques
- allow advanced link aggregation bonding on per-stream basis.
- In turn, a single stream will span across multiple network
- interfaces simultaneously with much greater throughput.
 endef
 
 define Package/yggdrasil/install
