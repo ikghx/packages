@@ -8,7 +8,6 @@ To install them run
 ```
 opkg install tailscale tailscaled
 ```
-
 > [!NOTE]
 > By default this package will use nftables. If you wish to use iptables, the config file `/etc/config/tailscale` can be modfied, changing the line `fw_mode 'nftables'` to `fw_mode 'iptables'`. You can then run `/etc/init.d/tailscale restart` to restart tailscale using your chosen method
 
@@ -29,5 +28,3 @@ tailscale up
 ```
 
 See the [OpenWrt wiki](https://openwrt.org/docs/guide-user/services/vpn/tailscale/start) for more detailed setup instructions
-
-
