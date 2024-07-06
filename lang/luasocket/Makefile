@@ -82,6 +82,7 @@ define Package/luasocket/install
 	$(INSTALL_DIR) $(1)/usr/lib/lua/socket
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/{ftp,http,smtp,tp,url,headers}.lua $(1)/usr/lib/lua/socket
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/unix.so $(1)/usr/lib/lua/socket
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/serial.so $(1)/usr/lib/lua/socket
 	ln -sf ../socket-3.0.0.so $(1)/usr/lib/lua/socket/core.so
 endef
 

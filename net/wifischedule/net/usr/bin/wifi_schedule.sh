@@ -1,8 +1,8 @@
-
-#!/bin/sh
+#!/bin/ash
+# shellcheck shell=dash
 
 # Copyright (c) 2016, prpl Foundation
-# Copyright  ANNO DOMINI  2024  Jan Chren (rindeal)  <dev.rindeal(a)gmail.com>
+# Copyright  ANNO DOMINI  2024  Jan Chren ~rindeal  <dev.rindeal{a}gmail.com>
 #
 # Permission to use, copy, modify, and/or distribute this software for any purpose with or without
 # fee is hereby granted, provided that the above copyright notice and this permission notice appear
@@ -18,89 +18,104 @@
 
 set -o pipefail
 
+
 SCRIPT="$0"
-LOCKFILE=/tmp/wifi_schedule.lock
-LOGFILE=/tmp/log/wifi_schedule.log
+PACKAGE="wifi_schedule"
+GLOBAL="${PACKAGE}.@global[0]"
+LOCKFILE="/tmp/${PACKAGE}.lock"
 LOGGING=0 #default is off
-PACKAGE=wifi_schedule
-GLOBAL=${PACKAGE}.@global[0]
 
 
-_arith_is() { [ "$1" -ne "0" ] ;}
+# Converts the result of arithmetic expansion to a normal command return code
+# Usage: if _arith_bool $(( 3*4 > 12 && foo <= bar )) ...
+_arith_bool() { [ "$1" -ne 0 ] ;}
 
+# Usage: if _uci_bool $(_uci_get_value "foo.bar") ...
+_uci_bool() { [ "$1" -eq 1 ] ;}
+
+# Usage: _join_by_char , foo bar baz
+# Prints: `foo.bar,baz`
 _join_by_char()
 {
-    local IFS="$1"
+    local IFS
+    IFS="$1"
     shift
     printf "%s" "$*"
 }
 
+## Usage: _log [emerg, alert, crit, err, warning, notice, info, debug] "Message ..."
 _log()
 {
-    [ "${LOGGING}" -eq 1 ] || return
-    local ts=$(date)
-    echo "$ts $@" >> "${LOGFILE}"
+    local severity="$1"
+    shift
+    _uci_bool "${LOGGING}" || return
+    logger -t "${PACKAGE}" -p "user.${severity}" "$@"
 }
 
 _exit()
 {
-    local rc=$1
     lock -u "${LOCKFILE}"
-    exit ${rc}
+    exit "$1"
 }
 
-_get_uci_value_raw() { uci get "$1" 2> /dev/null ;}
+_uci_get_value_raw() { uci get "$1" 2> /dev/null ;}
 
-_get_uci_value()
+_uci_get_value()
 {
-    _get_uci_value_raw "$1"
+    _uci_get_value_raw "$1"
     local rc=$?
-    if [ ${rc} -ne 0 ]; then
-        _log "Could not determine UCI value '$1'"
+    if [ "${rc}" -ne 0 ]; then
+        _log "notice" "Could not determine UCI value '$1'"
     fi
-    return ${rc}
+    return "${rc}"
 }
 
-_cfg_global_is_enabled()
-{
-    local enabled=$(_get_uci_value "${GLOBAL}.enabled")
-    test "${enabled}" -eq 1
+_cfg_global_is_enabled() {
+    local value
+    value="$(_uci_get_value "${GLOBAL}.enabled")"
+    _uci_bool "${value}"
 }
 
 _cfg_global_is_unload_modules_enabled()
 {
-    local unload_modules=$(_get_uci_value_raw "${GLOBAL}.unload_modules") || return 1
-    test "${unload_modules}" -eq 1
+    local unload_modules
+    unload_modules="$(_uci_get_value_raw "${GLOBAL}.unload_modules")" || return 1
+    _uci_bool "${unload_modules}"
 }
 
+# Prints: `entry1_name$'\n'entry2_name$'\n'...`
 _cfg_list_entries()
 {
-    uci show "${PACKAGE}" 2> /dev/null | awk -F= '$2 == "entry"' | cut -s -d. -f2 | cut -d= -f1
+    uci show "${PACKAGE}" | awk -F= '$2 == "entry" { n = split($1, a, "."); print a[n] }'
 }
 
-_cfg_entry_is_enabled()
-{
-    local enabled=$(_get_uci_value "${PACKAGE}.${entry}.enabled")
-    test "${enabled}" -eq 1
+_cfg_entry_is_enabled() {
+    local value
+    value="$(_uci_get_value "${PACKAGE}.${entry}.enabled")"
+    _uci_bool "${value}"
 }
 
 _cfg_entry_is_now_within_timewindow()
 {
-    local entry=$1
-    local starttime=$( _get_uci_value "${PACKAGE}.${entry}.starttime" ) || return 1
-    local stoptime=$(  _get_uci_value "${PACKAGE}.${entry}.stoptime"  ) || return 1
-    local daysofweek=$(_get_uci_value "${PACKAGE}.${entry}.daysofweek") || return 1
+    local entry="$1"
+    local starttime stoptime daysofweek
+    local nowdow nowhhmm nowts startts stopts
+    starttime=$( _uci_get_value "${PACKAGE}.${entry}.starttime" ) || return 1
+    stoptime=$(  _uci_get_value "${PACKAGE}.${entry}.stoptime"  ) || return 1
+    daysofweek=$(_uci_get_value "${PACKAGE}.${entry}.daysofweek") || return 1
 
     # check if day of week matches today
-    echo "$daysofweek" | grep -q "$(date +%A)" || return 1
+    nowdow="$(date +%A)"
+    echo "${daysofweek}" | grep -q "${nowdow}" || return 1
 
-    local nowts=$(  date -u +%s -d "$(date "+%H:%M")")
-    local startts=$(date -u +%s -d "$starttime")
-    local stopts=$( date -u +%s -d "$stoptime")
+    nowhhmm="$(date "+%H:%M")"
+    nowts=$(  date -u +%s -d "${nowhhmm}")
+    startts=$(date -u +%s -d "${starttime}")
+    stopts=$( date -u +%s -d "${stoptime}")
     # add a day if stopts goes past midnight
     stopts=$(( stopts < startts ? stopts + 86400 : stopts ))
 
-    _arith_is $(( nowts >= startts && nowts < stopts ))
+    _arith_bool $(( nowts >= startts && nowts < stopts ))
 }
 
 _cfg_can_wifi_run_now()
@@ -110,15 +125,18 @@ _cfg_can_wifi_run_now()
     do
         test -n "${entry}" || continue
         _cfg_entry_is_enabled "${entry}" || continue
-        _cfg_entry_is_now_within_timewindow "$entry" && return 0
+        _cfg_entry_is_now_within_timewindow "${entry}" && return 0
     done
     return 1
 }
 
 _cron_restart() { service cron restart > /dev/null ;}
 
-_crontab_add_entry_raw() { (crontab -l ; printf "%s\n" "$1") | crontab - ;}
+# shellcheck disable=SC2312
+_crontab_append_line() { (crontab -l ; printf "%s\n" "$(_join_by_char ' ' "$@")") | crontab - ;}
 
+## Usage: _crontab_rm_script_entries_by_arg          # this removes all script entries
+## Usage: _crontab_rm_script_entries_by_arg recheck  # this removes just entries with recheck argument
 _crontab_rm_script_entries_by_arg()
 {
     # this loop will create regexp that looks like this:
@@ -129,53 +147,54 @@ _crontab_rm_script_entries_by_arg()
     local arg
     for arg in "$@"
     do
-        regex="${regex}[[:space:]]{1,}${arg}"
+        regex="${regex}[[:space:]]+${arg}"
     done
     regex="${regex}(:?$|[[:space:]])"
 
-    crontab -l | awk -v cmd_field_n=6 -v regex="${regex}" '
+    crontab -l | awk -v cmd_col_pos=6 -v regex="${regex}" '
         {
             is_blank_or_comment = $0 ~ /^[[:space:]]*(:?#.*)?$/
-            is_env_var = $0 ~ /^[[:space:]]*[a-zA-Z_]{1,}[a-zA-Z0-9_]{0,}[[:space:]]*=.*$/
-            # find index of cmdline start
-            match($0, "[[:space:]]*([^[:space:]]+[[:space:]]+){" cmd_field_n - 1 "}")
-            cmdline = substr($0, RLENGTH + 1)
-            if ( is_blank_or_comment || is_env_var || cmdline !~ regex )
-            {
-                print
-                next
-            }
-        }' | crontab -
-}
+            is_env_var          = $0 ~ /^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*=.*$/
 
-_crontab_format_dow_field()
-{
-    _join_by_char "," $(printf "%.3s\n" $@)
+            # find index of the cmdline cell start
+            match($0, "[[:space:]]*([^[:space:]]+[[:space:]]+){" cmd_col_pos - 1 "}")
+            # get the cmdline cell
+            cmdline = substr($0, RLENGTH + 1)
+
+            if ( is_blank_or_comment || is_env_var || cmdline !~ regex )
+                print
+        }' | crontab -
 }
 
 _crontab_add_from_cfg_entry()
 {
-    local entry=$1
-    local starttime=$(    _get_uci_value "${PACKAGE}.${entry}.starttime" ) || return 1
-    local stoptime=$(     _get_uci_value "${PACKAGE}.${entry}.stoptime"  ) || return 1
-    local daysofweek=$(   _get_uci_value "${PACKAGE}.${entry}.daysofweek") || return 1
-    local forcewifidown=$(_get_uci_value "${PACKAGE}.${entry}.forcewifidown")
-    local starthh=$(expr substr "$starttime" 1 2) startmm=$(expr substr "$starttime" 4 2)
-    local stophh=$( expr substr "$stoptime"  1 2) stopmm=$( expr substr "$stoptime"  4 2)
+    local entry="$1"
+    local starttime stoptime daysofweek forcewifidown 
+    starttime=$(    _uci_get_value "${PACKAGE}.${entry}.starttime" ) || return 1
+    stoptime=$(     _uci_get_value "${PACKAGE}.${entry}.stoptime"  ) || return 1
+    daysofweek=$(   _uci_get_value "${PACKAGE}.${entry}.daysofweek") || return 1
+    forcewifidown=$(_uci_get_value "${PACKAGE}.${entry}.forcewifidown")
+    
+    # parse `HH:MM` to `Xhh` and `Xmm` variables
+    local starthh stophh startmm stopmm
+    starthh=$(echo "${starttime}" | cut -c 1-2) startmm=$(echo "${starttime}" | cut -c 4-5) || true
+    stophh=$( echo "${stoptime}"  | cut -c 1-2) stopmm=$( echo "${stoptime}"  | cut -c 4-5) || true
+
+    local fdow
+    # shellcheck disable=SC2046,SC2086
+    fdow=$(_join_by_char "," $(printf "%.3s\n" ${daysofweek}))
+
+    if [ "${starttime}" != "${stoptime}" ]
+    then
+        _crontab_append_line "${startmm} ${starthh} * * ${fdow} ${SCRIPT} start ${entry}"
+    fi
 
     local stopmode="stop"
-    if [ "$forcewifidown" -eq 1 ]; then
+    if _uci_bool "${forcewifidown}" ; then
         stopmode="forcestop"
     fi
 
-    local fdow=$(_crontab_format_dow_field $daysofweek)
-
-    if [ "$starttime" != "$stoptime" ]
-    then
-        _crontab_add_entry_raw "$startmm $starthh * * ${fdow} ${SCRIPT} start ${entry}"
-    fi
-
-    _crontab_add_entry_raw "$stopmm $stophh * * ${fdow} ${SCRIPT} ${stopmode} ${entry}"
+    _crontab_append_line "${stopmm} ${stophh} * * ${fdow} ${SCRIPT} ${stopmode} ${entry}"
 
     return 0
 }
@@ -195,45 +214,54 @@ _crontab_reset_from_cfg()
     done
 }
 
+# region: kernel module unload feature
+
 get_module_list()
 {
     local mod_list
     local _if
     for _if in $(_wifi_get_interfaces)
     do
-        local mod=$(basename "$(readlink -f /sys/class/net/${_if}/device/driver)")
-        local mod_dep=$(modinfo "${mod}" | awk '$1 ~ /^depends:/ { print $2 }')
-        mod_list=$(echo -e "${mod_list}\n${mod},${mod_dep}" | sort -u)
+        local mod mod_dep
+        # trunk-ignore(shellcheck/SC2312)
+        mod=$(basename "$(readlink -f "/sys/class/net/${_if}/device/driver")")
+        mod_dep=$(modinfo "${mod}" | awk '$1 ~ /^depends:/ { print $2 }')
+        mod_list=$(printf "%s\n%s,%s" "${mod_list}" "${mod}" "${mod_dep}" | sort -u)
     done
+    # trunk-ignore(shellcheck/SC2250)
     echo "$mod_list" | tr ',' ' '
 }
 
 save_module_list_uci()
 {
-    local list=$(get_module_list)
-    uci set ${GLOBAL}.modules="${list}"
+    local list
+    list=$(get_module_list)
+    uci set "${GLOBAL}.modules=${list}"
     uci commit "${PACKAGE}"
 }
 
 _unload_modules()
 {
-    local list=$(_get_uci_value "${GLOBAL}.modules")
-    local retries=$(_get_uci_value "${GLOBAL}.modules_retries") || return 1
-    _log "unload_modules ${list} (retries: ${retries})"
+    local list retries
+    list=$(_uci_get_value "${GLOBAL}.modules")
+    retries=$(_uci_get_value "${GLOBAL}.modules_retries") || return 1
+    _log "info" "unload_modules ${list} (retries: ${retries})"
     local i=0
-    while [ $i -lt "$retries" -a -n "$list" ]
+    # trunk-ignore(shellcheck/SC2250)
+    while _arith_bool $(( i < retries )) && test -n "$list"
     do
-        : $(( ++i ))
+        : $(( i += 1 ))
         local mod
         local first=0
         for mod in ${list}
         do
-            if [ $first -eq 0 ]; then
+            if [ "${first}" -eq 0 ]; then
                 list=""
                 first=1
             fi
-            rmmod "${mod}" > /dev/null 2>&1
-            if [ $? -ne 0 ]; then
+            
+            if ! rmmod "${mod}" >/dev/null 2>&1 ; then
+                # trunk-ignore(shellcheck/SC2250)
                 list="$list $mod"
             fi
         done
@@ -242,35 +270,46 @@ _unload_modules()
 
 _load_modules()
 {
-    local list=$(   _get_uci_value "${GLOBAL}.modules") || return 1
-    local retries=$(_get_uci_value "${GLOBAL}.modules_retries") || return 1
-    _log "load_modules ${list} (retries: ${retries})"
+    local list retries
+    list=$(   _uci_get_value "${GLOBAL}.modules") || return 1
+    retries=$(_uci_get_value "${GLOBAL}.modules_retries") || return 1
+    _log "info" "load_modules ${list} (retries: ${retries})"
     local i=0
-    while [ $i -lt "${retries}" -a -n "${list}" ]
+    # trunk-ignore(shellcheck/SC2250)
+    while _arith_bool $(( i < retries )) && test -n "$list"
     do
-        : $(( ++i ))
+        : $(( i += 1 ))
         local mod
         local first=0
         for mod in ${list}
         do
-            if [ $first -eq 0 ]; then
+            if [ "${first}" -eq 0 ]; then
                 list=""
                 first=1
             fi
             modprobe "${mod}" > /dev/null 2>&1
             rc=$?
-            if [ $rc -ne 255 ]; then
+            if [ "${rc}" -ne 255 ]; then
+                # trunk-ignore(shellcheck/SC2250)
                 list="$list $mod"
             fi
         done
     done
 }
 
-_uci_wireless_radio_set_disabled_to()
+# endregion: kernel module unload feature
+
+# Prints: `phy0-ap0$'\n'phy0-ap1$'\n'`
+_wifi_get_interfaces() { iwinfo | awk '/[^[:alnum:]]ESSID[^[:alnum:]]/ { print $1 }' ;}
+
+# Prints: `radio0$'\n'radio1$'\n'`
+_wifi_get_devices() { uci show "wireless" | awk -F= '$2 == "wifi-device" { n = split($1, a, "."); print a[n] }' ;}
+
+_wifi_rfkill_set_all_to()
 {
-    local status=$1
-    _arith_is $(( status == 0 || status == 1 )) || return 1
-    for radio in $(uci show wireless | awk -F= '$2 == "wifi-device" {print $1}' | awk -F. '{print $2}')
+    local status="$1"
+    _arith_bool $(( status == 0 || status == 1 )) || return 1
+    for radio in $(_wifi_get_devices)
     do
         uci set "wireless.${radio}.disabled=${status}"
     done
@@ -278,19 +317,14 @@ _uci_wireless_radio_set_disabled_to()
     /sbin/wifi
 }
 
-_uci_enable_all_radio_devices()  { _uci_wireless_radio_set_disabled_to 0 ;}
-_uci_disable_all_radio_devices() { _uci_wireless_radio_set_disabled_to 1 ;}
-
-_wifi_get_interfaces()
-{
-    iwinfo | grep ESSID | cut -f 1 -d" " -s
-}
+_wifi_rfkill_unblock_all() { _wifi_rfkill_set_all_to 0 ;}
+_wifi_rfkill_block_all()   { _wifi_rfkill_set_all_to 1 ;}
 
 wifi_disable()
 {
     _crontab_rm_script_entries_by_arg "recheck"
     _cron_restart
-    _uci_disable_all_radio_devices
+    _wifi_rfkill_block_all
     if _cfg_global_is_unload_modules_enabled
     then
         _unload_modules
@@ -299,16 +333,18 @@ wifi_disable()
 
 wifi_soft_disable()
 {
-    if ! command -v iwinfo 2>/dev/null ; then
-        _log "iwinfo not available, skipping"
+    if ! command -v iwinfo >/dev/null 2>&1 ; then
+        _log "info" "iwinfo not available, skipping"
         return 1
     fi
 
     local has_assoc=false
     local mac_filter='([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}'
 
-    local ignore_stations=$(_get_uci_value_raw "${GLOBAL}.ignore_stations")
-    local ignore_stations_filter=$( _join_by_char "|" ${ignore_stations} )
+    local ignore_stations ignore_stations_filter
+    ignore_stations=$(_uci_get_value_raw "${GLOBAL}.ignore_stations")
+    # shellcheck disable=SC2086
+    ignore_stations_filter=$(_join_by_char "|" ${ignore_stations})
 
     # check if no stations are associated
     local _if
@@ -317,38 +353,43 @@ wifi_soft_disable()
         local stations ignored_stations
         stations=$(iwinfo "${_if}" assoclist | grep -o -E "${mac_filter}")
         if [ -n "${ignore_stations}" ]; then
-            local all_stations="$stations"
+            local all_stations="${stations}"
+            # shellcheck disable=SC2086
             stations=$(printf "%s\n" ${stations} | grep -vwi -E "${ignore_stations_filter}")
-            ignored_stations="$( printf "%s\n" $all_stations $stations | sort | uniq -u )"
+            # shellcheck disable=SC2086
+            ignored_stations="$(printf "%s\n" ${all_stations} ${stations} | sort | uniq -u)"
         fi
 
         test -n "${stations}" || continue
 
         has_assoc=true
 
-        _log "Clients connected on '${_if}': $(_join_by_char ' ' ${stations})"
+        # shellcheck disable=SC2086
+        _log "info" "Clients connected on '${_if}': $(_join_by_char ' ' ${stations})" || true
         if test -n "${ignored_stations}"
         then
-        _log "Clients ignored on   '${_if}': $(_join_by_char ' ' ${ignored_stations})"
+        # shellcheck disable=SC2086
+        _log "info" "Clients ignored on   '${_if}': $(_join_by_char ' ' ${ignored_stations})" || true
         fi
     done
 
     _crontab_rm_script_entries_by_arg "recheck"
 
-    if [ "$has_assoc" = "false" ]
+    if [ "${has_assoc}" = "false" ]
     then
         if _cfg_can_wifi_run_now
         then
-            _log "Do not disable wifi since there is an allow timewindow, skip rechecking."
+            _log "info" "Do not disable wifi since there is an allow timewindow, skip rechecking."
         else
-            _log "No stations associated, disable wifi."
+            _log "notice" "No stations associated, disable wifi."
             wifi_disable
         fi
     else
-        _log "Could not disable wifi due to associated stations, retrying..."
-        local recheck_interval=$(_get_uci_value "${GLOBAL}.recheck_interval")
-        if [ -n "${recheck_interval}" -a "${recheck_interval}" -gt 0 ] ; then
-            _crontab_add_entry_raw "*/${recheck_interval} * * * * /bin/nice -n 19 ${SCRIPT} recheck"
+        _log "notice" "Could not disable wifi due to associated stations, retrying..."
+        local recheck_interval
+        recheck_interval=$(_uci_get_value "${GLOBAL}.recheck_interval")
+        if test -n "${recheck_interval}" && _arith_bool $(( recheck_interval > 0 )) ; then
+            _crontab_append_line "*/${recheck_interval} * * * * /bin/nice -n 19 ${SCRIPT} recheck"
         fi
     fi
 
@@ -363,7 +404,7 @@ wifi_enable()
     then
         _load_modules
     fi
-    _uci_enable_all_radio_devices
+    _wifi_rfkill_unblock_all
 }
 
 wifi_startup()
@@ -372,10 +413,10 @@ wifi_startup()
 
     if _cfg_can_wifi_run_now
     then
-        _log "enable wifi"
+        _log "notice" "enable wifi"
         wifi_enable
     else
-        _log "disable wifi"
+        _log "notice" "disable wifi"
         wifi_disable
     fi
 }
@@ -398,6 +439,7 @@ usage()
     echo ""
 }
 
+# shellcheck disable=SC2317
 _cleanup()
 {
     lock -u "${LOCKFILE}"
@@ -407,27 +449,30 @@ _cleanup()
 ###############################################################################
 # MAIN
 ###############################################################################
-trap _cleanup EXIT
+main() {
+    trap _cleanup EXIT
 
-LOGGING=$(_get_uci_value "${GLOBAL}.logging") || _exit 1
-_log "${SCRIPT}" "$@"
-lock "${LOCKFILE}"
+    LOGGING=$(_uci_get_value "${GLOBAL}.logging") || _exit 1
+    _log "info" "${SCRIPT}" "$@"
+    lock "${LOCKFILE}"
 
-case "$1" in
-    cron)
-        _crontab_reset_from_cfg
-        _cron_restart
-        wifi_startup
-    ;;
-    start) wifi_enable ;;
-    startup) wifi_startup ;;
-    forcestop) wifi_disable ;;
-    stop) wifi_soft_disable ;;
-    recheck) wifi_soft_disable ;;
-    getmodules) get_module_list ;;
-    savemodules) save_module_list_uci ;;
-    help|--help|-h|*) usage ;;
-esac
+    case "$1" in
+        cron)
+            _crontab_reset_from_cfg
+            _cron_restart
+            wifi_startup
+            ;;
+        start) wifi_enable ;;
+        startup) wifi_startup ;;
+        forcestop) wifi_disable ;;
+        stop) wifi_soft_disable ;;
+        recheck) wifi_soft_disable ;;
+        getmodules) get_module_list ;;
+        savemodules) save_module_list_uci ;;
+        help|--help|-h|*) usage ;;
+    esac
 
-_exit 0
+    _exit 0
+}
 
+main "${@}"

@@ -7,15 +7,16 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=uriparser
+PKG_NAME:=liburiparser
 PKG_VERSION:=0.9.7
 PKG_RELEASE:=1
 
 PKG_SOURCE:=uriparser-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/uriparser/uriparser/releases/download/uriparser-$(PKG_VERSION)/
+PKG_SOURCE_URL:=https://github.com/uriparser/uriparser/releases/download/uriparser-$(PKG_VERSION)
 PKG_HASH:=11553b2abd2b5728a6c88e35ab08e807d0a0f23c44920df937778ce8cc4d40ff
+PKG_BUILD_DIR:=$(BUILD_DIR)/uriparser-$(PKG_VERSION)
 
-PKG_MAINTAINER:=Weijia Song <songweijia@gmail.com>,Sebastian Pipping <sebastian@pipping.org>
+PKG_MAINTAINER:=Weijia Song <songweijia@gmail.com> & Sebastian Pipping <sebastian@pipping.org>
 PKG_LICENSE:=New BSD license
 PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:uriparser:uriparser
@@ -49,7 +50,7 @@ CMAKE_OPTIONS += \
 define Package/liburiparser/install
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) \
-		$(PKG_INSTALL_DIR)/usr/lib/liburiparser.so.* \
+		$(PKG_INSTALL_DIR)/usr/lib/liburiparser.so* \
 		$(1)/usr/lib/
 endef
 

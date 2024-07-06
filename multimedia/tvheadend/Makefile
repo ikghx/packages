@@ -33,9 +33,9 @@ define Package/tvheadend
 	+librt \
 	+libffi \
 	+libopenssl \
+	+liburiparser \
 	$(ICONV_DEPENDS) \
 	+zlib \
-	+liburiparser \
 	+TVHEADEND_AVAHI_SUPPORT:libavahi-client \
 	+TVHEADEND_REGEX_PCRE2:libpcre2 \
 	+BUILD_PATENTED&&TVHEADEND_CSA:libdvbcsa
@@ -217,7 +217,6 @@ CONFIGURE_ARGS += \
 	--disable-libfdkaac_static \
 	--disable-pcloud_cache \
 	--enable-bundle \
-	--enable-uriparser \
 	--disable-execinfo \
 	--nowerror=unused-variable
 
