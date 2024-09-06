@@ -65,6 +65,7 @@ HOST_GO_VALID_OS_ARCH:= \
   wasip1_wasm \
   \
   freebsd_riscv64 \
+  openbsd_riscv64 \
   \
   linux_ppc64 linux_ppc64le \
   linux_mips linux_mipsle linux_mips64 linux_mips64le \
