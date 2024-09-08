@@ -3,8 +3,8 @@
 USE_PROCD=1
 START=99
 
-CONF="hev-socks5-server"
-PROG="/usr/bin/hev-socks5-server"
+CONF="hev-socks5-tproxy"
+PROG="/usr/bin/hev-socks5-tproxy"
 
 start_service() {
 	config_load "$CONF"
