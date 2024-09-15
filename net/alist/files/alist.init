@@ -39,6 +39,8 @@ start_service() {
 	jwt_secret="$(jsonfilter -qi "$CONF_DIR/config.json" -e "@.jwt_secret")"
 	[ -n "$jwt_secret" ] || jwt_secret="$(tr -cd "a-zA-Z0-9" < "/dev/urandom" | head -c16)"
 
+	local nofile=$(cat /proc/sys/fs/nr_open)
+
 	mkdir -p "$CONF_DIR"
 	mkdir -p "$RUN_DIR"
 
@@ -98,8 +100,7 @@ start_service() {
 	config_get_bool debug "config" "debug" "0"
 	[ "$debug" -eq "0" ] || procd_append_param command --debug
 
-	procd_set_param limits core="unlimited"
-	procd_set_param limits nofile="1000000 1000000"
+	procd_set_param limits nofile="${nofile} ${nofile}"
 	procd_set_param respawn
 	[ "$debug" -eq "0" ] || procd_set_param stderr 1
 
