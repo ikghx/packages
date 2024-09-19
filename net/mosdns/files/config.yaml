@@ -25,14 +25,14 @@ plugins:
     type: domain_set
     args:
       files:
-        - "./rule/direct-list.txt"
+        - "./rule/chinalist.txt"
 
 # 匹配代理域名
   - tag: proxy_domain
     type: domain_set
     args:
       files:
-        - "./rule/proxy-list.txt"
+        - "./rule/gfwlist.txt"
 
 # 匹配广告域名
   - tag: ad_domain
@@ -46,7 +46,8 @@ plugins:
     type: ip_set
     args:
       files:
-        - "./rule/CN-ip-cidr.txt"
+        - "./rule/chnroute.txt"
+        - "./rule/chnroute6.txt"
 
 # DNS 应答缓存
 # DNS 缓存大小。单位: 条。

@@ -76,7 +76,6 @@ unexport \
 unexport \
   GCCGOTOOLDIR \
   GOEXPERIMENT \
-  GOROOT_FINAL \
   GO_EXTLINK_ENABLED
 # Unmodified:
 #   GIT_ALLOW_PROTOCOL
