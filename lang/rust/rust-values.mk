@@ -80,9 +80,7 @@ ifneq ($(CONFIG_RUST_SCCACHE),)
 	SCCACHE_DIR=$(RUST_SCCACHE_DIR)
 endif
 
-ifeq ($(CONFIG_USE_MOLD),y)
- CARGO_RUSTFLAGS+=-Clink-arg=-fuse-ld=mold
-endif
+CARGO_RUSTFLAGS+=-Clink-arg=-fuse-ld=$(TARGET_LINKER)
 
 CARGO_HOST_CONFIG_VARS= \
 	$(RUST_SCCACHE_VARS) \
