@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=kcptun
-PKG_VERSION:=20240906
+PKG_VERSION:=20240919
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/xtaci/kcptun/tar.gz/v${PKG_VERSION}?
-PKG_HASH:=99fb4efa4429309f6e67b59003077fb1378f316eb003e7da37377fd4a371e428
+PKG_HASH:=80c2dfe277196e5aac19272f30d83b588f57f6e180b22c5865b7864080cfed09
 
 PKG_MAINTAINER:=Dengfeng Liu <liudf0716@gmail.com>, Chao Liu <expiron18@gmail.com>
 PKG_LICENSE:=MIT
