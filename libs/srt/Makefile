@@ -1,6 +1,9 @@
-# SPDX-License-Identifier: GPL-2.0-only
 #
-# Copyright (C) 2023 Koen Vandeputte <koen.vandeputte@citymesh.com>
+# Copyright (C) 2024 Koen Vandeputte <koen.vandeputte@citymesh.com>
+#
+# This is free software, licensed under the GNU General Public License v2.
+# See /LICENSE for more information.
+#
 
 include $(TOPDIR)/rules.mk
 
@@ -11,14 +14,22 @@ PKG_RELEASE:=1
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/haivision/srt/tar.gz/v$(PKG_VERSION)?
 PKG_HASH:=befaeb16f628c46387b898df02bc6fba84868e86a6f6d8294755375b9932d777
-
 PKG_MAINTAINER:=Koen Vandeputte <koen.vandeputte@citymesh.com>
+
 PKG_LICENSE:=MPL-2.0
 PKG_LICENSE_FILES:=LICENSE
-PKG_INSTALL:=1
+
+CMAKE_INSTALL:=1
 
 PKG_CONFIG_DEPENDS:= \
-	CONFIG_SRT_OPENSSL_SUPPORT
+	\
+	CONFIG_SRT_OPENSSL \
+	CONFIG_SRT_MBEDTLS \
+	CONFIG_SRT_GNUTLS \
+	CONFIG_SRT_NOENCRYPTION \
+	\
+	CONFIG_SRT_MONOTONIC_CLOCK \
+	CONFIG_SRT_BONDING
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -26,41 +37,34 @@ include $(INCLUDE_DIR)/cmake.mk
 define Package/srt
   SECTION:=libs
   CATEGORY:=Libraries
+  DEPENDS:= +libstdcpp +libatomic
+  DEPENDS += +SRT_OPENSSL:libopenssl +SRT_MBEDTLS:libmbedtls +SRT_GNUTLS:libgnutls
   TITLE:=secure reliable transport
   URL:=https://github.com/Haivision/srt
-  DEPENDS:=+libstdcpp +libatomic +SRT_OPENSSL_SUPPORT:libopenssl
-endef
-
-define Package/srt/description
- This package contains a library for srt streaming.
+  MENU:=1
 endef
 
 define Package/srt/config
-	source "$(SOURCE)/Config.in"
+  source "$(SOURCE)/Config.in"
 endef
 
-ifdef CONFIG_SRT_OPENSSL_SUPPORT
-	CMAKE_OPTIONS += \
-		-DENABLE_ENCRYPTION=ON
-		-DOPENSSL_USE_STATIC_LIBS=OFF
-else
-	CMAKE_OPTIONS += -DENABLE_ENCRYPTION=OFF
-endif
+TARGET_LDFLAGS += -Wl,--gc-sections
 
 CMAKE_OPTIONS += \
-	-DENABLE_MONOTONIC_CLOCK=ON \
+	-DCMAKE_POSITION_INDEPENDENT_CODE=ON
 	-DENABLE_APPS=OFF \
+	-DENABLE_PKTINFO=OFF \
+	-DENABLE_SHARED=ON \
 	-DENABLE_STATIC=OFF \
-	-DENABLE_STDCXX_SYNC=OFF
-
-define Build/InstallDev
-	$(INSTALL_DIR) $(1)/usr/include
-	$(CP) $(PKG_INSTALL_DIR)/usr/include/* $(1)/usr/include/
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.so* $(1)/usr/lib/
-	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/srt.pc $(1)/usr/lib/pkgconfig/
-endef
+	-DENABLE_TESTING=OFF \
+	-DENABLE_UNITTESTS=OFF \
+	-DUSE_BUSY_WAITING=OFF \
+	-DENABLE_BONDING=$(if $(CONFIG_SRT_BONDING),ON,OFF) \
+	-DENABLE_MONOTONIC_CLOCK=$(if $(CONFIG_SRT_MONOTONIC_CLOCK),ON,OFF) \
+	-DENABLE_ENCRYPTION=$(if $(CONFIG_SRT_OPENSSL)$(CONFIG_SRT_MBEDTLS)$(CONFIG_SRT_GNUTLS),ON,OFF) \
+	$(if $(CONFIG_SRT_OPENSSL),-DUSE_ENCLIB=openssl-evp) \
+	$(if $(CONFIG_SRT_MBEDTLS),-DUSE_ENCLIB=mbedtls) \
+	$(if $(CONFIG_SRT_GNUTLS),-DUSE_ENCLIB=gnutls)
 
 define Package/srt/install
 	$(INSTALL_DIR) $(1)/usr/lib
