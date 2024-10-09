@@ -10,7 +10,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qemu
 PKG_VERSION:=9.0.3
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_HASH:=8e90241c48e608d8a08e5d7c7118a5e9db2829467d738a3a5dc8befb84ce4579
 PKG_SOURCE_URL:=https://download.qemu.org/
