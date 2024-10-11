@@ -9,11 +9,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qemu
-PKG_VERSION:=9.0.3
-PKG_RELEASE:=2
+PKG_VERSION:=8.0.0
+PKG_RELEASE:=1
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_HASH:=8e90241c48e608d8a08e5d7c7118a5e9db2829467d738a3a5dc8befb84ce4579
-PKG_SOURCE_URL:=https://download.qemu.org/
+PKG_HASH:=bb60f0341531181d6cc3969dd19a013d0427a87f918193970d9adb91131e56d0
+PKG_SOURCE_URL:=http://download.qemu.org/
 PKG_LICENSE:=GPL-2.0-only
 PKG_LICENSE_FILES:=LICENSE tcg/LICENSE
 PKG_MAINTAINER:=Yousong Zhou <yszhou4tech@gmail.com>
@@ -52,7 +52,7 @@ define Package/qemu-ga
   CATEGORY:=Utilities
   SUBMENU:=Virtualization
   TITLE:=QEMU Guest Agent
-  URL:=https://www.qemu.org
+  URL:=http://www.qemu.org
   DEPENDS:= +glib2 +virtio-console-helper +libstdcpp +libudev $(QEMU_DEPS_IN_GUEST)
 endef
 
@@ -63,6 +63,8 @@ define Package/qemu-ga/install
 	$(INSTALL_BIN) ./files/qemu-ga.init $(1)/etc/init.d/qemu-ga
 	$(INSTALL_DIR) $(1)/etc/hotplug.d/virtio-ports
 	$(INSTALL_BIN) ./files/10-qemu-ga.hotplug $(1)/etc/hotplug.d/virtio-ports/10-qemu-ga
+	$(INSTALL_DIR) $(1)/sbin
+	$(INSTALL_BIN) ./files/shutdown $(1)/sbin/shutdown
 endef
 
 PKG_CONFIG_DEPENDS += CONFIG_PACKAGE_qemu-ga
@@ -154,7 +156,7 @@ define Package/qemu-keymaps
   CATEGORY:=Utilities
   SUBMENU:=Virtualization
   TITLE:=QEMU reverse keymaps for use with -k argument
-  URL:=https://www.qemu.org
+  URL:=http://www.qemu.org
   DEPENDS:=$(QEMU_DEPS_IN_HOST)
 endef
 
@@ -336,6 +338,7 @@ CONFIGURE_ARGS +=			\
 
 # accel
 CONFIGURE_ARGS +=			\
+	--disable-hax			\
 	--disable-hvf			\
 	--disable-whpx			\
 	--disable-xen			\
@@ -377,7 +380,6 @@ CONFIGURE_ARGS +=			\
 #
 CONFIGURE_ARGS +=			\
 	--audio-drv-list=''		\
-	--disable-af-xdp                \
 	--disable-attr			\
 	--disable-auth-pam		\
 	--disable-brlapi		\
@@ -392,7 +394,7 @@ CONFIGURE_ARGS +=			\
 	--disable-docs			\
 	--disable-fuse			\
 	--disable-gcrypt		\
-	--disable-download		\
+	--with-git-submodules=ignore	\
 	--disable-glusterfs		\
 	--disable-gnutls		\
 	--disable-guest-agent-msi	\
@@ -401,7 +403,6 @@ CONFIGURE_ARGS +=			\
 	--disable-libpmem		\
 	--disable-libssh		\
 	--$(if $(CONFIG_QEMU_DEV_USB),enable,disable)-libusb		\
-	--disable-libkeyutils           \
 	--disable-linux-aio		\
 	--disable-linux-io-uring	\
 	--disable-lzfse			\
@@ -418,7 +419,6 @@ CONFIGURE_ARGS +=			\
 	--disable-qom-cast-debug	\
 	--disable-rbd			\
 	--disable-rdma			\
-	--disable-rutabaga-gfx          \
 	--disable-sanitizers		\
 	--$(if $(CONFIG_QEMU_SECCOMP),enable,disable)-seccomp		\
 	--disable-smartcard		\
