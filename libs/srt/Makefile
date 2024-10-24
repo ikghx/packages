@@ -44,6 +44,11 @@ define Package/srt
   MENU:=1
 endef
 
+define Package/srt/description
+  This package provides the Secure Reliable Transport library which
+  is mostly used by the gstreamer srt sink plugin
+endef
+
 define Package/srt/config
   source "$(SOURCE)/Config.in"
 endef
@@ -51,7 +56,7 @@ endef
 TARGET_LDFLAGS += -Wl,--gc-sections
 
 CMAKE_OPTIONS += \
-	-DCMAKE_POSITION_INDEPENDENT_CODE=ON
+	-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
 	-DENABLE_APPS=OFF \
 	-DENABLE_PKTINFO=OFF \
 	-DENABLE_SHARED=ON \
