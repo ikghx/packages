@@ -46,7 +46,7 @@ define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/share/hwdata
 	$(CP) $(PKG_INSTALL_DIR)/usr/share/hwdata/* $(1)/usr/share/hwdata
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
-	$(CP) $(PKG_INSTALL_DIR)/usr/share/pkgconfig/hwdata.pc $(1)/usr/lib/pkgconfig
+	$(CP) $(PKG_INSTALL_DIR)/usr/*/pkgconfig/hwdata.pc $(1)/usr/lib/pkgconfig
 endef
 
 define Package/pciids/install
