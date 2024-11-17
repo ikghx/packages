@@ -1,5 +1,4 @@
 #!/bin/sh
-. /lib/functions.sh
 
 # Create a symlink to webroot
 if [ -d /www/ ] && [ ! -L /www/.well-known/acme-challenge ] && [ ! -d /www/.well-known/acme-challenge/ ]; then
