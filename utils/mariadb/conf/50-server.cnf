@@ -16,7 +16,6 @@
 #
 pid-file = /var/run/mysqld/mysqld.pid
 socket = /var/run/mysqld/mysqld.sock
-#port = 3306
 datadir = /mnt/sda/database/mysql
 # tmpdir should also not go on flash memory, but needs to exist and have correct rights
 tmpdir = /tmp
@@ -25,25 +24,26 @@ skip-external-locking
 
 # Instead of skip-networking the default is now to listen only on
 # localhost which is more compatible and is not less secure.
-bind-address = 127.0.0.1
+#bind-address = 127.0.0.1
+#port = 3306
 
 #
 # * Fine Tuning
 #
-key_buffer_size = 16M
-max_allowed_packet = 16M
-thread_stack = 256K
-thread_cache_size = 8
-#max_connections = 151
+key_buffer_size = 384M
+max_allowed_packet = 32M
+#thread_stack = 256K
+#thread_cache_size = 8
+max_connections = 200
 #table_open_cache = 2000
 #thread_concurrency = 10
 
 #
 # * Query Cache Configuration
 #
-query_cache_limit = 1M
-query_cache_min_res_unit = 1k
-query_cache_size = 16M
+query_cache_limit = 2M
+query_cache_min_res_unit = 4k
+query_cache_size = 64M
 
 #
 # * Logging and Replication

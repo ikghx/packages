@@ -421,12 +421,26 @@ config_pool() {
 	swanctl_xappend1 "}"
 }
 
+config_mschapv2_secret() {
+	local conf="$1"
+
+	local id
+	local secret
+
+	config_get id "$conf" id
+	config_get secret "$conf" secret
+
+	swanctl_xappend1 "eap-${conf} {"
+	swanctl_xappend2 "id = $id"
+	swanctl_xappend2 "secret = $secret"
+	swanctl_xappend1 "}"
+}
+
 config_remote() {
 	local conf="$1"
 
 	local enabled
 	local gateway
-	local local_gateway
 	local local_sourceip
 	local local_ip
 	local local_identifier
@@ -434,22 +448,19 @@ config_remote() {
 	local remote_identifier
 	local pre_shared_key
 	local auth_method
-	local local_auth
-	local remote_auth
 	local keyingtries
 	local dpddelay
 	local inactivity
 	local keyexchange
 	local fragmentation
 	local mobike
-	local encap
 	local local_cert
 	local local_key
 	local ca_cert
 	local rekeytime
 	local remote_ca_certs
 	local pools
-	local aggressive
+	local eap_id
 
 	config_get_bool enabled "$conf" enabled 0
 	[ $enabled -eq 0 ] && return
@@ -457,9 +468,6 @@ config_remote() {
 	config_get gateway "$conf" gateway
 	config_get pre_shared_key "$conf" pre_shared_key
 	config_get auth_method "$conf" authentication_method
-	config_get local_auth "$conf" local_auth "$auth_method"
-	config_get remote_auth "$conf" remote_auth "$auth_method"
-	config_get local_id_eap "$conf" local_id_eap ""
 	config_get local_identifier "$conf" local_identifier ""
 	config_get remote_identifier "$conf" remote_identifier ""
 	config_get local_ip "$conf" local_ip "%any"
@@ -469,13 +477,13 @@ config_remote() {
 	config_get keyexchange "$conf" keyexchange "ikev2"
 	config_get fragmentation "$conf" fragmentation "yes"
 	config_get_bool mobike "$conf" mobike 1
-	config_get_bool encap "$conf" encap 0
 	config_get local_cert "$conf" local_cert ""
 	config_get local_key "$conf" local_key ""
 	config_get ca_cert "$conf" ca_cert ""
 	config_get rekeytime "$conf" rekeytime
 	config_get overtime "$conf" overtime
-	config_get aggressive "$1" aggressive ""
+	config_get send_cert "$conf" send_cert
+	config_get eap_id "$conf" eap_id "%any"
 
 	config_list_foreach "$conf" local_sourceip append_var local_sourceip ","
 	config_list_foreach "$conf" remote_ca_certs append_var remote_ca_certs ","
@@ -495,36 +503,7 @@ config_remote() {
 		;;
 	esac
 
-	case "$aggressive" in
-	yes|no|"")
-		;;
-	*)
-		fatal "aggressive value $aggressive invalid"
-		aggressive=""
-		;;
-	esac
-
 	[ "$gateway" = "any" ] && remote_gateway="%any" || remote_gateway="$gateway"
-
-	local ipdest
-	[ "$remote_gateway" = "%any" ] && ipdest="1.1.1.1" || ipdest="$remote_gateway"
-	if ip -o route get $ipdest 2&>1 >/dev/null ; then
-		local_gateway=`ip -o route get $ipdest | awk '/ src / { gsub(/^.* src /,""); gsub(/ .*$/, ""); print $0}'`
-	fi
-
-	#if local_ip is an network.interface name
-	for ifc in $(ubus list network.interface.*) ; do 
-		[[ $ifc =~ .*$local_ip.* ]] || continue
-		local GW
-		eval $(ubus call $ifc status | jsonfilter -e 'GW=$["route"][0].nexthop')
-		local_gateway="$GW"
-		local IP
-		eval $(ubus call $ifc status | jsonfilter -e 'IP=$["ipv6-address"][0].address')
-		[ -z $IP ] || local_ip="$IP"
-		eval $(ubus call $ifc status | jsonfilter -e 'IP=$["ipv4-address"][0].address')
-		[ -z $IP ] || local_ip="$IP"
-		[ -z $IP ] && local_ip="%any"
-	done
 
 	if [ -n "$local_key" ]; then
 		[ "$(dirname "$local_key")" != "." ] && \
@@ -538,23 +517,21 @@ config_remote() {
 
 	[ -n "$firewall" ] && fatal "Firewall not supported"
 
-	for auth_method in $local_auth $remote_auth ; do
-		if [ "$auth_method" = pubkey ]; then
-			if [ -n "$ca_cert" ]; then
-				[ "$(dirname "$ca_cert")" != "." ] && \
-					fatal "ca_cert $ca_cert can't be pathname"
-				[ -f "/etc/swanctl/x509ca/$ca_cert" ] || \
-					fatal "ca_cert $ca_cert not found"
-			fi
-
-			if [ -n "$local_cert" ]; then
-				[ "$(dirname "$local_cert")" != "." ] && \
-					fatal "local_cert $local_cert can't be pathname"
-				[ -f "/etc/swanctl/x509/$local_cert" ] || \
-					fatal "local_cert $local_cert not found"
-			fi
+	if [ "$auth_method" = pubkey ]; then
+		if [ -n "$ca_cert" ]; then
+			[ "$(dirname "$ca_cert")" != "." ] && \
+			    fatal "ca_cert $ca_cert can't be pathname"
+			[ -f "/etc/swanctl/x509ca/$ca_cert" ] || \
+			    fatal "ca_cert $ca_cert not found"
 		fi
-	done
+
+		if [ -n "$local_cert" ]; then
+			[ "$(dirname "$local_cert")" != "." ] && \
+			    fatal "local_cert $local_cert can't be pathname"
+			[ -f "/etc/swanctl/x509/$local_cert" ] || \
+			    fatal "local_cert $local_cert not found"
+		fi
+	fi
 
 	swanctl_xappend0 "# config for $conf"
 	swanctl_xappend0 "connections {"
@@ -565,20 +542,23 @@ config_remote() {
 	[ -n "$local_sourceip" ] && swanctl_xappend2 "vips = $local_sourceip"
 	[ -n "$fragmentation" ] && swanctl_xappend2 "fragmentation = $fragmentation"
 	[ -n "$pools" ] && swanctl_xappend2 "pools = $pools"
-	[ -n "$aggressive" ] && swanctl_xappend2 "aggressive = $aggressive"
+
+	local local_auth_method="$auth_method"
+	[ "$auth_method" = "eap-mschapv2" ] && local_auth_method="pubkey"
 
 	swanctl_xappend2 "local {"
-	swanctl_xappend3 "auth = $local_auth"
-	[ -n "$local_id_eap" ] && swanctl_xappend3 "eap_id = \"$local_id_eap\""
+	swanctl_xappend3 "auth = $local_auth_method"
+
 	[ -n "$local_identifier" ] && swanctl_xappend3 "id = \"$local_identifier\""
-	[ "$local_auth" = pubkey ] && [ -n "$local_cert" ] && \
+	[ "$local_auth_method" = pubkey ] && [ -n "$local_cert" ] && \
 	    swanctl_xappend3 "certs = $local_cert"
 	swanctl_xappend2 "}"
 
 	swanctl_xappend2 "remote {"
-	swanctl_xappend3 "auth = $remote_auth"
+	swanctl_xappend3 "auth = $auth_method"
 	[ -n "$remote_identifier" ] && swanctl_xappend3 "id = \"$remote_identifier\""
 	[ -n "$remote_ca_certs" ] && swanctl_xappend3 "cacerts = \"$remote_ca_certs\""
+	[ "$auth_method" = eap-mschapv2 ] && swanctl_xappend3 "eap_id = $eap_id"
 	swanctl_xappend2 "}"
 
 	swanctl_xappend2 "children {"
@@ -602,8 +582,9 @@ config_remote() {
 		;;
 	esac
 
+	[ -n "$send_cert" ] && swanctl_xappend2 "send_cert = $send_cert"
+
 	[ $mobike -eq 1 ] && swanctl_xappend2 "mobike = yes" || swanctl_xappend2 "mobike = no"
-	[ $encap -eq 1 ] && swanctl_xappend2 "encap = yes"
 
 	if [ -n "$rekeytime" ]; then
 		swanctl_xappend2 "rekey_time = $rekeytime"
@@ -620,50 +601,38 @@ config_remote() {
 
 	swanctl_xappend1 "}"
 	swanctl_xappend0 "}"
-	[ $local_auth = $remote_auth ] && remote_auth=""
-	for auth_method in $local_auth $remote_auth ; do
-		if [ "$auth_method" = pubkey ]; then
-			swanctl_xappend0 ""
 
-			if [ -n "$ca_cert" ]; then
-				swanctl_xappend0 "authorities {"
-				swanctl_xappend1 "$conf {"
-				swanctl_xappend2 "cacert = $ca_cert"
-				swanctl_xappend1 "}"
-				swanctl_xappend0 "}"
-			fi
+	if [ "$auth_method" = pubkey ]; then
+		swanctl_xappend0 ""
 
-		elif [ "$auth_method" = psk ]; then
-			swanctl_xappend0 ""
-
-			swanctl_xappend0 "secrets {"
-			swanctl_xappend1 "ike {"
-			swanctl_xappend2 "secret = $pre_shared_key"
-			if [ -n "$local_id" ]; then
-				swanctl_xappend2 "id1 = $local_id"
-				if [ -n "$remote_id" ]; then
-					swanctl_xappend2 "id2 = $remote_id"
-				fi
-			fi
+		if [ -n "$ca_cert" ]; then
+			swanctl_xappend0 "authorities {"
+			swanctl_xappend1 "$conf {"
+			swanctl_xappend2 "cacert = $ca_cert"
 			swanctl_xappend1 "}"
 			swanctl_xappend0 "}"
-		elif [ "$auth_method" = eap ]; then
-			swanctl_xappend0 ""
-
-			swanctl_xappend0 "secrets {"
-			swanctl_xappend1 "eap {"
-			swanctl_xappend2 "secret = $pre_shared_key"
-			swanctl_xappend2 "id = $local_id_eap"
-			swanctl_xappend1 "}"
-			swanctl_xappend0 "}"
-		else
-			fatal "AuthenticationMode $auth_mode not supported"
 		fi
-	done
 
-	swanctl_xappend0 "pools {"
-	config_list_foreach "$conf" pools config_pool
-	swanctl_xappend0 "}"
+	elif [ "$auth_method" = psk ]; then
+		swanctl_xappend0 ""
+
+		swanctl_xappend0 "secrets {"
+		swanctl_xappend1 "ike-$conf {"
+		swanctl_xappend2 "secret = $pre_shared_key"
+		if [ -n "$local_identifier" ]; then
+			swanctl_xappend2 "id1 = $local_identifier"
+			if [ -n "$remote_identifier" ]; then
+				swanctl_xappend2 "id2 = $remote_identifier"
+			fi
+		fi
+		swanctl_xappend1 "}"
+		swanctl_xappend0 "}"
+	elif [ "$auth_method" = eap-mschapv2 ]; then
+		# EAP-MSCHAPv2 secrets are handled in config_mschapv2_secrets globally
+		:  # empty command
+	else
+		fatal "AuthenticationMode $auth_mode not supported"
+	fi
 
 	swanctl_xappend0 ""
 }
@@ -679,7 +648,7 @@ config_ipsec() {
 	local routing_table
 	local routing_table_id
 	local interface
-
+	local interface_list
 
 	config_get debug "$conf" debug 0
 	config_get_bool rtinstall_enabled "$conf" rtinstall_enabled 1
@@ -710,8 +679,6 @@ config_ipsec() {
 }
 
 do_postamble() {
-	swanctl_xappend0 "include /var/swanctl/conf.d/*.conf"
-
 	swan_xappend0 "# generated by /etc/init.d/swanctl"
 	swan_xappend0 "charon {"
 	swan_xappend1 "install_routes = $install_routes"
@@ -730,18 +697,29 @@ do_postamble() {
 }
 
 prepare_env() {
-	mkdir -p /var/ipsec /var/swanctl/conf.d
+	mkdir -p /var/ipsec /var/swanctl
 
 	swan_reset
 	swanctl_reset
 	do_preamble
 
 	# needed by do_postamble
-	local debug install_routes routing_tables_ignored device_list interface_list
+	local debug install_routes routing_tables_ignored device_list
 
 	config_load ipsec
 	config_foreach config_ipsec ipsec
 	config_foreach config_remote remote
+	
+	swanctl_xappend0 "# Global config"
+	swanctl_xappend0 ""
+	
+	swanctl_xappend0 "pools {"
+	config_foreach config_pool pools
+	swanctl_xappend0 "}"
+
+	swanctl_xappend0 "secrets {"
+	config_foreach config_mschapv2_secret mschapv2_secrets
+	swanctl_xappend0 "}"
 
 	do_postamble
 }
