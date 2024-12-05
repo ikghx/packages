@@ -159,11 +159,11 @@ output_bool connection sslmode "ssl_enable"
 
 cert=$(get_value 'connection' cert)
 if ! [ -z $cert ]; then
-	output_const "rsa_cert_file" $cert
+	output_const "dsa_cert_file" $cert
 fi
 key=$(get_value 'connection' key)
 if ! [ -z $key ]; then
-	output_const "rsa_private_key_file" $key
+	output_const "dsa_private_key_file" $key
 fi
 
 ascii_download_enable=NO
