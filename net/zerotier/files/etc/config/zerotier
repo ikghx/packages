@@ -1,0 +1,8 @@
+
+config zerotier 'global'
+	option enabled '0'
+	option config_path '/etc/zerotier'
+	option port '9993'
+	option nat '1'
+	option copy_config_path '1'
+

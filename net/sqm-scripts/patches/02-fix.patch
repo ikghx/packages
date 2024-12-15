@@ -1,0 +1,49 @@
+--- a/platform/openwrt/sqm-hotplug
++++ b/platform/openwrt/sqm-hotplug
+@@ -1,4 +1,4 @@
+-#!/bin.sh
++#!/bin/sh
+ 
+ . /lib/functions.sh
+ 
+--- a/src/defaults.sh
++++ b/src/defaults.sh
+@@ -54,8 +54,8 @@ fi
+ [ -z "$IPT_MASK" ] && IPT_MASK="0xff" # to disable: set mask to 0xffffffff
+ #sm: we need the functions above before trying to set the ingress IFB device
+ #sm: *_CAKE_OPTS should contain the diffserv keyword for cake
+-[ -z "$INGRESS_CAKE_OPTS" ] && INGRESS_CAKE_OPTS="diffserv3"
+-[ -z "$EGRESS_CAKE_OPTS" ] && EGRESS_CAKE_OPTS="diffserv3"
++[ -z "$INGRESS_CAKE_OPTS" ] && INGRESS_CAKE_OPTS="diffserv3 nat"
++[ -z "$EGRESS_CAKE_OPTS" ] && EGRESS_CAKE_OPTS="diffserv3 nat"
+ 
+ [ -z "$CUR_DIRECTION" ] && CUR_DIRECTION="NONE"
+ 
+--- a/src/functions.sh
++++ b/src/functions.sh
+@@ -598,7 +598,7 @@ get_htb_quantum() {
+     fi
+ 
+     if [ -z "$QUANTUM" ]; then
+-	MIN_QUANTUM=$(( ${MTU} + 48 ))	# add 48 bytes to MTU for the  ovehead
++	MIN_QUANTUM=$(( ${HTB_MTU} + 48 ))	# add 48 bytes to MTU for the  ovehead
+ 	MIN_QUANTUM=$(( ${MIN_QUANTUM} + 47 ))	# now do ceil(Min_BURST / 48) * 53 in shell integer arithmic
+ 	MIN_QUANTUM=$(( ${MIN_QUANTUM} / 48 ))
+ 	MIN_QUANTUM=$(( ${MIN_QUANTUM} * 53 ))	# for MTU 1489 to 1536 this will result in MIN_BURST = 1749 Bytes
+--- a/src/piece_of_cake.qos
++++ b/src/piece_of_cake.qos
+@@ -13,9 +13,11 @@
+ QDISC=cake
+ 
+ 
+-# to keep this as simple as possible we ignore the *_CAKE_OPTS from defaults.sh
+-INGRESS_CAKE_OPTS="besteffort"
+-EGRESS_CAKE_OPTS="besteffort"
++# to keep this as simple as possible we append the *_CAKE_OPTS from defaults.sh
++# since cake will always just keep the last instance of competing keywords this
++# will effectively override defaults.sh's diffservX
++INGRESS_CAKE_OPTS="${INGRESS_CAKE_OPTS} besteffort"
++EGRESS_CAKE_OPTS="${EGRESS_CAKE_OPTS} besteffort"
+ 
+ 
+ egress() {

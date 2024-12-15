@@ -1,0 +1,35 @@
+#!/bin/sh
+
+
+if [ -f "/etc/nginx/luci_nginx.conf" ] && [ -f "/etc/nginx/nginx.conf" ]; then
+	if [ ! "$(cat '/etc/nginx/nginx.conf' | grep 'luci*.conf')" ]; then
+		if [ -f "/etc/nginx/nginx.conf_old" ]; then
+			rm /etc/nginx/nginx.conf
+		else
+			mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf_old
+		fi
+		mv /etc/nginx/luci_nginx.conf /etc/nginx/nginx.conf
+	else
+		rm /etc/nginx/luci_nginx.conf
+	fi
+fi
+
+if [ -x /etc/init.d/uhttpd ]; then
+        /etc/init.d/uhttpd disable
+        if [ -n "$(pgrep uhttpd)" ]; then
+                /etc/init.d/uhttpd stop
+        fi
+fi
+
+/etc/init.d/uwsgi enable
+if [ -n "$(pgrep uwsgi)" ]; then
+        /etc/init.d/uwsgi restart
+else
+        /etc/init.d/uwsgi start
+fi
+
+
+uci set nginx.@base[0].enabled=1
+uci commit nginx
+/etc/init.d/nginx restart
+exit 0
