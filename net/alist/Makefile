@@ -55,7 +55,7 @@ define Download/alist-web
 	URL:=https://github.com/AlistGo/alist-web/releases/download/$(WEB_VERSION)/
 	URL_FILE:=dist.tar.gz
 	FILE:=$(WEB_FILE)
-	HASH:=088ba92a2df4c296d92dda643dde1a90934fb366378a0a0bdaa914042e3c2830
+	HASH:=7fbc3e83874fca15eb6590aad2c09cd6eb4f15aa7febe2b25a961ea56ba5265b
 endef
 
 define Build/Prepare
