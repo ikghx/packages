@@ -136,6 +136,7 @@ define Package/transmission-daemon/install
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) files/transmission.config $(1)/etc/config/transmission
 	$(INSTALL_DIR) $(1)/etc/sysctl.d/
+	$(INSTALL_CONF) files/transmission.sysctl $(1)/etc/sysctl.d/20-transmission.conf
 	$(call InstallSeccomp,$(1),./files/transmission-daemon.json)
 endef
 
