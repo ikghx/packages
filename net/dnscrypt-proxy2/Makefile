@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dnscrypt-proxy2
-PKG_VERSION:=2.1.6
+PKG_VERSION:=2.1.7
 PKG_RELEASE:=1
 
 PKG_SOURCE:=dnscrypt-proxy-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/DNSCrypt/dnscrypt-proxy/tar.gz/$(PKG_VERSION)?
-PKG_HASH:=132c77fec07787ac4e5abf7e90a765f372a8d4598dac67d96e5684a297046f40
+PKG_HASH:=6394cd2d73dedca9317aeee498b6c2520b841cea042d83f398c3355a13c50f7c
 PKG_BUILD_DIR:=$(BUILD_DIR)/dnscrypt-proxy-$(PKG_VERSION)
 
 PKG_MAINTAINER:=Josef Schlehofer <pepe.schlehofer@gmail.com>
