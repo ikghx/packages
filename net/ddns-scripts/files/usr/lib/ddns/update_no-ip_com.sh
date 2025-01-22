@@ -16,7 +16,7 @@ local __UPDURL="http://[USERNAME]:[PASSWORD]@dynupdate.no-ip.com/nic/update?host
 [ -z "$username" ] && write_log 14 "Service section not configured correctly! Missing 'username'"
 [ -z "$password" ] && write_log 14 "Service section not configured correctly! Missing 'password'"
 
-# set IP version dependend dummy (localhost)
+# set IP version dependent dummy (localhost)
 [ $use_ipv6 -eq 0 ] && __DUMMY="127.0.0.1" || __DUMMY="::1"
 [ $use_ipv6 -eq 0 ] && __UPDURL=$__UPDURL || __UPDURL=$__UPDURL6
 

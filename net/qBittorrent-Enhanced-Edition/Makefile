@@ -18,7 +18,7 @@ PKG_LICENSE:=GPL-2.0+
 PKG_LICENSE_FILES:=COPYING
 
 PKG_BUILD_DEPENDS:=\
-	boost  qttools/host libtorrent-rasterbar \
+	boost qttools/host libtorrent-rasterbar \
 	openssl qtbase zlib
 
 PKG_BUILD_PARALLEL:=1

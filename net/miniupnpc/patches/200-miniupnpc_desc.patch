@@ -8,4 +8,4 @@
 +	AddPortMappingArgs[6].val = desc?desc:"miniupnpc";
  	AddPortMappingArgs[7].elt = "NewLeaseDuration";
  	AddPortMappingArgs[7].val = leaseDuration?leaseDuration:"0";
- 	buffer = simpleUPnPcommand(-1, controlURL, servicetype,
+ 	buffer = simpleUPnPcommand(controlURL, servicetype,

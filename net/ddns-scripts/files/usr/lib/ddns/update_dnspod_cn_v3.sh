@@ -8,7 +8,9 @@
 #	- at: net/ddns-scripts/files/usr/lib/ddns/update_cloudflare_com_v4.sh
 # - github.com/nixonli/ddns-scripts_dnspod for "update_dnspod_cn.sh"
 #
-# v1.2.0: Migrate retry_count to retry_max_count
+# v1.2.0:
+#   - Migrate retry_count to retry_max_count
+#   - Fix signature expiration during retries
 # v1.1.0: Publish script
 #
 # 2024 FriesI23 <FriesI23@outlook.com>

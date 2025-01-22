@@ -19,7 +19,7 @@ PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:qbittorrent:qbittorrent
 
 PKG_BUILD_DEPENDS:=\
-	boost  qttools/host libtorrent-rasterbar \
+	boost qttools/host libtorrent-rasterbar \
 	openssl qtbase zlib
 
 PKG_BUILD_PARALLEL:=1
