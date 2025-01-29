@@ -319,10 +319,10 @@ config service "myddns"
 
 	###########
 	# if error happen on detecting, sending or updating the
-	# script will retry the relevant action for retry_count times
+	# script will retry the relevant action for retry_max_count times
 	# before stopping script execution.
 	# default: 5
-	option retry_count '5'
+	option retry_max_count '5'
 
 	###########
 	# if error happen on detecting, sending or updating the

@@ -231,9 +231,9 @@ f_log() {
 
 	if [ -n "${log_msg}" ] && { [ "${class}" != "debug" ] || [ "${ban_debug}" = "1" ]; }; then
 		if [ -x "${ban_logcmd}" ]; then
-			"${ban_logcmd}" -p "${class}" -t "banIP-${ban_ver}[${$}]" "${log_msg::512}"
+			"${ban_logcmd}" -p "${class}" -t "banIP-${ban_ver}[${$}]" "${log_msg::256}"
 		else
-			printf "%s %s %s\n" "${class}" "banIP-${ban_ver}[${$}]" "${log_msg::512}"
+			printf "%s %s %s\n" "${class}" "banIP-${ban_ver}[${$}]" "${log_msg::256}"
 		fi
 	fi
 	if [ "${class}" = "err" ] || [ "${class}" = "emerg" ]; then
@@ -608,20 +608,24 @@ f_etag() {
 # load file in nftset
 #
 f_nftload() {
-	local cnt="1" max_cnt="${ban_nftretry:-"5"}" feed_rc="0" file="${1}" errmsg="${2}"
+	local cnt="1" max_cnt="${ban_nftretry:-"5"}" load_rc="4" load_log="" file="${1}" errmsg="${2}"
 
-	while ! "${ban_nftcmd}" -f "${file}" >/dev/null 2>&1; do
-		if [ "${cnt}" = "${max_cnt}" ]; then
+	while [ "${load_rc}" != "0" ]; do
+		load_log="$("${ban_nftcmd}" -f "${file}" 2>&1)"
+		load_rc="${?}"
+		if [ "${load_rc}" = "0" ]; then
+			break
+		elif [ "${cnt}" = "${max_cnt}" ]; then
 			[ ! -d "${ban_errordir}" ] && f_mkdir "${ban_errordir}"
 			"${ban_catcmd}" "${file}" 2>/dev/null >"${ban_errordir}/err.${file##*/}"
-			f_log "info" "${errmsg} ("${ban_errordir}/err.${file##*/}")"
-			feed_rc="4"
+			f_log "info" "${errmsg}, ${load_log::256}"
 			break
 		fi
 		cnt="$((cnt + 1))"
 	done
-	f_log "debug" "f_nftload   ::: file: ${file##*/}, cnt: ${cnt}, max_cnt: ${max_cnt}"
-	return "${feed_rc}"
+
+	f_log "debug" "f_nftload   ::: file: ${file##*/}, load_rc: ${load_rc}, cnt: ${cnt}, max_cnt: ${max_cnt}"
+	return "${load_rc}"
 }
 
 # build initial nft file with base table, chains and rules
@@ -770,7 +774,7 @@ f_down() {
 	# set log target
 	#
 	[ "${ban_loginbound}" = "1" ] && log_inbound="log level ${ban_nftloglevel} prefix \"banIP/inbound/${ban_blockpolicy}/${feed}: \""
-	[ "${ban_logoutbound}" = "1" ] && log_outbound="tlog level ${ban_nftloglevel} prefix \"banIP/outbound/reject/${feed}: \""
+	[ "${ban_logoutbound}" = "1" ] && log_outbound="log level ${ban_nftloglevel} prefix \"banIP/outbound/reject/${feed}: \""
 
 	# set feed target
 	#
@@ -1505,18 +1509,25 @@ f_report() {
 			set_proto=""
 			set_dport=""
 			for chain in _inbound _outbound; do
-				for expr in 0 1; do
+				for expr in 0 1 2; do
 					if [ "${chain}" = "_inbound" ] && [ -z "${set_cntinbound}" ]; then
 						set_cntinbound="$(printf "%s" "${table_json}" | "${ban_jsoncmd}" -ql1 -e "@.nftables[@.rule.chain=\"${chain}\"][@.expr[${expr}].match.right=\"@${item}\"].expr[*].counter.packets")"
 					elif [ "${chain}" = "_outbound" ] && [ -z "${set_cntoutbound}" ]; then
 						set_cntoutbound="$(printf "%s" "${table_json}" | "${ban_jsoncmd}" -ql1 -e "@.nftables[@.rule.chain=\"${chain}\"][@.expr[${expr}].match.right=\"@${item}\"].expr[*].counter.packets")"
 					fi
-					[ "${expr}" = "1" ] && [ -z "${set_dport}" ] && set_dport="$(printf "%s" "${table_json}" | "${ban_jsoncmd}" -ql1 -e "@.nftables[@.rule.chain=\"${chain}\"][@.expr[${expr}].match.right=\"@${item}\"].expr[*].match.right.set")"
-					[ "${expr}" = "1" ] && [ -z "${set_proto}" ] && set_proto="$(printf "%s" "${table_json}" | "${ban_jsoncmd}" -ql1 -e "@.nftables[@.rule.chain=\"${chain}\"][@.expr[${expr}].match.right=\"@${item}\"].expr[*].match.left.payload.protocol")"
+					[ -z "${set_proto}" ] && set_proto="$(printf "%s" "${table_json}" | "${ban_jsoncmd}" -ql1 -e "@.nftables[@.rule.chain=\"${chain}\"][@.expr[2].match.right=\"@${item}\"].expr[0].match.right.set")"
+					[ -z "${set_proto}" ] && set_proto="$(printf "%s" "${table_json}" | "${ban_jsoncmd}" -ql1 -e "@.nftables[@.rule.chain=\"${chain}\"][@.expr[1].match.right=\"@${item}\"].expr[0].match.left.payload.protocol")"
+					[ -z "${set_dport}" ] && set_dport="$(printf "%s" "${table_json}" | "${ban_jsoncmd}" -ql1 -e "@.nftables[@.rule.chain=\"${chain}\"][@.expr[2].match.right=\"@${item}\"].expr[1].match.right.set")"
+					[ -z "${set_dport}" ] && set_dport="$(printf "%s" "${table_json}" | "${ban_jsoncmd}" -ql1 -e "@.nftables[@.rule.chain=\"${chain}\"][@.expr[2].match.right=\"@${item}\"].expr[1].match.right")"
+					[ -z "${set_dport}" ] && set_dport="$(printf "%s" "${table_json}" | "${ban_jsoncmd}" -ql1 -e "@.nftables[@.rule.chain=\"${chain}\"][@.expr[1].match.right=\"@${item}\"].expr[0].match.right.set")"
+					[ -z "${set_dport}" ] && set_dport="$(printf "%s" "${table_json}" | "${ban_jsoncmd}" -ql1 -e "@.nftables[@.rule.chain=\"${chain}\"][@.expr[1].match.right=\"@${item}\"].expr[0].match.right")"
 				done
 			done
 			if [ -n "${set_proto}" ] && [ -n "${set_dport}" ]; then
 				sum_setports="$((sum_setports + 1))"
+				set_proto="${set_proto//[\{\}\":]/}"
+				set_proto="${set_proto#\[ *}"
+				set_proto="${set_proto%* \]}"
 				set_dport="${set_dport//[\{\}\":]/}"
 				set_dport="${set_dport#\[ *}"
 				set_dport="${set_dport%* \]}"
