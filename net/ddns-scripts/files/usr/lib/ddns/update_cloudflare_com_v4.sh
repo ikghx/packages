@@ -186,6 +186,9 @@ __DATA=$(grep -o '"content":\s*"[^"]*' $DATFILE | grep -o '[^"]*$' | head -1)
 	fi
 }
 
+# update is needed
+# let's build data to send
+
 # use file to work around " needed for json
 cat > $DATFILE << EOF
 {"content":"$__IP"}

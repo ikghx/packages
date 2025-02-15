@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nginx
-PKG_VERSION:=1.26.2
-PKG_RELEASE:=2
+PKG_VERSION:=1.26.3
+PKG_RELEASE:=1
 
 PKG_SOURCE:=nginx-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://nginx.org/download/
-PKG_HASH:=627fe086209bba80a2853a0add9d958d7ebbdffa1a8467a5784c9a6b4f03d738
+PKG_HASH:=69ee2b237744036e61d24b836668aad3040dda461fe6f570f1787eab570c75aa
 
 PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de> \
 				Christian Marangi <ansuelsmth@gmail.com>
@@ -216,10 +216,9 @@ define Package/nginx-mod-luci/install
 endef
 
 define Download/nginx-mod-geoip2
-  SOURCE_DATE:=2020-01-22
-  VERSION:=1cabd8a1f68ea3998f94e9f3504431970f848fbf
-  URL:=https://github.com/leev/ngx_http_geoip2_module.git
-  MIRROR_HASH:=f3d2a1af5c34812b5a34453457ba6a4d8093c92085aa7f76c46a1c4185c9735c
+  VERSION:=3.4
+  URL:=https://github.com/leev/ngx_http_geoip2_module
+  MIRROR_HASH:=22d67e35067faed200ea398581dd0dc9d599bc6ab4c0ea2034a1ea55666fdc1d
   PROTO:=git
 endef
 
@@ -283,10 +282,10 @@ define Download/nginx-mod-ts
 endef
 
 define Download/nginx-mod-naxsi
-  SOURCE_DATE:=2022-09-14
-  VERSION:=d714f1636ea49a9a9f4f06dba14aee003e970834
-  URL:=https://github.com/nbs-system/naxsi.git
-  MIRROR_HASH:=b0cef5fbf842f283eb5f0686ddd1afcd07d83abd7027c8cfb3e84a2223a34797
+  SOURCE_DATE:=2025-01-05
+  VERSION:=b61ba37b3666b386c7a6d83fbcdf6ca3377395a1
+  URL:=https://github.com/wargio/naxsi.git
+  MIRROR_HASH:=40ac68ac441b154fb9f1f1a23aa5ff7511ac3e2748af221bf6df843af12e48ca
   PROTO:=git
 endef
 
@@ -349,7 +348,7 @@ $(foreach m,$(PKG_MOD_EXTRA),$(eval $(call Module/Download,$(m))))
 
 define Module/nginx-mod-naxsi/install
 	$(INSTALL_DIR) $(1)/etc/nginx
-	$(INSTALL_CONF) ./files/naxsi_core.rules $(1)/etc/nginx
+	$(INSTALL_CONF) $(PKG_BUILD_DIR)/nginx-mod-naxsi/naxsi_config/naxsi_core.rules $(1)/etc/nginx
 	$(INSTALL_CONF) ./files/naxsi.rules $(1)/etc/nginx
 	chmod 0640 $(1)/etc/nginx/naxsi_core.rules
 	chmod 0640 $(1)/etc/nginx/naxsi.rules
