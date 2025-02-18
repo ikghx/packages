@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ariang
-PKG_VERSION:=1.3.9
+PKG_VERSION:=1.3.10
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).zip
 PKG_SOURCE_URL:=https://github.com/mayswind/AriaNg/releases/download/$(PKG_VERSION)
-PKG_HASH:=0e41d7e9262b69fb276f8cc47abba4e08902e95baa908d79b44e47b828b73803
+PKG_HASH:=5b76f02ff208b8c948bf8b614511687b7e6d1562323b29494528d89c032fe086
 UNPACK_CMD=unzip -q -d $(1) $(DL_DIR)/$(PKG_SOURCE)
 
 PKG_MAINTAINER:=Ansuel Smith <ansuelsmth@gmail.com>
