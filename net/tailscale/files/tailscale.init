@@ -13,7 +13,7 @@ start_instance() {
   local std_err std_out
   local enabled
 
-  config_get_bool enabled "settings" 'enabled' 0
+  config_get_bool enabled "settings" enabled 0
   [ $enabled -gt 0 ] || return 1
 
   config_get_bool std_out "settings" log_stdout 1

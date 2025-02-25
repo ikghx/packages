@@ -348,7 +348,7 @@ $(foreach m,$(PKG_MOD_EXTRA),$(eval $(call Module/Download,$(m))))
 
 define Module/nginx-mod-naxsi/install
 	$(INSTALL_DIR) $(1)/etc/nginx
-	$(INSTALL_CONF) $(PKG_BUILD_DIR)/nginx-mod-naxsi/naxsi_config/naxsi_core.rules $(1)/etc/nginx
+	$(INSTALL_CONF) $(PKG_BUILD_DIR)/nginx-mod-naxsi/naxsi_rules/naxsi_core.rules $(1)/etc/nginx
 	$(INSTALL_CONF) ./files/naxsi.rules $(1)/etc/nginx
 	chmod 0640 $(1)/etc/nginx/naxsi_core.rules
 	chmod 0640 $(1)/etc/nginx/naxsi.rules
