@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qBittorrent-Enhanced-Edition
-PKG_VERSION:=5.0.3.10
+PKG_VERSION:=5.0.4.10
 PKG_RELEASE=1
 
 PKG_SOURCE:=$(PKG_NAME)-release-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/c0re100/qBittorrent-Enhanced-Edition/tar.gz/release-$(PKG_VERSION)?
-PKG_HASH:=00940a3d806077deceb2dbdb6c9210bf32421c99ee8cc26e115b63ff17dd6591
+PKG_HASH:=19f7f8e7cffbc81bee3da3cdfe72b3171d61a4f48078a5a12a9c0df12b0726e5
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-release-$(PKG_VERSION)
 
