@@ -216,7 +216,7 @@ define Package/nginx-mod-luci/install
 endef
 
 define Download/nginx-mod-geoip2
-  VERSION:=3.4
+  SOURCE_VERSION:=3.4
   URL:=https://github.com/leev/ngx_http_geoip2_module
   MIRROR_HASH:=22d67e35067faed200ea398581dd0dc9d599bc6ab4c0ea2034a1ea55666fdc1d
   PROTO:=git
@@ -251,7 +251,7 @@ endef
 
 define Download/nginx-mod-headers-more
   SOURCE_DATE:=2022-07-17
-  VERSION:=bea1be3bbf6af28f6aa8cf0c01c07ee1637e2bd0
+  SOURCE_VERSION:=bea1be3bbf6af28f6aa8cf0c01c07ee1637e2bd0
   URL:=https://github.com/openresty/headers-more-nginx-module.git
   MIRROR_HASH:=569abadc137b5b52bdcc33b00aa21f6d266cb84fb891795da2c4e101c4898abe
   PROTO:=git
@@ -259,7 +259,7 @@ endef
 
 define Download/nginx-mod-brotli
   SOURCE_DATE:=2020-04-23
-  VERSION:=25f86f0bac1101b6512135eac5f93c49c63609e3
+  SOURCE_VERSION:=25f86f0bac1101b6512135eac5f93c49c63609e3
   URL:=https://github.com/google/ngx_brotli.git
   MIRROR_HASH:=680c56be79e7327cb8df271646119333d2f6965a3472bc7043721625fa4488f5
   PROTO:=git
@@ -267,7 +267,7 @@ endef
 
 define Download/nginx-mod-rtmp
   SOURCE_DATE:=2018-12-07
-  VERSION:=f0ea62342a4eca504b311cd5df910d026c3ea4cf
+  SOURCE_VERSION:=f0ea62342a4eca504b311cd5df910d026c3ea4cf
   URL:=https://github.com/ut0mt8/nginx-rtmp-module.git
   MIRROR_HASH:=9c98d886ae4ea3708bb0bca55f8df803418a407e0ffc6df56341bd76ad39cba8
   PROTO:=git
@@ -275,7 +275,7 @@ endef
 
 define Download/nginx-mod-ts
   SOURCE_DATE:=2017-12-04
-  VERSION:=ef2f874d95cc75747eb625a292524a702aefb0fd
+  SOURCE_VERSION:=ef2f874d95cc75747eb625a292524a702aefb0fd
   URL:=https://github.com/arut/nginx-ts-module.git
   MIRROR_HASH:=3f144d4615a4aaa1215435cd06ae4054ea12206d5b38306321420f7acc62aca8
   PROTO:=git
@@ -283,7 +283,7 @@ endef
 
 define Download/nginx-mod-naxsi
   SOURCE_DATE:=2025-01-05
-  VERSION:=b61ba37b3666b386c7a6d83fbcdf6ca3377395a1
+  SOURCE_VERSION:=b61ba37b3666b386c7a6d83fbcdf6ca3377395a1
   URL:=https://github.com/wargio/naxsi.git
   MIRROR_HASH:=40ac68ac441b154fb9f1f1a23aa5ff7511ac3e2748af221bf6df843af12e48ca
   PROTO:=git
@@ -291,7 +291,7 @@ endef
 
 define Download/nginx-mod-lua
   SOURCE_DATE:=2023-08-19
-  VERSION:=c89469e920713d17d703a5f3736c9335edac22bf
+  SOURCE_VERSION:=c89469e920713d17d703a5f3736c9335edac22bf
   URL:=https://github.com/openresty/lua-nginx-module.git
   MIRROR_HASH:=c3bdf1b23f0a63991b5dcbd1f8ee150e6f893b43278e8600e4e0bb42a6572db4
   PROTO:=git
@@ -299,7 +299,7 @@ endef
 
 define Download/nginx-mod-lua-resty-core
   SOURCE_DATE:=2023-09-09
-  VERSION:=2e2b2adaa61719972fe4275fa4c3585daa0dcd84
+  SOURCE_VERSION:=2e2b2adaa61719972fe4275fa4c3585daa0dcd84
   URL:=https://github.com/openresty/lua-resty-core.git
   MIRROR_HASH:=c5f3df92fd72eac5b54497c039aca0f0d9ea1d87223f1e3a54365ba565991874
   PROTO:=git
@@ -307,7 +307,7 @@ endef
 
 define Download/nginx-mod-lua-resty-lrucache
   SOURCE_DATE:=2023-08-06
-  VERSION:=52f5d00403c8b7aa8a4d4f3779681976b10a18c1
+  SOURCE_VERSION:=52f5d00403c8b7aa8a4d4f3779681976b10a18c1
   URL:=https://github.com/openresty/lua-resty-lrucache.git
   MIRROR_HASH:=0833e0114948af4edb216c5c34b3f1919f534b298f4fa29739544f7c9bb8a08d
   PROTO:=git
@@ -315,7 +315,7 @@ endef
 
 define Download/nginx-mod-dav-ext
   SOURCE_DATE:=2018-12-17
-  VERSION:=f5e30888a256136d9c550bf1ada77d6ea78a48af
+  SOURCE_VERSION:=f5e30888a256136d9c550bf1ada77d6ea78a48af
   URL:=https://github.com/arut/nginx-dav-ext-module.git
   MIRROR_HASH:=c574e60ffab5f6e5d8bea18aab0799c19cd9a84f3d819b787e9af4f0e7867b52
   PROTO:=git
@@ -323,7 +323,7 @@ endef
 
 define Download/nginx-mod-ubus
   SOURCE_DATE:=2020-09-06
-  VERSION:=b2d7260dcb428b2fb65540edb28d7538602b4a26
+  SOURCE_VERSION:=b2d7260dcb428b2fb65540edb28d7538602b4a26
   URL:=https://github.com/Ansuel/nginx-ubus-module.git
   MIRROR_HASH:=515bb9d355ad80916f594046a45c190a68fb6554d6795a54ca15cab8bdd12fda
   PROTO:=git
@@ -331,7 +331,7 @@ endef
 
 define Download/nginx-mod-njs
   SOURCE_DATE:=2024-10-03
-  VERSION:=c5a29a7af8894ee1ec44ebda71ef0ea1f2a31af6
+  SOURCE_VERSION:=c5a29a7af8894ee1ec44ebda71ef0ea1f2a31af6
   URL:=https://github.com/nginx/njs.git
   MIRROR_HASH:=69bc424d4bfd8b7a0a70feeb4787ff8b503ac893fb730f07f3244e35fde876e4
   PROTO:=git
