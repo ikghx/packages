@@ -4,7 +4,7 @@ PKG_NAME:=transmission-web-control
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/ronggang/transmission-web-control
+PKG_SOURCE_URL:=https://github.com/ronggang/transmission-web-control.git
 PKG_SOURCE_DATE:=2025-02-21
 PKG_SOURCE_VERSION:=c9d83844ee2cf2f07e36e03660a2886da5f4208a
 PKG_MIRROR_HASH:=129e52a3d41fae5fc316f89c8773c7428cb0ac267e60d6791cdbb141acc7bd40
