@@ -1,3 +1,26 @@
+From 449e688b189b9f7ded36d733e0fcde374e42557e Mon Sep 17 00:00:00 2001
+From: Chen Minqiang <ptpt52@gmail.com>
+Date: Sun, 5 Jul 2020 10:42:52 +0800
+Subject: [PATCH] options: force_forwarding support
+
+This make the port forwarding force to work even
+when the router is behind NAT
+
+Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
+---
+ miniupnpd.c      | 12 ++++++++----
+ miniupnpd.conf   |  2 ++
+ natpmp.c         |  2 +-
+ options.c        |  1 +
+ options.h        |  1 +
+ testgetifaddr.c  |  2 ++
+ testportinuse.c  |  2 ++
+ upnpdescgen.c    |  2 +-
+ upnpglobalvars.h |  2 ++
+ upnpredirect.c   |  2 +-
+ upnpsoap.c       |  6 +++++-
+ 11 files changed, 26 insertions(+), 8 deletions(-)
+
 --- a/miniupnpd.c
 +++ b/miniupnpd.c
 @@ -1018,7 +1018,7 @@ parselanaddr(struct lan_addr_s * lan_add
@@ -49,11 +72,10 @@
  						syslog(LOG_INFO, "You are probably behind NAT, enable option ext_perform_stun=yes to detect public IP address");
 --- a/miniupnpd.conf
 +++ b/miniupnpd.conf
-@@ -17,7 +17,8 @@
- # Setting ext_ip is also useful in double NAT setup, you can declare here
+@@ -18,6 +18,8 @@
  # the public IP address.
  #ext_ip=
--
+ 
 +#force forwarding enable for upnp: default is no
 +#force_forwarding=yes
  # The WAN interface must have a public IP address. Otherwise it is behind NAT
@@ -114,7 +136,7 @@
  #ifndef CHECK_PORTINUSE
 --- a/upnpdescgen.c
 +++ b/upnpdescgen.c
-@@ -1316,7 +1316,7 @@ genEventVars(int * len, const struct ser
+@@ -1322,7 +1322,7 @@ genEventVars(int * len, const struct ser
  				else {
  					struct in_addr addr;
  					char ext_ip_addr[INET_ADDRSTRLEN];
