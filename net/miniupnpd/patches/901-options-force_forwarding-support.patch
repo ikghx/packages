@@ -23,7 +23,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
 
 --- a/miniupnpd.c
 +++ b/miniupnpd.c
-@@ -1018,7 +1018,7 @@ parselanaddr(struct lan_addr_s * lan_add
+@@ -1025,7 +1025,7 @@ parselanaddr(struct lan_addr_s * lan_add
  				INIT_PRINT_ERR("Error parsing address : %s\n", lan_addr->ext_ip_str);
  				return -1;
  			}
@@ -32,7 +32,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  				/* error */
  				INIT_PRINT_ERR("Error: option ext_ip address contains reserved / private address : %s\n", lan_addr->ext_ip_str);
  				return -1;
-@@ -1260,6 +1260,10 @@ init(int argc, char * * argv, struct run
+@@ -1274,6 +1274,10 @@ init(int argc, char * * argv, struct run
  			case UPNPEXT_IP:
  				use_ext_ip_addr = ary_options[i].value;
  				break;
@@ -43,7 +43,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  			case UPNPEXT_PERFORM_STUN:
  				if(strcmp(ary_options[i].value, "yes") == 0)
  					SETFLAG(PERFORMSTUNMASK);
-@@ -1867,7 +1871,7 @@ init(int argc, char * * argv, struct run
+@@ -1885,7 +1889,7 @@ init(int argc, char * * argv, struct run
  			INIT_PRINT_ERR("Error: option ext_ip contains invalid address %s\n", use_ext_ip_addr);
  			return 1;
  		}
@@ -52,7 +52,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  			INIT_PRINT_ERR("Error: option ext_ip contains reserved / private address %s, not public routable\n", use_ext_ip_addr);
  			return 1;
  		}
-@@ -2315,7 +2319,7 @@ main(int argc, char * * argv)
+@@ -2350,7 +2354,7 @@ main(int argc, char * * argv)
  		if (getifaddr(ext_if_name, if_addr, INET_ADDRSTRLEN, &addr, NULL) < 0) {
  			syslog(LOG_WARNING, "Cannot get IP address for ext interface %s. Network is down", ext_if_name);
  			disable_port_forwarding = 1;
@@ -61,7 +61,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  			syslog(LOG_INFO, "Reserved / private IP address %s on ext interface %s: Port forwarding is impossible", if_addr, ext_if_name);
  			syslog(LOG_INFO, "You are probably behind NAT, enable option ext_perform_stun=yes to detect public IP address");
  			syslog(LOG_INFO, "Or use ext_ip= / -o option to declare public IP address");
-@@ -2628,7 +2632,7 @@ main(int argc, char * * argv)
+@@ -2672,7 +2676,7 @@ main(int argc, char * * argv)
  					syslog(LOG_WARNING, "Cannot get IP address for ext interface %s. Network is down", ext_if_name);
  					disable_port_forwarding = 1;
  				} else {
@@ -136,7 +136,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  #ifndef CHECK_PORTINUSE
 --- a/upnpdescgen.c
 +++ b/upnpdescgen.c
-@@ -1322,7 +1322,7 @@ genEventVars(int * len, const struct ser
+@@ -1316,7 +1316,7 @@ genEventVars(int * len, const struct ser
  				else {
  					struct in_addr addr;
  					char ext_ip_addr[INET_ADDRSTRLEN];
@@ -158,7 +158,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  #define CLEARFLAG(mask)	runtime_flags &= ~mask
 --- a/upnpredirect.c
 +++ b/upnpredirect.c
-@@ -444,7 +444,7 @@ upnp_redirect_internal(const char * rhos
+@@ -445,7 +445,7 @@ upnp_redirect_internal(const char * rhos
  {
  	/*syslog(LOG_INFO, "redirecting port %hu to %s:%hu protocol %s for: %s",
  		eport, iaddr, iport, protocol, desc);			*/
@@ -169,7 +169,7 @@ Signed-off-by: Chen Minqiang <ptpt52@gmail.com>
  	                      desc, timestamp) < 0) {
 --- a/upnpsoap.c
 +++ b/upnpsoap.c
-@@ -348,7 +348,11 @@ GetExternalIPAddress(struct upnphttp * h
+@@ -371,7 +371,11 @@ GetExternalIPAddress(struct upnphttp * h
  			ext_ip_addr[0] = '\0';
  		} else if (addr_is_reserved(&addr)) {
  			syslog(LOG_NOTICE, "private/reserved address %s is not suitable for external IP", ext_ip_addr);
