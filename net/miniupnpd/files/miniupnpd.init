@@ -153,7 +153,7 @@ upnpd() {
 		upnpd_write_bool system_uptime 1
 		upnpd_write_bool use_stun 0 ext_perform_stun
 		upnpd_write_bool ipv6_disable 1
-		upnpd_write_bool force_forwarding 0
+		upnpd_write_bool ext_allow_private_ipv4 0
 
 		[ "$use_stun" -eq 0 ] || {
 			[ -n "$stun_host" ] && echo "ext_stun_host=$stun_host"

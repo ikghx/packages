@@ -37,10 +37,10 @@ define Package/jq/Default
 endef
 
 define Package/jq
-	$(Package/jq/Default)
-	TITLE+= without regex support
-	VARIANT:=noregex
-	DEFAULT_VARIANT:=1
+  $(Package/jq/Default)
+  TITLE+= without regex support.
+  VARIANT:=noregex
+  DEFAULT_VARIANT:=1
 endef
 
 define Package/jq/description
@@ -49,13 +49,13 @@ define Package/jq/description
 endef
 
 define Package/jq-full
-	$(Package/jq/Default)
-	TITLE+= without regex support
-	VARIANT:=regex
-	DEPENDS+=+oniguruma
+  $(Package/jq/Default)
+  TITLE+= with regex support.
+  VARIANT:=regex
+  DEPENDS+=+oniguruma
 endef
 
-define Package/jq/description
+define Package/jq-full/description
   Lightweight and flexible command-line JSON processor.
   This package was compiled with ONIGURUMA regex libary and has full regex support.
 endef
