@@ -20,15 +20,15 @@ GO_PKG:=github.com/snowie2000/geoview
 GO_PKG_BUILD_PKG:=$(GO_PKG)
 
 include $(INCLUDE_DIR)/package.mk
-include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
+include ../../lang/golang/golang-package.mk
 
 define Package/geoview
-  TITLE:=A geofile toolkit
-  URL:=https://github.com/snowie2000/geoview
   SECTION:=net
   CATEGORY:=Network
   SUBMENU:=IP Addresses and Names
-  DEPENDS+= $(GO_ARCH_DEPENDS)
+  TITLE:=A geofile toolkit
+  URL:=https://github.com/snowie2000/geoview
+  DEPENDS:=$(GO_ARCH_DEPENDS)
 endef
 
 define Package/geoview/description
