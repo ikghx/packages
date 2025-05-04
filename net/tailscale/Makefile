@@ -56,12 +56,12 @@ define Package/tailscale/conffiles
 endef
 
 define Package/tailscale/install
-	$(INSTALL_DIR) $(1)/usr/sbin $(1)/etc/init.d $(1)/etc/config
+	$(INSTALL_DIR) $(1)/usr/sbin $(1)/etc/init.d $(1)/etc/config $(1)/etc/hotplug.d/iface
 	$(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/tailscaled $(1)/usr/sbin
 	$(LN) tailscaled $(1)/usr/sbin/tailscale
-	$(INSTALL_BIN) ./files//tailscale.init $(1)/etc/init.d/tailscale
-	$(INSTALL_DATA) ./files//tailscale.conf $(1)/etc/config/tailscale
-	$(INSTALL_BIN) ./files//tailscale.iface $(1)/etc/hotplug.d/iface/40-tailscale
+	$(INSTALL_BIN) ./files/tailscale.init $(1)/etc/init.d/tailscale
+	$(INSTALL_DATA) ./files/tailscale.conf $(1)/etc/config/tailscale
+	$(INSTALL_BIN) ./files/tailscale.iface $(1)/etc/hotplug.d/iface/40-tailscale
 endef
 
 $(eval $(call BuildPackage,tailscale))
