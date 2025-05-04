@@ -22,6 +22,13 @@ section_enabled() {
 	[ $enabled -gt 0 ]
 }
 
+revert_exit() {
+	logger -p daemon.err -t tailscale -s "$(date '+%Y/%m/%d %H:%M:%S') $1"
+	uci revert dhcp && uci revert network && uci revert firewall
+	/etc/init.d/tailscale stop
+	exit 1;
+}
+
 custom_instance() {
 	local cfg="$1"
 	local accept_routes hostname accept_dns advertise_exit_node exit_node advertise_routes disable_snat_subnet_routes subnet_routes flags login_server authkey std_out std_err
@@ -63,7 +70,7 @@ custom_instance() {
 		# Use flock to acquire an exclusive lock
 		local LOCK_FILE=/var/lock/tailscale.lock
 		exec 9> "$LOCK_FILE"
-		flock -xn 9 || { echo "Failed to acquire lock on $LOCK_FILE"; exit 1; }
+		flock -xn 9 || { revert_exit "Failed to acquire lock on $LOCK_FILE"; }
 		trap 'rm -f "$LOCK_FILE"; exit' INT TERM EXIT
 
 		# Wait for Tailscale IPv4 address to be available
@@ -72,7 +79,7 @@ custom_instance() {
 		do
 			sleep 2
 			let count++
-			[ "${count}" -ge 5 ] && exit 19
+			[ "${count}" -ge 5 ] && { revert_exit "Failed to get Tailscale IPv4 address after 5 attempts."; }
 		done
 
 		# Configure Tailscale MagicDNS
@@ -83,6 +90,7 @@ custom_instance() {
 			for i in $index; do
 				uci get dhcp.@dnsmasq[$i].address 2>/dev/null | grep -qxF "$target_address" || uci add_list dhcp.@dnsmasq[$i].address="$target_address"
 			done
+			[ $? -ne 0 ] && { revert_exit "Failed to configure Tailscale MagicDNS."; }
 		fi
 
 		# Configure network interface for Tailscale
@@ -105,14 +113,16 @@ custom_instance() {
 				uci set network.tailscale.netmask='255.0.0.0'
 				uci set network.tailscale.device=$ts0
 			fi
+			[ $? -ne 0 ] && { revert_exit "Failed to configure network interface for Tailscale."; }
 		fi
 
-		# Find the LAN to WAN forwarding rule index
-		index=$(uci show firewall | grep "firewall.@forwarding\[[0-9]\+\]\.src='lan'" -B 1 -A 1 | grep "firewall.@forwarding\[[0-9]\+\]\.dest='wan'" | grep -o '[0-9]\+')
 		# Configure firewall forwarding rules based on exit_node
 		if [ -n "$exit_node" ]; then
+			# Find the LAN to WAN forwarding rule index
+			index=$(uci show firewall | grep "firewall.@forwarding\[[0-9]\+\]\.src='lan'" -B 1 -A 1 | grep "firewall.@forwarding\[[0-9]\+\]\.dest='wan'" | grep -o '[0-9]\+')
 			uci set firewall.@defaults[0].forward='REJECT'
 			[ -n $index ] && uci set firewall.@forwarding[$index].enabled='0'
+			[ $? -ne 0 ] && { revert_exit "Failed to configure firewall forwarding rules based on exit_node."; }
 		fi
 
 		# Configure subnet routes for site to site
@@ -127,6 +137,7 @@ custom_instance() {
 				uci set network.ts_subnet$i.gateway=$ts_ip
 				let i++
 			done
+			[ $? -ne 0 ] && { revert_exit "Failed to configure subnet routes for site to site."; }
 		fi
 
 		# Create firewall zone and forwarding rules for Tailscale
@@ -142,6 +153,7 @@ custom_instance() {
 				set firewall.tszone.name='tailscale'
 				set firewall.tszone.network='tailscale'
 			EOF
+			[ $? -ne 0 ] && { revert_exit "Failed to create firewall zone and forwarding rules for Tailscale."; }
 		fi
 
 		# Configure specific firewall forwarding rules between Tailscale, LAN, and WAN.
@@ -165,6 +177,7 @@ custom_instance() {
 			uci set firewall.wan_ac_ts.dest='tailscale'
 			uci set firewall.wan_ac_ts.src='wan'
 		fi
+		[ $? -ne 0 ] && { revert_exit "Failed to configure specific firewall forwarding rules between Tailscale, LAN, and WAN."; }
 
 		# Commit configuration changes and reload service
 		[ -n "$(uci changes dhcp)" ] && uci commit dhcp && /etc/init.d/dnsmasq reload
