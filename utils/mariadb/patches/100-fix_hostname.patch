@@ -18,7 +18,7 @@ and the support-files init scripts..
 
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -367,6 +367,7 @@ IF(WIN32)
+@@ -379,6 +379,7 @@ IF(WIN32)
  ELSE()
    SET(DEFAULT_MYSQL_HOME ${CMAKE_INSTALL_PREFIX})
    SET(SHAREDIR ${INSTALL_MYSQLSHAREDIRABS})
