@@ -10,7 +10,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ffmpeg
 PKG_VERSION:=6.1.2
-PKG_RELEASE:=1
+PKG_RELEASE:=3
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://ffmpeg.org/releases/
@@ -231,7 +231,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/ffmpeg/Default
  TITLE:=FFmpeg
  URL:=https://ffmpeg.org/
- DEPENDS+= +libpthread
+ DEPENDS+= +libatomic
 endef
 
 define Package/ffmpeg/Default/description
@@ -347,7 +347,7 @@ endef
 define Package/libffmpeg-full
 $(call Package/libffmpeg/Default)
  TITLE+= (full)
- DEPENDS+= +alsa-lib +libatomic +libopenssl +libopus \
+ DEPENDS+= +alsa-lib +libopenssl +libopus \
     +PACKAGE_libv4l:libv4l \
     +SOFT_FLOAT:shine \
     +!SOFT_FLOAT:lame-lib \
