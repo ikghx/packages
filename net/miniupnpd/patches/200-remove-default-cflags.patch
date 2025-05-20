@@ -1,6 +1,16 @@
 --- a/Makefile.linux
 +++ b/Makefile.linux
-@@ -35,14 +35,14 @@ CPPFLAGS += -D_GNU_SOURCE
+@@ -28,16 +28,16 @@ endif
+ 
+ # Make sucks, prove me wrong
+ , := ,
+-ifeq ($(filter -D_FORTIFY_SOURCE=% -Wp$(,)-D_FORTIFY_SOURCE=%,$(CPPFLAGS) $(CFLAGS)),)
+-CPPFLAGS += -D_FORTIFY_SOURCE=2
+-endif
++#ifeq ($(filter -D_FORTIFY_SOURCE=% -Wp$(,)-D_FORTIFY_SOURCE=%,$(CPPFLAGS) $(CFLAGS)),)
++#CPPFLAGS += -D_FORTIFY_SOURCE=2
++#endif
+ CPPFLAGS += -D_GNU_SOURCE
  
  #CFLAGS = -O -g -DDEBUG
  CFLAGS ?= -Os
@@ -13,9 +23,3 @@
  CFLAGS += -Wall
  CFLAGS += -Wextra -Wstrict-prototypes -Wdeclaration-after-statement
  #CFLAGS += -Wno-missing-field-initializers
- #CFLAGS += -ansi	# iptables headers does use typeof which is a gcc extension
--LDFLAGS += -Wl,-z,now -Wl,-z,relro -pie
-+LDFLAGS ?= -Wl,-z,now -Wl,-z,relro -pie
- CC ?= gcc
- RM = rm -f
- INSTALL = install
