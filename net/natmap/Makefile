@@ -6,7 +6,7 @@ PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://github.com/heiher/natmap/releases/download/$(PKG_VERSION)
-PKG_HASH:=82f2582a375d944af3404d9a89bd12a7cc3ba03a233c2111d668cbc5ee5b1c16
+PKG_HASH:=dd94e361483c693f9eaa7cf55818523d928393a761f7f3146796be3faec18e63
 
 PKG_MAINTAINER:=Richard Yu <yurichard3839@gmail.com>, Ray Wang <git@hev.cc>
 PKG_LICENSE:=MIT
