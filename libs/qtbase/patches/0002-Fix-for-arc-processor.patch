@@ -31,7 +31,7 @@
      AVR32 is big-endian.
 --- a/src/corelib/plugin/qelfparser_p.cpp
 +++ b/src/corelib/plugin/qelfparser_p.cpp
-@@ -109,6 +109,8 @@ struct ElfMachineCheck
+@@ -113,6 +113,8 @@ struct ElfMachineCheck
              // nothing
  #elif defined(Q_PROCESSOR_ALPHA)
              EM_ALPHA
@@ -40,7 +40,7 @@
  #elif defined(Q_PROCESSOR_ARM_32)
              EM_ARM
  #elif defined(Q_PROCESSOR_ARM_64)
-@@ -380,6 +380,9 @@ Q_DECL_UNUSED Q_DECL_COLD_FUNCTION static QDebug &operator<<(QDebug &d, ElfHeade
+@@ -384,6 +386,9 @@ Q_DECL_UNUSED Q_DECL_COLD_FUNCTION stati
      // list definitely not exhaustive!
      case EM_NONE:       d << ", no machine"; break;
      case EM_ALPHA:      d << ", Alpha"; break;
@@ -49,4 +49,4 @@
 +#endif
      case EM_68K:        d << ", MC68000"; break;
      case EM_ARM:        d << ", ARM"; break;
-     case EM_AARCH64:    d << ", AArch64"; break;
+ #ifdef EM_AARCH64

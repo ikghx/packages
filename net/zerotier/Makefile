@@ -62,6 +62,9 @@ endef
 TARGET_CFLAGS += -Wl,-z,noexecstack
 TARGET_LDFLAGS += -Wl,--as-needed -Wl,-z,noexecstack
 
+# Prevent `-isystem ext` from causing the wrong miniupnpc header to be used (OpenWrt packages issue - 18019)
+TARGET_CFLAGS += -isystem $(STAGING_DIR)/usr/include
+
 define Package/zerotier/conffiles
 /etc/config/zerotier
 /etc/config/zero/

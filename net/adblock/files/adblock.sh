@@ -1222,7 +1222,6 @@ f_main() {
 		src_tmpload="${adb_tmpload}.${src_name}.load"
 		src_tmparchive="${adb_tmpload}.${src_name}.archive"
 		src_tmpfile="${adb_tmpfile}.${src_name}"
-
 		src_rc=4
 
 		# basic pre-checks
@@ -1544,11 +1543,11 @@ f_report() {
 			;;
 		"json")
 			if [ "${adb_map}" = "1" ]; then
-				jsn="$("${adb_catcmd}" ${report_jsn} ${map_jsn})"
-				printf "[%s]]\n" "${jsn}"
+				jsn="$("${adb_catcmd}" ${report_jsn} ${map_jsn} 2>/dev/null)"
+				[ -n "${jsn}" ] && printf "[%s]]\n" "${jsn}"
 			else
-				jsn="$("${adb_catcmd}" ${report_jsn})"
-				printf "[%s]\n" "${jsn}"
+				jsn="$("${adb_catcmd}" ${report_jsn} 2>/dev/null)"
+				[ -n "${jsn}" ] && printf "[%s]\n" "${jsn}"
 			fi
 			;;
 		"mail")

@@ -61,12 +61,11 @@ PKG_MOD_AVAILABLE:= \
 	ldap \
 	led \
 	load-tester \
+	lookip \
 	md4 \
 	md5 \
 	mgf1 \
 	mysql \
-	newhope \
-	ntru \
 	openssl \
 	pem \
 	pgp \
@@ -92,7 +91,6 @@ PKG_MOD_AVAILABLE:= \
 	stroke \
 	test-vectors \
 	unity \
-	uci \
 	updown \
 	vici \
 	whitelist \
@@ -200,12 +198,11 @@ $(call Package/strongswan/Default)
 	+strongswan-mod-ldap \
 	+strongswan-mod-led \
 	+strongswan-mod-load-tester \
+	+strongswan-mod-lookip \
 	+strongswan-mod-md4 \
 	+strongswan-mod-md5 \
 	+strongswan-mod-mgf1 \
 	+strongswan-mod-mysql \
-	+strongswan-mod-newhope \
-	+strongswan-mod-ntru \
 	+strongswan-mod-openssl \
 	+strongswan-mod-pem \
 	+strongswan-mod-pgp \
@@ -229,7 +226,6 @@ $(call Package/strongswan/Default)
 	+strongswan-mod-sshkey \
 	+strongswan-mod-stroke \
 	+strongswan-mod-test-vectors \
-	+strongswan-mod-uci \
 	+strongswan-mod-unity \
 	+strongswan-mod-updown \
 	+strongswan-mod-vici \
@@ -315,7 +311,6 @@ $(call Package/strongswan/Default)
 	+strongswan-mod-sha1 \
 	+strongswan-mod-socket-default \
 	+strongswan-mod-stroke \
-	+strongswan-mod-uci \
 	+strongswan-mod-updown
 endef
 
@@ -462,18 +457,6 @@ CONFIGURE_ARGS+= \
 	--enable-nonce \
 	--enable-mgf1 \
 	--enable-mediation \
-	--enable-aes \
-	--enable-curve25519 \
-	--enable-des \
-	--enable-fips-prf \
-	--enable-gmp \
-	--enable-hmac \
-	--enable-md5 \
-	--enable-pkcs12 \
-	--enable-rc2 \
-	--enable-sha1 \
-	--enable-sha2 \
-	--enable-sha3 \
 	--with-systemdsystemunitdir=no \
 	$(if $(CONFIG_PACKAGE_strongswan-charon-cmd),--enable-cmd,--disable-cmd) \
 	$(if $(CONFIG_PACKAGE_strongswan-mod-gmpdh),--enable-gmpdh,) \
@@ -707,12 +690,11 @@ $(eval $(call BuildPlugin,kernel-netlink,netlink kernel interface,))
 $(eval $(call BuildPlugin,ldap,LDAP,+PACKAGE_strongswan-mod-ldap:libopenldap))
 $(eval $(call BuildPlugin,led,LED blink on IKE activity,))
 $(eval $(call BuildPlugin,load-tester,load testing,))
+$(eval $(call BuildPlugin,lookip,enable fast virtual IP lookup and notification,))
 $(eval $(call BuildPlugin,md4,MD4 crypto,))
 $(eval $(call BuildPlugin,md5,MD5 crypto,))
 $(eval $(call BuildPlugin,mgf1,MGF1 crypto,))
 $(eval $(call BuildPlugin,mysql,MySQL database interface,+strongswan-mod-sql +PACKAGE_strongswan-mod-mysql:libmysqlclient-r))
-$(eval $(call BuildPlugin,newhope,New Hope crypto,+strongswan-mod-chapoly +strongswan-mod-sha3))
-$(eval $(call BuildPlugin,ntru,NTRU crypto,+strongswan-mod-mgf1))
 $(eval $(call BuildPlugin,openssl,OpenSSL crypto,+PACKAGE_strongswan-mod-openssl:libopenssl))
 $(eval $(call BuildPlugin,pem,PEM decoding,))
 $(eval $(call BuildPlugin,pgp,PGP key decoding,))
@@ -737,7 +719,6 @@ $(eval $(call BuildPlugin,sqlite,SQLite database interface,+strongswan-mod-sql +
 $(eval $(call BuildPlugin,sshkey,SSH key decoding,))
 $(eval $(call BuildPlugin,stroke,Stroke,+strongswan-charon +strongswan-ipsec))
 $(eval $(call BuildPlugin,test-vectors,crypto test vectors,))
-$(eval $(call BuildPlugin,uci,UCI config interface,+PACKAGE_strongswan-mod-uci:libuci @BROKEN))
 $(eval $(call BuildPlugin,unity,Cisco Unity extension,))
 $(eval $(call BuildPlugin,updown,updown firewall,+iptables +IPV6:ip6tables +iptables-mod-ipsec +kmod-ipt-ipsec))
 $(eval $(call BuildPlugin,vici,Versatile IKE Configuration Interface,))

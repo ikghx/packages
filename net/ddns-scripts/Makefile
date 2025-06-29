@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ddns-scripts
 PKG_VERSION:=2.8.2
-PKG_RELEASE:=70
+PKG_RELEASE:=74
 
 PKG_LICENSE:=GPL-2.0
 
@@ -25,7 +25,7 @@ endef
 define Package/ddns-scripts
   $(call Package/ddns-scripts/Default)
   TITLE:=Dynamic DNS Client scripts (with IPv6 support)
-  DEPENDS:=+ddns-scripts-services +bind-host
+  DEPENDS:=+ddns-scripts-services +resolveip +ip +bind-host
 endef
 
 define Package/ddns-scripts/description
@@ -56,18 +56,6 @@ endef
 define Package/ddns-scripts-services/description
   Dynamic DNS Client definitions for supported services
 endef
-
-
-define Package/ddns-scripts-aliyun
-  $(call Package/ddns-scripts/Default)
-  TITLE:=Extension for aliyun.com API
-  DEPENDS:=ddns-scripts +curl +openssl-util
-endef
-
-define Package/ddns-scripts-aliyun/description
-  Dynamic DNS Client scripts extension for aliyun.com API (require curl)
-endef
-
 
 define Package/ddns-scripts-utils
   $(call Package/ddns-scripts/Default)
@@ -355,6 +343,16 @@ define Package/ddns-scripts-huaweicloud/description
   Dynamic DNS Client scripts extension for huaweicloud.com API (require curl and openssl)
 endef
 
+define Package/ddns-scripts-aliyun
+	$(call Package/ddns-scripts/Default)
+	TITLE:=Extension for Aliyun DNS API
+	DEPENDS:=ddns-scripts +curl +openssl-util
+endef
+
+define Package/ddns-scripts-aliyun/description
+	Dynamic DNS Client scripts extension for aliyun.com API
+endef
+
 define Build/Configure
 endef
 
@@ -416,7 +414,6 @@ define Package/ddns-scripts-services/install
 		$(1)/usr/share/ddns/default
 
 	# Remove special services
-	rm $(1)/usr/share/ddns/default/aliyun.com.json
 	rm $(1)/usr/share/ddns/default/luadns.com-v1.json
 	rm $(1)/usr/share/ddns/default/cloudflare.com-v4.json
 	rm $(1)/usr/share/ddns/default/cloud.google.com-v1.json
@@ -437,25 +434,7 @@ define Package/ddns-scripts-services/install
 	rm $(1)/usr/share/ddns/default/one.com.json
 	rm $(1)/usr/share/ddns/default/porkbun.com-v3.json
 	rm $(1)/usr/share/ddns/default/huaweicloud.com.json
-endef
-
-
-define Package/ddns-scripts-aliyun/install
-	$(INSTALL_DIR) $(1)/usr/lib/ddns
-	$(INSTALL_BIN) ./files/usr/lib/ddns/update_aliyun_com.sh \
-		$(1)/usr/lib/ddns
-
-	$(INSTALL_DIR) $(1)/usr/share/ddns/default
-	$(INSTALL_DATA) ./files/usr/share/ddns/default/aliyun.com.json \
-		$(1)/usr/share/ddns/default/
-endef
-
-define Package/ddns-scripts-aliyun/prerm
-#!/bin/sh
-if [ -z "$${IPKG_INSTROOT}" ]; then
-	/etc/init.d/ddns stop
-fi
-exit 0
+	rm $(1)/usr/share/ddns/default/aliyun.com.json
 endef
 
 
@@ -847,10 +826,27 @@ fi
 exit 0
 endef
 
+define Package/ddns-scripts-aliyun/install
+	$(INSTALL_DIR) $(1)/usr/lib/ddns
+	$(INSTALL_BIN) ./files/usr/lib/ddns/update_aliyun_com.sh \
+		$(1)/usr/lib/ddns
+
+	$(INSTALL_DIR) $(1)/usr/share/ddns/default
+	$(INSTALL_DATA) ./files/usr/share/ddns/default/aliyun.com.json \
+		$(1)/usr/share/ddns/default/
+endef
+
+define Package/ddns-scripts-aliyun/prerm
+#!/bin/sh
+if [ -z "$${IPKG_INSTROOT}" ]; then
+	/etc/init.d/ddns stop
+fi
+exit 0
+endef
+
 
 $(eval $(call BuildPackage,ddns-scripts))
 $(eval $(call BuildPackage,ddns-scripts-services))
-$(eval $(call BuildPackage,ddns-scripts-aliyun))
 $(eval $(call BuildPackage,ddns-scripts-utils))
 $(eval $(call BuildPackage,ddns-scripts-luadns))
 $(eval $(call BuildPackage,ddns-scripts-cloudflare))
@@ -872,3 +868,4 @@ $(eval $(call BuildPackage,ddns-scripts-ns1))
 $(eval $(call BuildPackage,ddns-scripts-one))
 $(eval $(call BuildPackage,ddns-scripts-porkbun))
 $(eval $(call BuildPackage,ddns-scripts-huaweicloud))
+$(eval $(call BuildPackage,ddns-scripts-aliyun))
