@@ -30,7 +30,7 @@ define Package/swanmon
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=strongSwan monitoring tool
-  DEPENDS:=$(INTL_DEPENDS) +davici +glib2 +libjson-c
+  DEPENDS:=+davici +glib2 +libjson-c
 endef
 
 define Package/swanmon/description

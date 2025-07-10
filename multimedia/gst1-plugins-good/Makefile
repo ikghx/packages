@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gst1-plugins-good
-PKG_VERSION:=1.26.2
+PKG_VERSION:=1.24.13
 PKG_RELEASE:=1
 
 PKG_SOURCE:=gst-plugins-good-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://gstreamer.freedesktop.org/src/gst-plugins-good/
-PKG_HASH:=d864b9aec28c3a80895468c909dd303e5f22f92d6e2b1137f80e2a1454584339
+PKG_HASH:=574ac6f9fd84b32eb04e80572391d6762df6f9802a47bc0386cd6cc48c14d08b
 PKG_BUILD_DIR:=$(BUILD_DIR)/gst-plugins-good-$(PKG_VERSION)
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org> \

@@ -21,7 +21,7 @@ FRONTEND_HASH:=74bda6f7c7334342b33fff50a0cdff4e206f84a471bab983ee16d3f6f112c53a
 PKG_LICENSE:=GPL-3.0-only
 PKG_LICENSE_FILES:=LICENSE.txt
 PKG_CPE_ID:=cpe:/a:adguard:adguardhome
-PKG_MAINTAINER:=Dobroslaw Kijowski <dobo90@gmail.com>, George Sapkin <george@sapk.in>
+PKG_MAINTAINER:=Dobroslaw Kijowski <dobo90@gmail.com>
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1

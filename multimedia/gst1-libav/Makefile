@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gst1-libav
-PKG_VERSION:=1.26.2
+PKG_VERSION:=1.24.13
 PKG_RELEASE:=1
 
 PKG_SOURCE:=gst-libav-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://gstreamer.freedesktop.org/src/gst-libav
-PKG_HASH:=2eceba9cae4c495bb4ea134c27f010356036f1fa1972db5f54833f5f6c9f8db0
+PKG_HASH:=150e2b70588fa32a1294f42665756f2175417ce4b5988e2c2081b683719aa6c1
 PKG_BUILD_DIR:=$(BUILD_DIR)/gst-libav-$(PKG_VERSION)
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org> \
@@ -203,9 +203,9 @@ CONFIGURE_ARGS += \
 define Package/gst1-libav/install
 	$(INSTALL_DIR) $(1)/usr/lib/gstreamer-$(GST_VERSION)
 	( cd $(PKG_INSTALL_DIR); $(CP) \
-                ./usr/lib/gstreamer-$(GST_VERSION)/libgstlibav.so* \
-                $(1)/usr/lib/gstreamer-$(GST_VERSION)/ \
-        )
+		./usr/lib/gstreamer-$(GST_VERSION)/libgstlibav.so* \
+		$(1)/usr/lib/gstreamer-$(GST_VERSION)/ \
+	)
 endef
 
 $(eval $(call BuildPackage,gst1-libav))

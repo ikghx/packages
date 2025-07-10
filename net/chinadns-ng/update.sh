@@ -6,7 +6,7 @@ function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
 
 export CURDIR="$(cd "$(dirname $0)"; pwd)"
 
-TAG_INFO="$(curl -H "Authorization: $GITHUB_TOKEN" -sL "https://api.github.com/repos/zfl9/chinadns-ng/releases/latest")"
+TAG_INFO="$(curl -H "Authorization: Bearer $GITHUB_TOKEN" -sL "https://api.github.com/repos/zfl9/chinadns-ng/releases/latest")"
 [ -n "$TAG_INFO" ] || exit 1
 
 VERSION="$(jq -r ".tag_name" <<< "$TAG_INFO")"
@@ -17,7 +17,7 @@ for i in $(jq -r '.assets[].browser_download_url | select(contains("chinadns-ng%
 	i="$(urldecode "$i")"
 
 	arch="$(awk -F '@' '{printf "%s@%s", $2, $3}' <<< "$i")"
-	line="$(sed -n "/PKG_ARCH:=.*$arch@/=" "$CURDIR/Makefile")"
+	line="$(sed -n "/PKG_SOURCE_URL_FILE:=.*$arch@/=" "$CURDIR/Makefile")"
 	[ -n "$line" ] || continue
 
 	sha256="$(curl -fsSL "$i" | sha256sum | awk '{print $1}')" || exit 1

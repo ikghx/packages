@@ -8,16 +8,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=htop
-PKG_VERSION:=3.4.0
-PKG_RELEASE:=2
+PKG_VERSION:=3.4.1
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/htop-dev/htop/tar.gz/$(PKG_VERSION)?
-PKG_HASH:=7a45cd93b393eaa5804a7e490d58d0940b1c74bb24ecff2ae7b5c49e7a3c1198
+PKG_HASH:=af9ec878f831b7c27d33e775c668ec79d569aa781861c995a0fbadc1bdb666cf
 
 PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:htop:htop
+
 
 PKG_FIXUP:=autoreconf
 PKG_BUILD_PARALLEL:=1
@@ -54,8 +55,6 @@ define Package/htop/config
 			Users wanting this functionality need to
 			install libsensors.
 endef
-
-export CURSES_LIBS=-lncurses
 
 CONFIGURE_ARGS += \
 	--$(if $(CONFIG_HTOP_LMSENSORS),en,dis)able-sensors \

@@ -5,16 +5,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=v2ray-core
-PKG_VERSION:=5.34.0
+PKG_VERSION:=5.37.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/v2fly/v2ray-core/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=6cf41da0cd786efbc33abf4aa979f934802e33dfe48b5bdfde13e792d4926a08
+PKG_HASH:=a8aeab23fe4dbdf2236fb7ecdeb451d92f76eb7d652628b18a1e4a219baa003d
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=Tianling Shen <cnsztl@immortalwrt.org>
+PKG_CPE_ID:=cpe:/a:v2fly:v2ray-core
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
