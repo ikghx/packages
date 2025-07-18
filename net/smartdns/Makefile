@@ -26,11 +26,9 @@ PKG_LICENSE_FILES:=LICENSE
 
 PKG_BUILD_PARALLEL:=1
 
-# node compile is slow, so do not use it, download node manually.
-# curl -fsSL https://deb.nodesource.com/setup_22.x -o nodesource_setup.sh | sudo -E bash -
-# sudo -E apt install -y nodejs
-# PACKAGE_smartdns-ui:node/host
-PKG_BUILD_DEPENDS:=PACKAGE_smartdns-ui:rust/host
+PKG_BUILD_DEPENDS:= \
+	PACKAGE_smartdns-ui:rust/host \
+	PACKAGE_smartdns-ui:node/host
 
 include ../../lang/rust/rust-package.mk
 include $(INCLUDE_DIR)/package.mk
