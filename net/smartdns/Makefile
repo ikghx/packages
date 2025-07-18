@@ -6,13 +6,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=smartdns
-PKG_VERSION:=2025.7.1
+PKG_VERSION:=2025.7.17
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/pymumu/smartdns.git
-PKG_SOURCE_VERSION:=130a9c06016d4aa12fede5edc94dc847c81640d7
-PKG_MIRROR_HASH:=44a3efdc68e331597a8f4aa64d23ba78ddd943a5647caf4945151370c2e1dcab
+PKG_SOURCE_VERSION:=8bae7c110a18520889e8095cd63511b98f7be847
+PKG_MIRROR_HASH:=a08b052b89a59826ea067aadc829095c989ef20654a110047acf7c8ff6481f7f
 
 SMARTDNS_WEBUI_VERSION:=1.0.0
 SMAETDNS_WEBUI_SOURCE_PROTO:=git
@@ -28,7 +28,7 @@ PKG_BUILD_PARALLEL:=1
 
 # node compile is slow, so do not use it, download node manually.
 # PACKAGE_smartdns-ui:node/host
-PKG_BUILD_DEPENDS:=PACKAGE_smartdns-ui:rust/host 
+PKG_BUILD_DEPENDS:=PACKAGE_smartdns-ui:rust/host
 
 include ../../lang/rust/rust-package.mk
 include $(INCLUDE_DIR)/package.mk

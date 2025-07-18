@@ -30,6 +30,7 @@ define Package/vsftpd/Default
   TITLE:=Fast and secure FTP server
   URL:=https://security.appspot.com/vsftpd.html
   DEPENDS:=+libuci
+  USERID:=ftp=50:ftp=50
 endef
 
 
