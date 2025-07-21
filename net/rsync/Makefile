@@ -33,6 +33,7 @@ define Package/rsync
   TITLE:=rsync is an open source utility that provides fast incremental file transfer
   DEPENDS:=+libpopt +zlib +RSYNC_xattr:libattr +RSYNC_acl:libacl +RSYNC_zstd:libzstd +RSYNC_xxhash:libxxhash +RSYNC_lz4:liblz4 $(ICONV_DEPENDS)
   URL:=https://rsync.samba.org/
+  USERID:=rsyncd=976:rsyncd=976
   MENU:=1
 endef
 
@@ -111,6 +112,8 @@ define Package/rsyncd/install
 	$(INSTALL_DATA) ./files/rsyncd.secrets $(1)/etc/
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/rsyncd.init $(1)/etc/init.d/rsyncd
+	$(INSTALL_DIR) $(1)/etc/capabilities
+	$(INSTALL_DATA) ./files/rsyncd.json $(1)/etc/capabilities
 endef
 
 define Package/rrsync/description
