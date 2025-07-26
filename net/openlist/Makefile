@@ -21,7 +21,7 @@ PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_FLAGS:=no-mips16
 
-GO_PKG:=github.com/OpenListTeam/OpenList
+GO_PKG:=github.com/OpenListTeam/OpenList/v4
 GO_PKG_LDFLAGS_X = \
 	$(GO_PKG)/internal/conf.Version=$(PKG_VERSION) \
 	$(GO_PKG)/internal/conf.WebVersion=$(WEB_VERSION)
