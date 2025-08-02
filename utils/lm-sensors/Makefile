@@ -20,9 +20,12 @@ PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION_SUBST)
 PKG_MAINTAINER:=Jo-Philipp Wich <jo@mein.io>
 PKG_LICENSE:=GPL-2.0-or-later LGPL-2.1-or-later
 PKG_CPE_ID:=cpe:/a:lm_sensors:lm_sensors
-PKG_BUILD_FLAGS:=no-lto
 
 PKG_BUILD_PARALLEL:=1
+
+ifneq (,$(filter mips mipsel,$(ARCH)))
+  PKG_BUILD_FLAGS:=no-lto
+endif
 
 include $(INCLUDE_DIR)/package.mk
 

@@ -36,6 +36,10 @@ define Package/vlmcsd/conffiles
 /etc/vlmcsd/vlmcsd.ini
 endef
 
+MAKE_FLAGS += \
+	CC="$(TARGET_CC_NOCACHE)" \
+	VLMCSD_VERSION="$(PKG_VERSION)"
+
 define Package/vlmcsd/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/bin/vlmcsd $(1)/usr/bin/vlmcsd
