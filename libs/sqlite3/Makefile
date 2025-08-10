@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sqlite
-PKG_VERSION:=3.50.1
-PKG_SRC_VERSION:=3500100
+PKG_VERSION:=3.50.4
+PKG_SRC_VERSION:=3500400
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-autoconf-$(PKG_SRC_VERSION).tar.gz
 PKG_SOURCE_URL:=https://www.sqlite.org/2025/
-PKG_HASH:=00a65114d697cfaa8fe0630281d76fd1b77afcd95cd5e40ec6a02cbbadbfea71
+PKG_HASH:=a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18
 
 PKG_CPE_ID:=cpe:/a:sqlite:sqlite
 PKG_LICENSE:=PUBLICDOMAIN
@@ -75,10 +75,11 @@ define Package/sqlite3-cli
   SECTION:=utils
   CATEGORY:=Utilities
   DEPENDS := \
-	  +libsqlite3 \
-	  +SQLITE3_LIBEDIT:libedit \
-	  +SQLITE3_READLINE:libreadline \
-	  +SQLITE3_READLINE:libncursesw
+    +libsqlite3 \
+    +SQLITE3_LIBEDIT:libedit \
+    +SQLITE3_READLINE:libreadline \
+    +SQLITE3_READLINE:libncursesw
+  EXTRA_DEPENDS:=libsqlite3 (=$(PKG_VERSION)-r$(PKG_RELEASE))
   TITLE+= (cli)
 endef
 
