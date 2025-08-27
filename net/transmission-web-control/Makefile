@@ -21,7 +21,7 @@ define Package/transmission-web-control
   SUBMENU:=BitTorrent
   DEPENDS:=+transmission-daemon
   CONFLICTS:=transmission-web
-  TITLE:=Transmission Web Control
+  TITLE:=A custom web UI for Transmission
   URL:=https://github.com/ronggang/transmission-web-control
   PKGARCH:=all
 endef
