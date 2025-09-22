@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=rsync
 PKG_VERSION:=3.4.1
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://download.samba.org/pub/$(PKG_NAME)/src
@@ -30,10 +30,9 @@ define Package/rsync
   SECTION:=net
   CATEGORY:=Network
   SUBMENU:=File Transfer
-  TITLE:=rsync is an open source utility that provides fast incremental file transfer
+  TITLE:=an open source utility that provides fast incremental file transfer
   DEPENDS:=+libpopt +zlib +RSYNC_xattr:libattr +RSYNC_acl:libacl +RSYNC_zstd:libzstd +RSYNC_xxhash:libxxhash +RSYNC_lz4:liblz4 $(ICONV_DEPENDS)
   URL:=https://rsync.samba.org/
-  USERID:=rsyncd=976:rsyncd=976
   MENU:=1
 endef
 
@@ -68,6 +67,7 @@ define Package/rsyncd
   SUBMENU:=File Transfer
   TITLE:=Rsync daemon
   DEPENDS:=+rsync
+  USERID:=rsyncd=976:rsyncd=976
   URL:=https://rsync.samba.org/
 endef
 
@@ -76,7 +76,7 @@ define Package/rrsync
   CATEGORY:=Network
   SUBMENU:=File Transfer
   TITLE:=Restricted rsync script
-  DEPENDS:=+rsync +perlbase-file +perl @(PACKAGE_openssh-server||PACKAGE_openssh-server-pam)
+  DEPENDS:=+rsync python3-light @(PACKAGE_openssh-server||PACKAGE_openssh-server-pam||(PACKAGE_dropbear&&DROPBEAR_SVR_PUBKEY_OPTIONS))
   URL:=https://www.samba.org/ftp/unpacked/rsync/support/rrsync
 endef
 

@@ -12,7 +12,7 @@ PKG_VERSION:=4.0
 PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://dianne.skoll.ca/projects/rp-pppoe/download
+PKG_SOURCE_URL:=https://downloads.uls.co.za/rp-pppoe/
 PKG_HASH:=41ac34e5db4482f7a558780d3b897bdbb21fae3fef4645d2852c3c0c19d81cea
 
 PKG_MAINTAINER:=

@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dnscrypt-proxy2
-PKG_VERSION:=2.1.13
+PKG_VERSION:=2.1.14
 PKG_RELEASE:=1
 
 PKG_SOURCE:=dnscrypt-proxy-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/DNSCrypt/dnscrypt-proxy/tar.gz/$(PKG_VERSION)?
-PKG_HASH:=7f6a3d2613f91ace402f2f682929529565a54d6d7e4213403e7e6a0db448bddc
+PKG_HASH:=495c4f494d40068e5e3ddcb8748d91b90e99f2516060e3b59520b9f3d6148a9e
 PKG_BUILD_DIR:=$(BUILD_DIR)/dnscrypt-proxy-$(PKG_VERSION)
 
 PKG_MAINTAINER:=Josef Schlehofer <pepe.schlehofer@gmail.com>
@@ -31,6 +31,7 @@ include ../../lang/golang/golang-package.mk
 
 GO_MOD_ARGS:=
 GO_PKG_BUILD_VARS+= GO111MODULE=off
+GO_PKG_INSTALL_EXTRA:= dnscrypt-proxy/static/
 
 define Package/dnscrypt-proxy2
   SECTION:=net
@@ -40,16 +41,6 @@ define Package/dnscrypt-proxy2
   URL:=https://github.com/DNSCrypt/dnscrypt-proxy
   DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle
   CONFLICTS:=dnscrypt-proxy
-endef
-
-define Build/Prepare
-	$(call Build/Prepare/Default)
-
-	# Create static directory in the build directory
-	$(INSTALL_DIR) $(GO_PKG_BUILD_DIR)/src/$(GO_PKG)/dnscrypt-proxy/static
-
-	# Copy static files from the package build directory to the Go package build directory
-	$(CP) -r $(PKG_BUILD_DIR)/dnscrypt-proxy/static/* $(GO_PKG_BUILD_DIR)/src/$(GO_PKG)/dnscrypt-proxy/static/
 endef
 
 define Package/dnscrypt-proxy2/install

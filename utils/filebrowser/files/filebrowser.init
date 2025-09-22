@@ -16,6 +16,7 @@ start_instance () {
 	config_get dir "$cfg" 'dir'
 	config_get cert "$cfg" 'cert'
 	config_get key "$cfg" 'key'
+	config_get_bool disable_exec "$cfg" 'disable_exec'
 
 	config_get_bool enable "$cfg" enable 0
 	[ "$enable" -gt 0 ] || return 1
@@ -29,6 +30,7 @@ start_instance () {
 	procd_append_param command -d $database
 	procd_append_param command -p $port
 	procd_append_param command -r $dir
+	procd_append_param command --disable-exec=$disable_exec
 	[ -n "$cert" ] && [ -n "$key" ] && \
 		procd_append_param command -t $cert -k $key
 	procd_set_param respawn
