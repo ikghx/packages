@@ -79,6 +79,9 @@ define Package/adguardhome/install
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/adguardhome.config $(1)/etc/config/adguardhome
 
+	$(INSTALL_DIR) $(1)/etc/adguardhome
+	$(INSTALL_CONF) ./files/adguardhome.yaml $(1)/etc/adguardhome/adguardhome.yaml
+
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/adguardhome.init $(1)/etc/init.d/adguardhome
 
