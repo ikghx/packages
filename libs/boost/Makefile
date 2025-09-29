@@ -16,7 +16,7 @@ PKG_SOURCE_VERSION:=1_86_0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)_$(PKG_SOURCE_VERSION).tar.bz2
-PKG_SOURCE_URL:=@SF/$(PKG_NAME)/$(PKG_NAME)/$(PKG_VERSION) https://boostorg.jfrog.io/artifactory/main/release/$(PKG_VERSION)/source/
+PKG_SOURCE_URL:=https://archives.boost.io/release/$(PKG_VERSION)/source @SF/$(PKG_NAME)/$(PKG_NAME)/$(PKG_VERSION)
 PKG_HASH:=1bed88e40401b2cb7a1f76d4bab499e352fa4d0c5f31c0dbae64e24d34d7513b
 
 PKG_MAINTAINER:=Carlos M. Ferreira <carlosmf.pt@gmail.com>
