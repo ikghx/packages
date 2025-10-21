@@ -10,6 +10,7 @@
 	kerberos keytab file = 
 	kerberos service name = 
 	map to guest = Bad User
+	server signing = auto
 	max active sessions = 1024
 	max open files = 10000
 	restrict anonymous = 0

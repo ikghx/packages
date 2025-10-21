@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=miniupnpd
 PKG_VERSION:=2.3.9
-PKG_RELEASE:=1
+PKG_RELEASE:=3
 
 PKG_SOURCE_URL:=https://miniupnp.tuxfamily.org/files
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
@@ -80,6 +80,8 @@ CONFIGURE_ARGS = \
 	--portinuse \
 	--firewall=$(BUILD_VARIANT) \
 	--disable-fork \
+	--disable-pppconn \
+	--vendorcfg \
 	--regex
 
 TARGET_CFLAGS += $(FPIC)

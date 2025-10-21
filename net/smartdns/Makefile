@@ -1,24 +1,17 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 #
 # Copyright (c) 2018-2023 Nick Peng (pymumu@gmail.com)
-# This is free software, licensed under the GNU General Public License v3.
-#
 
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=smartdns
-PKG_VERSION:=2025.9.30
+PKG_VERSION:=2025.10.21
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/pymumu/smartdns.git
-PKG_SOURCE_VERSION:=73413c5ab0f7bf1ecbe4c2e3c8ef422cae02bab5
-PKG_MIRROR_HASH:=7e9ecffb5a48b10b1553735e62f2e9fc91fd12ba70ede6d7b2d22dc0dd4cacc4
-
-SMARTDNS_WEBUI_VERSION:=1.0.0
-SMAETDNS_WEBUI_SOURCE_PROTO:=git
-SMARTDNS_WEBUI_SOURCE_URL:=https://github.com/pymumu/smartdns-webui.git
-SMARTDNS_WEBUI_SOURCE_VERSION:=95f5d622fd014713aa2991190cbb62a2d58024b5
-SMARTDNS_WEBUI_FILE:=smartdns-webui-$(SMARTDNS_WEBUI_VERSION).tar.gz
+PKG_SOURCE_VERSION:=6371f63d567683e03995fc91a5a6c6eb03606de5
+PKG_MIRROR_HASH:=06054232bfe4beef28b380d5af4d5a52d5cc645fdeb0653e8ac522cbc4967648
 
 PKG_MAINTAINER:=Nick Peng <pymumu@gmail.com>
 PKG_LICENSE:=GPL-3.0-or-later
@@ -79,9 +72,9 @@ endef
 define Download/smartdns-webui
   PROTO:=git
   URL:=https://github.com/pymumu/smartdns-webui.git
-  SOURCE_DATE:=2025-09-18
-  SOURCE_VERSION:=c322303eac2ebee389f4a72a002163552e552f74
-  MIRROR_HASH:=b239f3d994e05ad08356bf1be629cd84c2bfc6706997aafea881284cacc29545
+  SOURCE_DATE:=2025-10-17
+  SOURCE_VERSION:=9a3b9ef7fe1d2f3f05f400cd9f7f8ea542287808
+  MIRROR_HASH:=140c2d73d4bf27a62eecc878b2de8dbb4f1b8f47aa1e15f46da0084024992d58
   SUBDIR:=smartdns-webui-$$$$(subst -,.,$$$$(SOURCE_DATE))~$$$$(call version_abbrev,$$$$(SOURCE_VERSION))
   FILE:=$$(SUBDIR).tar.zst
 endef
@@ -104,6 +97,7 @@ ifneq ($(CONFIG_PACKAGE_smartdns-ui),)
 	( \
 		pushd $(PKG_BUILD_DIR) ; \
 		pushd smartdns-webui ; \
+		$(SED) 's/"\^/"/g' package.json ; \
 		npm install ; \
 		npm run build ; \
 		popd ; \
