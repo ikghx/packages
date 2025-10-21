@@ -62,6 +62,7 @@ define Package/nfs-kernel-server-v4
 	TITLE:=Kernel NFS server (NFSv4.x)
 	DEPENDS+= +kmod-fs-nfsd +kmod-fs-nfs +rpcbind +kmod-fs-nfs-v4 +libkeyutils +libdevmapper +libevent2-core +libreadline +krb5-libs +libopenldap
 	VARIANT:=v4
+	PROVIDES:=nfs-kernel-server
 	USERID:=nfs:nfs
 endef
 
@@ -86,6 +87,7 @@ define Package/nfs-utils-v4
 	TITLE:=NFS mount and umount utils (NFSv4.x)
 	DEPENDS:=+libtirpc +libkeyutils +libdevmapper
 	VARIANT:=v4
+	PROVIDES:=nfs-utils
 endef
 
 define Package/nfs-utils-v4/description
