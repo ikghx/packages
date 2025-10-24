@@ -38,7 +38,6 @@ upnpd() {
 	config_get uuid settings uuid
 	config_get upnp_igd_http_port settings upnp_igd_http_port 5000
 	config_get notify_interval settings notify_interval
-	config_get force settings force 0
 
 	# External network interface
 	local external_iface external_iface6 external_zone external_ip
@@ -105,7 +104,6 @@ upnpd() {
 			[ "$allow_third_party_mapping" = "pcp" ] && echo "secure_mode=yes" && echo "pcp_allow_thirdparty=yes"
 			echo_yesno_opt ipv6_disable "$ipv6_disable"
 			echo_yesno_opt system_uptime "$system_uptime"
-			echo_yesno_opt ext_allow_private_ipv4 "$force"
 			touch "$lease_file" && echo "lease_file=$lease_file"
 			[ "$ipv6_disable" = "0" ] && touch "${lease_file}-ipv6" && echo "lease_file6=${lease_file}-ipv6"
 
