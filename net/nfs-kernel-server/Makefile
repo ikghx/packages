@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nfs-kernel-server
 PKG_VERSION:=2.8.4
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 PKG_HASH:=11c4cc598a434d7d340bad3e072a373ba1dcc2c49f855d44b202222b78ecdbf5
 
 PKG_SOURCE:=nfs-utils-$(PKG_VERSION).tar.xz
@@ -60,7 +60,7 @@ endef
 define Package/nfs-kernel-server-v4
 	$(call Package/nfs-kernel-server/Default)
 	TITLE:=Kernel NFS server (NFSv4.x)
-	DEPENDS+= +kmod-fs-nfsd +kmod-fs-nfs +rpcbind +kmod-fs-nfs-v4 +libkeyutils +libdevmapper +libevent2-core +libreadline +krb5-libs +libopenldap
+	DEPENDS+= +kmod-fs-nfsd +kmod-fs-nfs +rpcbind +kmod-fs-nfs-v4 +libkeyutils +libdevmapper +libevent2-core +libreadline
 	VARIANT:=v4
 	PROVIDES:=nfs-kernel-server
 	USERID:=nfs:nfs
@@ -140,6 +140,8 @@ ifeq ($(BUILD_VARIANT),v4)
 	CONFIGURE_ARGS += \
 	--enable-nfsdcld \
 	--enable-nfsv4server \
+	--disable-ldap \
+	--disable-gss \
 	--enable-nfsv4 \
 	--enable-nfsv41 \
 	--enable-nfsv42
@@ -162,6 +164,7 @@ HOST_CFLAGS += -Dlinux \
 
 HOST_CONFIGURE_ARGS += \
 	--disable-gss \
+	--disable-ldap \
 	--disable-nfsrahead \
 	--disable-nfsdctl \
 	--without-tcp-wrappers \
