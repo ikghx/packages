@@ -5,13 +5,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=smartdns
-PKG_VERSION:=2025.10.23
+PKG_VERSION:=2025.10.31
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/pymumu/smartdns.git
-PKG_SOURCE_VERSION:=1339810604545c2fcd44d4ef893908bcaf554440
-PKG_MIRROR_HASH:=78a071d79f9d959a4793e3be7185df8e6dbbedad8fbf81deea38499d0e7d8342
+PKG_SOURCE_VERSION:=2044be5e78c11ec26af32f165b31809e4c5c79ab
+PKG_MIRROR_HASH:=a6d576c23de1e824aa9d4f5e7111d0b4080cc9d36fec96336e8c71c9774ec26e
 
 PKG_MAINTAINER:=Nick Peng <pymumu@gmail.com>
 PKG_LICENSE:=GPL-3.0-or-later
@@ -97,6 +97,7 @@ ifneq ($(CONFIG_PACKAGE_smartdns-ui),)
 	( \
 		pushd $(PKG_BUILD_DIR) ; \
 		pushd smartdns-webui ; \
+		$(SED) 's/"\^/"/g' package.json ; \
 		npm install ; \
 		npm run build ; \
 		popd ; \

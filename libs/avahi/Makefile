@@ -1,6 +1,4 @@
 #
-# Copyright (C) 2007-2016 OpenWrt.org
-#
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
@@ -12,11 +10,11 @@ PKG_VERSION:=0.8
 PKG_RELEASE:=10
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/lathiat/avahi/releases/download/v$(PKG_VERSION) \
+PKG_SOURCE_URL:=https://github.com/avahi/avahi/releases/download/v$(PKG_VERSION) \
 		https://avahi.org/download
 PKG_HASH:=060309d7a333d38d951bc27598c677af1796934dbd98e1024e7ad8de798fedda
 
-PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
+PKG_MAINTAINER:=
 PKG_LICENSE:=LGPL-2.1-or-later
 PKG_LICENSE_FILES:=LICENSE
 PKG_CPE_ID:=cpe:/a:avahi:avahi
@@ -32,7 +30,6 @@ define Package/avahi/Default
   CATEGORY:=Network
   TITLE:=An mDNS/DNS-SD implementation
   URL:=http://www.avahi.org/
-  USERID:=avahi=105:avahi=105
 endef
 
 define Package/avahi/Default/description
@@ -68,6 +65,7 @@ define Package/avahi-autoipd
   SUBMENU:=IP Addresses and Names
   DEPENDS:=+libdaemon
   TITLE:=IPv4LL network address configuration daemon
+  USERID:=avahi=105:avahi=105
 endef
 
 define Package/avahi-autoipd/description
@@ -87,6 +85,7 @@ define Package/avahi-dbus-daemon
   SUBMENU:=IP Addresses and Names
   DEPENDS:=+libavahi-dbus-support +libexpat +librt +libdaemon
   TITLE+= (daemon)
+  USERID:=avahi=105:avahi=105
 endef
 
 define Package/avahi-nodbus-daemon
@@ -96,6 +95,7 @@ define Package/avahi-nodbus-daemon
   SUBMENU:=IP Addresses and Names
   DEPENDS:=+libavahi-nodbus-support +libexpat +librt +libdaemon
   TITLE+= (daemon)
+  USERID:=avahi=105:avahi=105
 endef
 
 define Package/avahi-daemon/description
@@ -153,6 +153,7 @@ define Package/avahi-dnsconfd
   SUBMENU:=IP Addresses and Names
   DEPENDS:=+libavahi +libdaemon +libpthread
   TITLE:=A Unicast DNS server using avahi-daemon
+  USERID:=avahi=105:avahi=105
 endef
 
 define Package/avahi-dnsconfd/description
