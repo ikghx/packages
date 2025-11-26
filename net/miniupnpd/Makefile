@@ -87,9 +87,11 @@ CONFIGURE_ARGS = \
 TARGET_CFLAGS += $(FPIC)
 TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 
-ifeq ($(BUILD_VARIANT),iptables)
-	TARGET_CFLAGS += -flto
-endif
+#ifeq ($(BUILD_VARIANT),iptables)
+#ifneq ($(filter $(ARCH),mips mipsel),)
+#	TARGET_CFLAGS += -flto
+#endif
+#endif
 
 define Package/miniupnpd/install/Default
 	$(INSTALL_DIR) $(1)/usr/sbin
