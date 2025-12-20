@@ -5,14 +5,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sqlite
-PKG_VERSION:=3.51.0
-PKG_SRC_VERSION:=3510000
-PKG_RELEASE:=2
-PKG_ABI_VERSION:=0
+PKG_VERSION:=3.51.1
+PKG_SRC_VERSION:=3510100
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-autoconf-$(PKG_SRC_VERSION).tar.gz
 PKG_SOURCE_URL:=https://www.sqlite.org/2025/
-PKG_HASH:=42e26dfdd96aa2e6b1b1be5c88b0887f9959093f650d693cb02eb9c36d146ca5
+PKG_HASH:=4f2445cd70479724d32ad015ec7fd37fbb6f6130013bd4bfbc80c32beb42b7e0
 
 PKG_CPE_ID:=cpe:/a:sqlite:sqlite
 PKG_LICENSE:=blessing
@@ -58,7 +57,7 @@ define Package/libsqlite3
   CATEGORY:=Libraries
   DEPENDS:=+libpthread +zlib
   TITLE+= (library)
-  ABI_VERSION:=$(PKG_ABI_VERSION)
+  ABI_VERSION:=0
 endef
 
 define Package/libsqlite3/description
@@ -138,7 +137,7 @@ endef
 
 define Package/libsqlite3/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libsqlite3.so.{$(PKG_VERSION),$(PKG_ABI_VERSION)} $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libsqlite3.so.{$(PKG_VERSION),$(ABI_VERSION)} $(1)/usr/lib
 endef
 
 define Package/sqlite3-cli/install

@@ -707,16 +707,6 @@ define Package/freeradius3-mod-wimax/conffiles
 /etc/freeradius3/mods-available/wimax
 endef
 
-define Package/freeradius3-mod-yubikey
-  $(call Package/freeradius3/Default)
-  DEPENDS:=freeradius3 +libyubikey +ykclient
-  TITLE:=Yubikey Authentication
-endef
-
-define Package/freeradius3-mod-yubikey/conffiles
-/etc/freeradius3/mods-available/yubikey
-endef
-
 define Package/freeradius3-utils
   $(call Package/freeradius3/Default)
   DEPENDS:=+freeradius3-common
@@ -758,6 +748,7 @@ CONFIGURE_ARGS+= \
 	--without-rlm_sql_freetds \
 	--without-rlm_sql_iodbc \
 	--without-rlm_sql_oracle \
+	--without-rlm_yubikey \
 
 CONFIGURE_LIBS+= -latomic
 
@@ -961,15 +952,6 @@ else
   CONFIGURE_ARGS+= --without-rlm_unix
 endif
 
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius3-mod-yubikey),)
-  CONFIGURE_ARGS+= \
-		--with-rlm_yubikey \
-		--with-rlm_yubikey-include-dir="$(STAGING_DIR)/usr/include" \
-		--with-rlm_yubikey-lib-dir="$(STAGING_DIR)/usr/lib"
-else
-  CONFIGURE_ARGS+= --without-rlm_yubikey
-endif
-
 ifeq ($(CONFIG_USE_GLIBC),y)
   TARGET_CFLAGS+= -DLIBBSD_OVERLAY -I$(STAGING_DIR)/usr/include/bsd \
 	-D_RPC_NETDB_H
@@ -1137,5 +1119,4 @@ $(eval $(call BuildPlugin,freeradius3-mod-unix,rlm_unix,))
 $(eval $(call BuildPlugin,freeradius3-mod-unpack,rlm_unpack,))
 $(eval $(call BuildPlugin,freeradius3-mod-utf8,rlm_utf8,))
 $(eval $(call BuildPlugin,freeradius3-mod-wimax,rlm_wimax,))
-$(eval $(call BuildPlugin,freeradius3-mod-yubikey,rlm_yubikey,))
 $(eval $(call BuildPackage,freeradius3-utils))

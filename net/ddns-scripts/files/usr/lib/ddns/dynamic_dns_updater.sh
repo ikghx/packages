@@ -158,8 +158,9 @@ trap "trap_handler 15" 15	# SIGTERM	Termination
 # ip_script	either full path and name of your script or single (Ash-compatible) statement to detect current IP
 # ip_interface	physical interface to use for detecting
 #
-# check_interval	check for changes every  !!! checks below 10 minutes make no sense because the Internet
-# check_unit		'days' 'hours' 'minutes' !!! needs about 5-10 minutes to sync an IP-change for an DNS entry
+# check_interval	check for changes every
+# check_interval_min	check_interval minimum value (used to be check_interval's minimum value of 300 seconds)
+# check_unit		'days' 'hours' 'minutes'
 #
 # force_interval	force to send an update to your service if no change was detected
 # force_unit		'days' 'hours' 'minutes' !!! force_interval="0" runs this script once for use i.e. with cron
@@ -193,7 +194,6 @@ ERR_LAST=$?	# save return code - equal 0 if SECTION_ID found
 # set defaults if not defined
 [ -z "$enabled" ]	  && enabled=0
 [ -z "$retry_max_count" ] && retry_max_count=0	# endless retry
-[ -z "$use_network" ]     && use_network=1	# use network address
 [ -z "$use_syslog" ]      && use_syslog=2	# syslog "Notice"
 [ -z "$use_https" ]       && use_https=0	# not use https
 [ -z "$use_logfile" ]     && use_logfile=1	# use logfile by default
@@ -202,22 +202,12 @@ ERR_LAST=$?	# save return code - equal 0 if SECTION_ID found
 [ -z "$force_dnstcp" ]	  && force_dnstcp=0	# default UDP
 [ -z "$ip_source" ]	  && ip_source="network"
 [ -z "$is_glue" ]	  && is_glue=0		# default the ddns record is not a glue record
-[ -z "$run_once" ]    && run_once=-1    # default -1; needed for backwards compatibility with old configs. See issue #17641 in openwrt/packages github
+[ -z "$run_once" ]    && run_once=1
 [ "$ip_source" = "network" -a -z "$ip_network" -a $use_ipv6 -eq 0 ] && ip_network="wan"  # IPv4: default wan
 [ "$ip_source" = "network" -a -z "$ip_network" -a $use_ipv6 -eq 1 ] && ip_network="wan6" # IPv6: default wan6
 [ "$ip_source" = "web" -a -z "$ip_url" -a $use_ipv6 -eq 0 ] && ip_url="http://checkip.dyndns.com"
 [ "$ip_source" = "web" -a -z "$ip_url" -a $use_ipv6 -eq 1 ] && ip_url="http://checkipv6.dyndns.com"
 [ "$ip_source" = "interface" -a -z "$ip_interface" ] && ip_interface="eth1"
-
-### backwards compatibility:
-if [ $run_once -lt 0 ] ; then
-	if [ $force_interval -eq 0 ] ; then
-		run_once=1
-		force_interval=1
-	else
-		run_once=0
-	fi
-fi
 
 # url encode username (might be email or something like this)
 # and password (might have special chars for security reason)
@@ -311,8 +301,10 @@ fi
 
 # compute update interval in seconds
 get_seconds CHECK_SECONDS ${check_interval:-10} ${check_unit:-"minutes"} # default 10 min
+get_seconds CHECK_SECONDS_MIN ${check_interval_min:-5} ${check_unit:-"minutes"}
 get_seconds FORCE_SECONDS ${force_interval:-72} ${force_unit:-"hours"}	 # default 3 days
 get_seconds RETRY_SECONDS ${retry_interval:-60} ${retry_unit:-"seconds"} # default 60 sec
+[ $CHECK_SECONDS -lt 300 ] && CHECK_SECONDS=$CHECK_SECONDS_MIN		 # minimum 5 minutes
 [ $FORCE_SECONDS -gt 0 -a $FORCE_SECONDS -lt $CHECK_SECONDS ] && FORCE_SECONDS=$CHECK_SECONDS	# FORCE_SECONDS >= CHECK_SECONDS or 0
 write_log 7 "check interval: $CHECK_SECONDS seconds"
 write_log 7 "force interval: $FORCE_SECONDS seconds"

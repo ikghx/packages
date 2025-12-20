@@ -21,13 +21,13 @@ config_get_ram()
 		printf "\tsmb2 max trans = 64K\n"
 		printf "\tcache read buffers = no\n"
 		printf "\tcache trans buffers = no\n"
-	elif [ "$ramsize" -gt 65536 ] && [ "$ramsize" -lt 134073 ];then
+	elif [ "$ramsize" -lt 134073 ];then
 		printf "\tsmb2 max read = 128K\n"
 		printf "\tsmb2 max write = 128K\n"
 		printf "\tsmb2 max trans = 128K\n"
 		printf "\tcache read buffers = no\n"
 		printf "\tcache trans buffers = no\n"
-	elif [ "$ramsize" -gt 134072 ] && [ "$ramsize" -lt 262146 ];then
+	elif [ "$ramsize" -lt 262146 ];then
 		printf "\tsmb2 max read = 1M\n"
 		printf "\tsmb2 max write = 1M\n"
 		printf "\tsmb2 max trans = 1M\n"
@@ -54,6 +54,7 @@ smb_header()
 
 	config_get_sane workgroup "$1" workgroup "WORKGROUP"
 	config_get_sane description "$1" description "Ksmbd on OpenWrt"
+	config_get_bool ALLOW_GUEST_IPC "$1" allow_guest_ipc 0
 	config_get_bool ALLOW_LEGACY_PROTOCOLS "$1" allow_legacy_protocols 0
 
 	sed -e "s#|NAME|#$hostname#g" \
@@ -61,11 +62,16 @@ smb_header()
 	    -e "s#|DESCRIPTION|#$description#g" \
 	    -e "s#|INTERFACES|#$interfaces#g" \
 	    /etc/ksmbd/ksmbd.conf.template > /var/etc/ksmbd/ksmbd.conf
-
-	config_get_ram >> /var/etc/ksmbd/ksmbd.conf
+		
 	{
+		config_get_ram
+		
 		printf "\n######### Dynamic written config options #########\n"
 
+		if [ "$ALLOW_GUEST_IPC" -eq 1 ]; then
+			logger -p daemon.info -t 'ksmbd' "Guest access to the IPC$ share is enabled!"
+			printf "\tguest ok = yes\n"
+		fi
 		if [ "$ALLOW_LEGACY_PROTOCOLS" -eq 1 ]; then
 			logger -p daemon.info -t 'ksmbd' "Legacy Protocols allowed, don't use this option for secure environments!"
 			printf "\tserver min protocol = NT1\n"
@@ -110,10 +116,10 @@ smb_add_share()
 		if [ "$force_root" -eq 1 ]; then
 			printf "\tforce user = %s\n" "root"
 			printf "\tforce group = %s\n" "root"
+		else
+			[ -n "$users" ] && printf "\tvalid users = %s\n" "$users"
 		fi
 
-
-		[ -n "$users" ] && printf "\tvalid users = %s\n" "$users"
 		[ -n "$create_mask" ] && printf "\tcreate mask = %s\n" "$create_mask"
 		[ -n "$dir_mask" ] && printf "\tdirectory mask = %s\n" "$dir_mask"
 		[ -n "$force_create_mode" ] && printf "\tforce create mode = %s\n" "$force_create_mode"

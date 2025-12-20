@@ -1,4 +1,7 @@
 #!/bin/sh /etc/rc.common
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
 # shellcheck disable=SC3043 # ash supports local
 
 PROG=/usr/bin/AdGuardHome
@@ -9,6 +12,30 @@ USE_PROCD=1
 START=19
 # stops before networking stops
 STOP=89
+
+config_cb() {
+	[ $# -eq 0 ] && return
+
+	option_cb() {
+		local option="$1"
+		local value="$2"
+
+		case $option in
+
+		# Support old option names
+		config)
+			option='config_file'
+			;;
+
+		workdir)
+			option='work_dir'
+			;;
+
+		esac
+
+		eval $option="$value"
+	}
+}
 
 boot() {
 	ADGUARDHOME_BOOT=1
