@@ -74,24 +74,24 @@ define Build/Prepare
 endef
 
 CONFIGURE_ARGS = \
-	$(if $(CONFIG_IPV6),--ipv6) \
-	--igd2 \
-	--leasefile \
-	--portinuse \
-	--firewall=$(BUILD_VARIANT) \
 	--disable-fork \
 	--disable-pppconn \
-	--vendorcfg \
-	--regex
+	--firewall=$(BUILD_VARIANT) \
+	--igd2 \
+	$(if $(CONFIG_IPV6),--ipv6) \
+	--leasefile \
+	--portinuse \
+	--regex \
+	--vendorcfg
 
 TARGET_CFLAGS += $(FPIC)
 TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 
-#ifeq ($(BUILD_VARIANT),iptables)
-#ifneq ($(filter $(ARCH),mips mipsel),)
-#	TARGET_CFLAGS += -flto
-#endif
-#endif
+ifeq ($(BUILD_VARIANT),iptables)
+ifeq ($(filter $(ARCH),mips mipsel),)
+	TARGET_CFLAGS += -flto
+endif
+endif
 
 define Package/miniupnpd/install/Default
 	$(INSTALL_DIR) $(1)/usr/sbin

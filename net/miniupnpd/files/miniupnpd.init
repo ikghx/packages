@@ -14,7 +14,7 @@ start_service() {
 	config_get config_file settings config_file
 	config_get log_output settings log_output
 	if [ "$enabled" != "1" ]; then
-		log "Service disabled, UCI enabled is not set"
+		log "Service disabled, enabled UCI option not set"
 		return 1
 	fi
 
@@ -38,7 +38,7 @@ start_service() {
 	procd_set_param command "$PROG"
 	procd_append_param command -f "$conf"
 	[ "$log_output" = "info" ] && procd_append_param command -v
-	[ "$log_output" = "debug" ] && procd_append_param command -d
+	[ "$log_output" = "debug" ] && procd_append_param command -vv
 	procd_close_instance
 }
 
@@ -115,7 +115,7 @@ upnpd_generate_config() {
 		log "No internal networks configured, not starting" daemon.err
 		return 1
 	fi
-	# Only perform an STUN CGNAT test when necessary with a private/CGNAT external IPv4
+	# Only perform an STUN CGNAT test if necessary, with a private/CGNAT external IPv4
 	local extipv4 extipv4private
 	network_get_ipaddr extipv4 "$external_iface"
 	case "$extipv4" in
@@ -175,7 +175,7 @@ upnpd_generate_config() {
 
 		echo "# External network interface"
 		echo "ext_ifname=$ifname"
-		echo "ext_ifname6=$ifname6"
+		echo "ext_ifname6=${ifname6:-$ifname}"
 		[ -n "$external_ip" ] && echo "ext_ip=$external_ip"
 
 		# Enabled internal networks / access control
