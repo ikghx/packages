@@ -61,8 +61,8 @@ service_triggers() {
 
 upnpd_generate_config() {
 	# Daemon
-	local enabled_protocols allow_cgnat stun_host allow_third_party_mapping ipv6_disable system_uptime lease_file
-	config_get enabled_protocols settings enabled_protocols all
+	local enable_protocols allow_cgnat stun_host allow_third_party_mapping ipv6_disable system_uptime lease_file
+	config_get enable_protocols settings enable_protocols all
 	config_get allow_cgnat settings allow_cgnat 0
 	config_get stun_host settings stun_host stun.nextcloud.com
 	config_get allow_third_party_mapping settings allow_third_party_mapping 0
@@ -124,13 +124,13 @@ upnpd_generate_config() {
 
 	{
 		echo "# Daemon"
-		[ "$enabled_protocols" = "all" ] && echo "enable_upnp=yes" && echo "enable_pcp_pmp=yes"
-		[ "$enabled_protocols" = "upnp-igd" ] && echo "enable_upnp=yes" && echo "enable_pcp_pmp=no"
-		[ "$enabled_protocols" = "pcp+nat-pmp" ] && echo "enable_upnp=no" && echo "enable_pcp_pmp=yes"
+		[ "$enable_protocols" = "all" ] && echo "enable_upnp=yes" && echo "enable_pcp_pmp=yes"
+		[ "$enable_protocols" = "upnp-igd" ] && echo "enable_upnp=yes" && echo "enable_pcp_pmp=no"
+		[ "$enable_protocols" = "pcp+nat-pmp" ] && echo "enable_upnp=no" && echo "enable_pcp_pmp=yes"
 		if [ "$extipv4private" = "1" ] && [ "$allow_cgnat" != "0" ] && [ "$external_ip" = "" ]; then
 			[ "$allow_cgnat" = "1" ] && echo "ext_perform_stun=yes"
 			[ "$allow_cgnat" = "allow-filtered" ] && echo "ext_perform_stun=allow-filtered"
-			# Alternatively, as allow-filtered detects the public IPv4 required by multiple clients, e.g. PCP/NAT-PMP
+			# Alternatively, as allow-filtered detects the public IPv4 required by various clients, e.g. PCP/NAT-PMP
 			[ "$allow_cgnat" = "allow-private-ext-ipv4" ] && echo "ext_allow_private_ipv4=yes"
 			echo "ext_stun_host=${stun_host%%:*}"
 			[ "${stun_host%%:*}" != "${stun_host##*:}" ] && echo "ext_stun_port=${stun_host##*:}"
@@ -144,7 +144,7 @@ upnpd_generate_config() {
 		touch "$lease_file" && echo "lease_file=$lease_file"
 		[ "$ipv6_disable" = "0" ] && touch "${lease_file}-ipv6" && echo "lease_file6=${lease_file}-ipv6"
 
-		if [ "$enabled_protocols" = "upnp-igd" ] || [ "$enabled_protocols" = "all" ]; then
+		if [ "$enable_protocols" = "upnp-igd" ] || [ "$enable_protocols" = "all" ]; then
 			echo "# UPnP IGD"
 			[ "$upnp_igd_compat" = "igdv1" ] && echo "force_igd_desc_v1=yes" || echo "force_igd_desc_v1=no"
 			[ -n "$download_kbps" ] && echo "bitrate_down=$((download_kbps * 1000))"
@@ -159,7 +159,7 @@ upnpd_generate_config() {
 				uci set upnpd.settings.uuid="$uuid"
 				uci commit upnpd
 			}
-			[ "$uuid" != "nocli" ] && echo "uuid=$uuid" || log "Deprecated. Set uuid to 00000000-0000-0000-0000-000000000000 instead"
+			[ "$uuid" != "nocli" ] && echo "uuid=$uuid" || log "uuid=nocli deprecated, set to 00000000-0000-0000-0000-000000000000 instead"
 			echo "http_port=$http_port"
 			[ -n "$notify_interval" ] && echo "notify_interval=$notify_interval"
 		fi
@@ -178,18 +178,18 @@ upnpd_generate_config() {
 		echo "ext_ifname6=${ifname6:-$ifname}"
 		[ -n "$external_ip" ] && echo "ext_ip=$external_ip"
 
-		# Enabled internal networks / access control
-		config_foreach upnpd_add_int_network_and_preset internal_network precustom
-		echo "# Custom ACL"
-		config_foreach upnpd_add_custom_acl_entry acl_entry
-		config_foreach upnpd_add_int_network_and_preset internal_network postcustom
+		# Enable internal networks / access control
+		config_foreach upnpd_add_int_network_and_preset internal_network pre-acl
+		echo "# Access control list"
+		config_foreach upnpd_add_acl_entry acl_entry
+		config_foreach upnpd_add_int_network_and_preset internal_network post-acl
 		echo "deny 1-65535 0.0.0.0/0 1-65535 # Reject ACL by default"
 
 	} >"$1"
 }
 
 log() {
-	logger -s -p "${2:-daemon.notice}" -t "upnpd" "$1" || echo "upnpd: $1" >&2
+	logger -s -p "${2:-daemon.notice}" -t "miniupnpd-init" "$1" || echo "miniupnpd-init: $1" >&2
 }
 
 xml_encode() {
@@ -208,37 +208,37 @@ is_port_or_range() {
 
 upnpd_add_int_network_and_preset() {
 	local cfg="$1"
-	local interface access_preset accept_ports reject_ports custom_acl_before
+	local interface access_preset accept_ports reject_ports acl_before
 	config_get interface "$cfg" interface
-	config_get access_preset "$cfg" access_preset accept-high-ports
+	config_get access_preset "$cfg" access_preset none
 	config_get accept_ports "$cfg" accept_ports
 	config_get reject_ports "$cfg" reject_ports "21 23 135 137-139 445 3389"
-	config_get custom_acl_before "$cfg" custom_acl_before
+	config_get acl_before "$cfg" acl_before
 	local device subnet rejectport acceptpresetports acceptport
 	network_get_device device "$interface"
 	network_get_subnet subnet "$interface"
-	if [ "$2" = "precustom" ]; then
-		echo "# Enable internal network $interface ($device) with preset $access_preset${custom_acl_before:+ and check custom ACL before}"
+	if [ "$2" = "pre-acl" ]; then
+		echo "# Enable internal network $interface ($device) with preset $access_preset${acl_before:+ and check ACL before}"
 		echo "listening_ip=$device"
 	fi
 	[ "$subnet" = "" ] && log "Cannot get IPv4 subnet for network $interface, access_preset ignored" daemon.warn && return 0
-	if [ "$2" = "precustom" ]; then
+	if [ "$2" = "pre-acl" ]; then
 		for rejectport in $reject_ports; do
 			is_port_or_range "$rejectport" && echo "deny $rejectport $subnet $rejectport # Reject port $rejectport on $interface" ||
 				log "Invalid port or port range ($rejectport) in reject_ports ignored" daemon.warn
 		done
 	fi
-	if { [ "$2" = "postcustom" ] && [ "$custom_acl_before" = "1" ]; } ||
-		{ [ "$2" = "precustom" ] && [ "$custom_acl_before" != "1" ]; }; then
+	if { [ "$2" = "post-acl" ] && [ "$acl_before" = "1" ]; } ||
+		{ [ "$2" = "pre-acl" ] && [ "$acl_before" != "1" ]; }; then
 		if [ "$access_preset" = "accept-high-ports" ]; then
 			acceptpresetports="1024-65535"
-		elif [ "$access_preset" = "accept-high-ports+web" ]; then
-			acceptpresetports="1024-65535 80 443"
-		elif [ "$access_preset" = "accept-high-ports+web+dns" ]; then
-			acceptpresetports="1024-65535 80 443 53 853"
+		elif [ "$access_preset" = "accept-web+high-ports" ]; then
+			acceptpresetports="80 443 1024-65535"
+		elif [ "$access_preset" = "accept-web-ports" ]; then
+			acceptpresetports="80 443"
 		elif [ "$access_preset" = "accept-all-ports" ]; then
 			acceptpresetports="1-65535"
-		elif [ "$access_preset" != "0" ] && [ "$access_preset" != "accept-listed-ports" ]; then
+		elif [ "$access_preset" != "none" ]; then
 			log "Invalid access_preset ($access_preset) ignored" daemon.warn
 		fi
 		for acceptport in $acceptpresetports $accept_ports; do
@@ -246,12 +246,12 @@ upnpd_add_int_network_and_preset() {
 				log "Invalid port or port range ($acceptport) in accept_ports ignored" daemon.warn
 		done
 	fi
-	if [ "$2" = "precustom" ] && [ "$custom_acl_before" != "1" ] && [ "$access_preset" != "0" ]; then
+	if [ "$2" = "pre-acl" ] && [ "$acl_before" != "1" ]; then
 		echo "deny 1-65535 $subnet 1-65535 # Reject ACL by default on $interface"
 	fi
 }
 
-upnpd_add_custom_acl_entry() {
+upnpd_add_acl_entry() {
 	local cfg="$1"
 	local comment int_addr int_port ext_port descr_filter action
 	config_get comment "$cfg" comment "unspecified" # comment
@@ -261,13 +261,18 @@ upnpd_add_custom_acl_entry() {
 	config_get descr_filter "$cfg" descr_filter     # description regex filter (must be built in)
 	config_get action "$cfg" action                 # accept/reject/ignore
 	! is_port_or_range "$int_port" port0inrange &&
-		log "Custom ACL: Entry with invalid port or port range ($int_port) in int_port ignored" daemon.warn && int_port=1-65535
+		log "ACL entry: Invalid port or port range ($int_port) in int_port ignored" daemon.warn && int_port=1-65535
 	! is_port_or_range "$ext_port" port0inrange &&
-		log "Custom ACL: Entry with invalid port or port range ($ext_port) in ext_port ignored" daemon.warn && ext_port=1-65535
+		log "ACL entry: Invalid port or port range ($ext_port) in ext_port ignored" daemon.warn && ext_port=1-65535
 	[ "$descr_filter" != "" ] && descr_filter=" \"$descr_filter\""
-	[ "$action" = "accept" ] && action=allow
-	[ "$action" = "reject" ] && action=deny
+	if [ "$action" = "accept" ]; then
+		action=allow
+	elif [ "$action" = "reject" ]; then
+		action=deny
+	elif [ "$action" != "ignore" ]; then
+		log "ACL entry: Entry with invalid action ($action) ignored" daemon.warn
+		action=ignore
+	fi
 	[ "$action" = "ignore" ] && return 0
-	[ "$action" = "" ] && log "Custom ACL: Entry with no action ignored" daemon.warn && return 0
 	echo "$action $ext_port $int_addr $int_port${descr_filter} # $comment"
 }

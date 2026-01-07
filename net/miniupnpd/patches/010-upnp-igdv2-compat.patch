@@ -4,11 +4,11 @@ From: Self-Hosting-Group
 Date: Thu, 27 Nov 2025 00:00:00 +0000
 Subject: [PATCH] miniupnpd: UPnP IGDv2 Microsoft/Apple compatibility
 
-- Add workaround to list port maps with the Windows IGDv2-incompatible
+* Add workaround to list port maps with the Windows IGDv2-incompatible
   client by returning an infinite (0) lease duration. To fix listing and
   editing via GUI (Explorer/Network), if daemon was compiled with IGDv2
-- Extend detection to older versions of Windows and add Xbox
-- Detect Apple IGDv2-incompatible clients and apply existing workaround,
+* Extend detection to older versions of Windows and add Xbox
+* Detect Apple IGDv2-incompatible clients and apply existing workaround,
   that only caused problems if PCP/NAT-PMP (prioritised) was disabled
 
 Link: https://github.com/Self-Hosting-Group/miniupnp/tree/upnp-igdv2-compat
