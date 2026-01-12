@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=zabbix
 PKG_VERSION:=7.0.21
-PKG_RELEASE:=1
+PKG_RELEASE:=3
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://cdn.zabbix.com/zabbix/sources/stable/$(basename $(PKG_VERSION))/ \
@@ -189,13 +189,15 @@ endef
 define Package/zabbix-server-frontend
   $(call Package/zabbix/Default)
   TITLE+= server-frontend
-  DEPENDS += +php8 \
+  DEPENDS += @PACKAGE_php8 \
     +php8-cgi \
     +php8-mod-gd \
     +php8-mod-bcmath \
     +php8-mod-ctype \
+    +php8-mod-filter \
     +php8-mod-xmlreader \
     +php8-mod-xmlwriter \
+    +php8-mod-openssl \
     +php8-mod-session \
     +php8-mod-sockets \
     +php8-mod-mbstring \
