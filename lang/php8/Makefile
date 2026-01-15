@@ -67,7 +67,60 @@ define Package/php8/Default/description
 endef
 
 define Package/php8/config
-  source "$(SOURCE)/Config.in"
+	config PHP8_LIBXML
+		bool "PHP8 LIBXML support"
+		default y
+
+	config PHP8_DOM
+		bool "PHP8 DOM support"
+		depends on PHP8_LIBXML
+		default y
+		help
+			Without the mod-dom, this option does not provide a PHP8
+			programmer the XML DOM functionality (it only adds DOM for internal
+			use by php-cli, php-cgi, etc.). Therefore please consider adding the
+			php8-mod-dom to provide this functionality to PHP8 consumers.
+
+	config PHP8_SYSTEMTZDATA
+		bool "Use system timezone data instead of php's built-in database"
+		depends on PACKAGE_php8-cli || PACKAGE_php8-cgi || PACKAGE_apache-mod-php8
+		default y
+		help
+			Enabling this feature automatically selects the zoneinfo-core package
+			which contains data for UTC timezone. To use other timezones you have
+			to install the corresponding zoneinfo-... package(s).
+
+	config PHP8_GETTEXT
+		bool "Enable gettext"
+		default y
+		help
+			Note that this option depends in ICU library which is built without data
+			by default. This is to satisfy programs build and run dependencies but to
+			keep the installed footprint small on the target system(s).
+			However, the data is required to make the ICU library useful - and thus
+			directly affects PHPs ICU extension, too - so consider to also
+			select PHP8_FULLICUDATA.
+			Further without the gettext module, this option does not provide a PHP8
+			programmer the gettext functionality (it only adds gettext for internal
+			use by php-cli, php-cgi, etc.). Therefore please consider adding the
+			php8-mod-gettext to provide this functionality to PHP8 consumers.
+
+	config PHP8_INTL
+		bool "Enable Internationalization"
+		depends on PHP8_GETTEXT
+		default y if PHP8_GETTEXT
+		default n
+		help
+			Without the intl module, this option does not provide a PHP8
+			programmer the intl functionality (it only adds intl for internal
+			use by php-cli, php-cgi, etc.). Therefore please consider adding the
+			php8-mod-intl to provide this functionality to PHP8 consumers.
+
+	config PHP8_FULLICUDATA
+		bool "Add dependency to full ICU Data"
+		depends on PHP8_GETTEXT && PHP8_INTL && PACKAGE_php8-mod-intl
+		default n
+
 endef
 
 define Package/php8
