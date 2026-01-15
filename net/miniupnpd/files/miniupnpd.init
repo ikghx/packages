@@ -178,9 +178,8 @@ upnpd_generate_config() {
 		echo "ext_ifname6=${ifname6:-$ifname}"
 		[ -n "$external_ip" ] && echo "ext_ip=$external_ip"
 
-		# Enable internal networks / access control
+		echo "# Enable internal networks / access control"
 		config_foreach upnpd_add_int_network_and_preset internal_network pre-acl
-		echo "# Access control list"
 		config_foreach upnpd_add_acl_entry acl_entry
 		config_foreach upnpd_add_int_network_and_preset internal_network post-acl
 		echo "deny 1-65535 0.0.0.0/0 1-65535 # Reject ACL by default"
@@ -208,17 +207,17 @@ is_port_or_range() {
 
 upnpd_add_int_network_and_preset() {
 	local cfg="$1"
-	local interface access_preset accept_ports reject_ports acl_before
+	local interface access_preset accept_ports reject_ports ignore_acl
 	config_get interface "$cfg" interface
 	config_get access_preset "$cfg" access_preset none
 	config_get accept_ports "$cfg" accept_ports
 	config_get reject_ports "$cfg" reject_ports "21 23 135 137-139 445 3389"
-	config_get acl_before "$cfg" acl_before
+	config_get ignore_acl "$cfg" ignore_acl 0
 	local device subnet rejectport acceptpresetports acceptport
 	network_get_device device "$interface"
 	network_get_subnet subnet "$interface"
 	if [ "$2" = "pre-acl" ]; then
-		echo "# Enable internal network $interface ($device) with preset $access_preset${acl_before:+ and check ACL before}"
+		echo "# Enable internal network $interface ($device) with preset $access_preset and ignore ACL ${ignore_acl}"
 		echo "listening_ip=$device"
 	fi
 	[ "$subnet" = "" ] && log "Cannot get IPv4 subnet for network $interface, access_preset ignored" daemon.warn && return 0
@@ -228,8 +227,8 @@ upnpd_add_int_network_and_preset() {
 				log "Invalid port or port range ($rejectport) in reject_ports ignored" daemon.warn
 		done
 	fi
-	if { [ "$2" = "post-acl" ] && [ "$acl_before" = "1" ]; } ||
-		{ [ "$2" = "pre-acl" ] && [ "$acl_before" != "1" ]; }; then
+	if { [ "$2" = "post-acl" ] && [ "$ignore_acl" = "0" ]; } ||
+		{ [ "$2" = "pre-acl" ] && [ "$ignore_acl" = "1" ]; }; then
 		if [ "$access_preset" = "accept-high-ports" ]; then
 			acceptpresetports="1024-65535"
 		elif [ "$access_preset" = "accept-web+high-ports" ]; then
@@ -246,7 +245,7 @@ upnpd_add_int_network_and_preset() {
 				log "Invalid port or port range ($acceptport) in accept_ports ignored" daemon.warn
 		done
 	fi
-	if [ "$2" = "pre-acl" ] && [ "$acl_before" != "1" ]; then
+	if [ "$2" = "pre-acl" ] && [ "$ignore_acl" = "1" ]; then
 		echo "deny 1-65535 $subnet 1-65535 # Reject ACL by default on $interface"
 	fi
 }
