@@ -7,7 +7,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=php
 PKG_VERSION:=8.4.16
-PKG_RELEASE:=2
+PKG_RELEASE:=4
 
 PKG_MAINTAINER:=Michael Heimpold <mhei@heimpold.de>
 PKG_LICENSE:=PHP-3.01
@@ -41,13 +41,13 @@ PHP8_MODULES= \
 PKG_CONFIG_DEPENDS:= \
 	$(patsubst %,CONFIG_PACKAGE_php8-mod-%,$(PHP8_MODULES)) \
 	CONFIG_PACKAGE_apache-mod-php8 \
-	CONFIG_PHP8_LIBXML \
 	CONFIG_PHP8_FULLICUDATA \
 	CONFIG_PHP8_GETTEXT \
 	CONFIG_PHP8_INTL \
+	CONFIG_PHP8_LIBXML \
 	CONFIG_PHP8_SYSTEMTZDATA
 
-PKG_BUILD_DEPENDS:= PHP8_GETTEXT:icu
+PKG_BUILD_DEPENDS:= PHP8_INTL:icu
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
@@ -67,60 +67,7 @@ define Package/php8/Default/description
 endef
 
 define Package/php8/config
-	config PHP8_LIBXML
-		bool "PHP8 LIBXML support"
-		default y
-
-	config PHP8_DOM
-		bool "PHP8 DOM support"
-		depends on PHP8_LIBXML
-		default y
-		help
-			Without the mod-dom, this option does not provide a PHP8
-			programmer the XML DOM functionality (it only adds DOM for internal
-			use by php-cli, php-cgi, etc.). Therefore please consider adding the
-			php8-mod-dom to provide this functionality to PHP8 consumers.
-
-	config PHP8_SYSTEMTZDATA
-		bool "Use system timezone data instead of php's built-in database"
-		depends on PACKAGE_php8-cli || PACKAGE_php8-cgi || PACKAGE_apache-mod-php8
-		default y
-		help
-			Enabling this feature automatically selects the zoneinfo-core package
-			which contains data for UTC timezone. To use other timezones you have
-			to install the corresponding zoneinfo-... package(s).
-
-	config PHP8_GETTEXT
-		bool "Enable gettext"
-		default y
-		help
-			Note that this option depends in ICU library which is built without data
-			by default. This is to satisfy programs build and run dependencies but to
-			keep the installed footprint small on the target system(s).
-			However, the data is required to make the ICU library useful - and thus
-			directly affects PHPs ICU extension, too - so consider to also
-			select PHP8_FULLICUDATA.
-			Further without the gettext module, this option does not provide a PHP8
-			programmer the gettext functionality (it only adds gettext for internal
-			use by php-cli, php-cgi, etc.). Therefore please consider adding the
-			php8-mod-gettext to provide this functionality to PHP8 consumers.
-
-	config PHP8_INTL
-		bool "Enable Internationalization"
-		depends on PHP8_GETTEXT
-		default y if PHP8_GETTEXT
-		default n
-		help
-			Without the intl module, this option does not provide a PHP8
-			programmer the intl functionality (it only adds intl for internal
-			use by php-cli, php-cgi, etc.). Therefore please consider adding the
-			php8-mod-intl to provide this functionality to PHP8 consumers.
-
-	config PHP8_FULLICUDATA
-		bool "Add dependency to full ICU Data"
-		depends on PHP8_GETTEXT && PHP8_INTL && PACKAGE_php8-mod-intl
-		default n
-
+  source "$(SOURCE)/Config.in"
 endef
 
 define Package/php8
@@ -129,16 +76,12 @@ define Package/php8
   DEPENDS:=+libpcre2 +zlib \
            +PHP8_LIBXML:libxml2 \
            +PHP8_SYSTEMTZDATA:zoneinfo-core
-  CONFLICTS:=php7
 endef
 
 define Package/php8/description
   $(call Package/php8/Default/description)
   This package contains only the PHP config file. You must actually choose
   your PHP flavour (cli, cgi or fastcgi).
-
-  Please note, that installing php5 and php8 in parallel on the same target
-  is not supported in OpenWrt/LEDE.
 endef
 
 define Package/php8-cli
@@ -176,7 +119,7 @@ endef
 
 define Package/php8-fpm
   $(call Package/php8/Default)
-  DEPENDS+= +PHP8_GETTEXT:libstdcpp +riscv64:libatomic
+  DEPENDS+= +PHP8_INTL:libstdcpp +riscv64:libatomic
   TITLE+= (FPM)
 endef
 
@@ -205,9 +148,9 @@ define Package/apache-mod-php8
   SECTION:=net
   CATEGORY:=Network
   DEPENDS+=PACKAGE_apache-mod-php8:apache \
-     +PHP8_INTL:libstdcpp \
-     +riscv64:libatomic \
-     +libpcre2 +zlib
+    +PHP8_INTL:libstdcpp \
+    +riscv64:libatomic \
+    +libpcre2 +zlib
   TITLE:=PHP8 module for Apache Web Server
 endef
 
@@ -378,10 +321,7 @@ else
 endif
 
 ifneq ($(CONFIG_PACKAGE_php8-mod-openssl)$(CONFIG_PACKAGE_php8-mod-ftp)$(CONFIG_PACKAGE_php8-mod-snmp),)
-  CONFIGURE_ARGS+= \
-	--with-openssl=shared \
-	--with-kerberos=no \
-	--with-openssl-dir="$(STAGING_DIR)/usr"
+  CONFIGURE_ARGS+= --with-openssl=shared
 else
   CONFIGURE_ARGS+= --without-openssl
 endif
@@ -710,7 +650,7 @@ $(eval $(call BuildModule,gd,GD graphics,+PACKAGE_php8-mod-gd:libgd-full))
 $(eval $(call BuildModule,gettext,Gettext,@PHP8_GETTEXT +PACKAGE_php8-mod-gettext:libintl-full))
 $(eval $(call BuildModule,gmp,GMP,+PACKAGE_php8-mod-gmp:libgmp))
 $(eval $(call BuildModule,iconv,iConv,$(ICONV_DEPENDS)))
-$(eval $(call BuildModule,intl,Internationalization Functions,@PHP8_GETTEXT @PHP8_INTL +PACKAGE_php8-mod-intl:php8-mod-gettext +PHP8_FULLICUDATA:icu-full-data +!PHP8_FULLICUDATA:icu))
+$(eval $(call BuildModule,intl,Internationalization Functions,@PHP8_INTL +PACKAGE_php8-mod-intl:icu +PHP8_FULLICUDATA:icu-full-data))
 $(eval $(call BuildModule,ldap,LDAP,+PACKAGE_php8-mod-ldap:libopenldap +PACKAGE_php8-mod-ldap:libsasl2))
 $(eval $(call BuildModule,mbstring,MBString,+PACKAGE_php8-mod-mbstring:oniguruma))
 $(eval $(call BuildModule,mysqli,MySQL Improved Extension,+PACKAGE_php8-mod-mysqli:php8-mod-mysqlnd,30))
