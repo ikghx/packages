@@ -46,7 +46,7 @@ endef
 
 define Package/upmpdcli/install
 	$(INSTALL_DIR) $(1)/etc
-	$(INSTALL_CONF) $(PKG_INSTALL_DIR)/etc/upmpdcli.conf $(1)/etc/
+	$(INSTALL_CONF) ./files/upmpdcli.conf $(1)/etc/
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/upmpdcli.config $(1)/etc/config/upmpdcli
 	$(INSTALL_DIR) $(1)/usr/bin

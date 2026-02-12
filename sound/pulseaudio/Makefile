@@ -92,7 +92,7 @@ MESON_ARGS += \
 	-Dtests=false \
 	-Dsystem_user=pulse \
 	-Dsystem_group=pulse \
-	-Daccess_group=audio \
+	-Daccess_group=mpd \
 	-Ddatabase=simple \
 	-Dlegacy-database-entry-format=false \
 	-Dstream-restore-clear-old-devices=true \
@@ -177,7 +177,7 @@ define Package/pulseaudio-daemon/install
 	$(INSTALL_BIN) ./files/pulseaudio.init $(1)/etc/init.d/pulseaudio
 
 	$(INSTALL_DIR) $(1)/etc/pulse
-	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/etc/pulse/* $(1)/etc/pulse
+	$(INSTALL_DATA) ./files/etc/pulse/* $(1)/etc/pulse
 
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.so* $(1)/usr/lib/

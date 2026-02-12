@@ -12,7 +12,7 @@
 #
 # 存放音频文件的目录。
 # 需要修改目录权限为 mpd
-# chown mpd:mpd /mnt/music
+# chown mpd:mpd -R /mnt/music
 music_directory		"/mnt/music"
 #
 # This setting sets the MPD internal playlist directory. The purpose of this
@@ -57,8 +57,8 @@ pid_file			"/var/run/mpd.pid"
 # it was brought down. This setting is disabled by default and the server
 # state will be reset on server start up.
 #
-# 保存 MPD 当前的播放状态，以便程序重启后恢复播放进度。
-#state_file			"~/.mpd/state"
+# 保存 MPD 当前的播放状态，以便程序重启后可以恢复播放进度。
+state_file			"/mnt/music/mpd/state"
 #
 # The location of the sticker database.  This is a database which
 # manages dynamic information attached to songs.
@@ -238,22 +238,22 @@ input {
 #
 # An example of an ALSA output:
 #
-# 音频输出参数。
+# 直接访问声卡播放。
 # 可以根据设备上的声卡数量来配置多个参数，客户端可以任意选择一个可用的音频输出来进行播放。
 # https://mpd.readthedocs.io/en/stable/plugins.html#output-plugins
-audio_output {
-	type		"alsa"
-	name		"My ALSA Device"
-	device		"hw:0,0"
-	mixer_type      "software"
-	auto_resample   "no"
-	auto_channels   "no"
-	auto_format     "no"
-	dop             "yes"
+#audio_output {
+#	type		"alsa"
+#	name		"My ALSA Device"
+#	device		"hw:0,0"
+#	mixer_type      "software"
+#	auto_resample   "no"
+#	auto_channels   "no"
+#	auto_format     "no"
+#	dop             "yes"
 ##	mixer_device	"default"	# optional
 ##	mixer_control	"PCM"		# optional
 ##	mixer_index	"0"		# optional
-}
+#}
 #
 # An example of an OSS output:
 #
@@ -317,13 +317,21 @@ audio_output {
 #
 # An example of a pulseaudio output (streaming to a remote pulseaudio server)
 #
-# 使用 pulseaudio 播放声音，通常用于多应用混音需求。
-#audio_output {
-#	type		"pulse"
-#	name		"My Pulse Output"
+# 使用本机 pulseaudio 播放。
+audio_output {
+	type		"pulse"
+	name		"Local Pulse Output"
 ##	server		"remote_server"		# optional
 ##	sink		"remote_server_sink"	# optional
 ##	media_role	"media_role"		#optional
+}
+
+# 使用 pulseaudio 组播，通常用于实现多个音频节点同步播放。
+#audio_output {
+#	type		"pulse"
+#	name		"MPD RTP"
+#	sink		"rtp"
+#	mixer_type	"software"
 #}
 #
 # An example of a winmm output (Windows multimedia API).
