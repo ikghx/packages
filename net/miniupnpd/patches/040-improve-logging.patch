@@ -1,5 +1,14 @@
 --- a/minissdp.c
 +++ b/minissdp.c
+@@ -1161,7 +1161,7 @@ ProcessSSDPData(int s, const char *bufr,
+ 	           sender_str );*/
+ 		if(st && (st_len > 0))
+ 		{
+-			syslog(LOG_INFO, "SSDP M-SEARCH from %s ST: %.*s",
++			syslog(LOG_DEBUG, "SSDP M-SEARCH from %s ST: %.*s",
+ 			       sender_str, st_len, st);
+ 			/* find in which sub network the client is */
+ #ifdef ENABLE_IPV6
 @@ -1274,7 +1274,7 @@ ProcessSSDPData(int s, const char *bufr,
  					else
  						snprintf(ver_str, sizeof(ver_str), "%d", known_service_types[i].version);
@@ -45,35 +54,6 @@
  					SendSSDPResponse(s, sender, st, st_len, "",
  					                 announced_host, http_port,
  #ifdef ENABLE_HTTPS
-@@ -1646,4 +1646,3 @@ SubmitServicesToMiniSSDPD(const char * h
- 	syslog(LOG_DEBUG, "%d service submitted to MiniSSDPd", i);
- 	return 0;
- }
--
---- a/miniupnpd.8
-+++ b/miniupnpd.8
-@@ -42,10 +42,10 @@ and do not filter out low priority messa
- report system uptime instead of daemon uptime to clients.
- .TP
- .B \-S0
--disable "secure" mode so clients can only add mappings to other IPs
-+disable UPnP IGD secure mode, allow adding port maps for non-requesting IP addresses
- .TP
- .B \-N
--enable NAT-PMP and PCP functionality.
-+enable PCP/NAT-PMP protocols.
- .TP
- .BI \-u " uuid"
- set the uuid of the UPnP Internet Gateway Device.
-@@ -83,7 +83,7 @@ examples :
- sets the value of BOOTID.UPNP.ORG SSDP header
- .TP
- .B \-1
--force reporting IGDv1 in rootDesc when compiled as IGDv2 *use with care*
-+force reporting IGDv1 in rootDesc when compiled as IGDv2
- .SH "SEE ALSO"
- minissdpd(1) miniupnpc(3)
- .SH BUGS
 --- a/miniupnpd.c
 +++ b/miniupnpd.c
 @@ -859,7 +859,7 @@ set_startup_time(void)
@@ -89,7 +69,7 @@
  		pidfilename = NULL;
  #endif
  
-+syslog(LOG_NOTICE, "MiniUPnP daemon version " MINIUPNPD_VERSION " starting, enabled protocols: %s%s%s, ext_ifname=%s BOOTID=%u",
++syslog(LOG_NOTICE, "MiniUPnP daemon " MINIUPNPD_VERSION " starting, enable protocols: %s%s%s, ext_ifname=%s BOOTID=%u",
 +	GETFLAG(ENABLEUPNPMASK) ? "UPnP IGD" : "",
 +#ifdef ENABLE_NATPMP
 +	GETFLAG(ENABLEUPNPMASK) && GETFLAG(ENABLENATPMPMASK) ? " & " : "",
@@ -103,38 +83,20 @@
 +#endif
 +	ext_if_name, upnp_bootid);
 +syslog(LOG_INFO, "More information at https://miniupnp.tuxfamily.org/ or http://miniupnp.free.fr/");
-+syslog(LOG_NOTICE, "Extra logging by setting log level to info (-v) or debug (-vv)");
++syslog(LOG_NOTICE, "Extra logging with log level info (-v) or debug (-vv)");
 +
  #ifdef USE_SYSTEMD
  	if (systemd_flag) {
  		int r = sd_notify(0,
-@@ -2190,14 +2206,14 @@ print_usage:
- #if defined(USE_PF) || defined(USE_IPF)
- 			"\t-L sets packet log in pf and ipf on.\n"
- #endif
--			"\t-S0 disable \"secure\" mode so clients can add mappings to other ips\n"
-+			"\t-S0 disable UPnP IGD secure mode, allow adding port maps for non-requesting IP addresses\n"
- 			"\t-U causes miniupnpd to report system uptime instead "
- 			"of daemon uptime.\n"
- #ifdef ENABLE_NATPMP
- #ifdef ENABLE_PCP
--			"\t-N enables NAT-PMP and PCP functionality.\n"
-+			"\t-N enable PCP/NAT-PMP protocols.\n"
- #else
--			"\t-N enables NAT-PMP functionality.\n"
-+			"\t-N enable NAT-PMP protocol.\n"
- #endif
- #endif
- 			"\t-B sets bitrates reported by daemon in bits per second.\n"
-@@ -2217,7 +2233,7 @@ print_usage:
- 			"\t  \"deny 0-65535 0.0.0.0/0 0-65535\"\n"
- 			"\t-b sets the value of BOOTID.UPNP.ORG SSDP header\n"
- #ifdef IGD_V2
--			"\t-1 force reporting IGDv1 in rootDesc *use with care*\n"
-+			"\t-1 force reporting IGDv1 in rootDesc\n"
- #endif
- 			"\t-v enables LOG_INFO messages, -vv LOG_DEBUG as well (default with -d)\n"
- 			"\t-h / --help prints this help and quits.\n"
+@@ -2110,7 +2126,7 @@ init(int argc, char * * argv, struct run
+ 
+ #ifdef ENABLE_LEASEFILE
+ 	/*remove(lease_file);*/
+-	syslog(LOG_INFO, "Reloading rules from lease file");
++	syslog(LOG_INFO, "Reloading port maps from lease file");
+ 	reload_from_lease_file();
+ #ifdef ENABLE_UPNPPINHOLE
+ 	reload_from_lease_file6();
 @@ -2398,21 +2414,9 @@ main(int argc, char * * argv)
  		return 0;
  	}
@@ -154,7 +116,7 @@
  #ifdef ENABLE_IPV6
  	if (strcmp(ext_if_name6, ext_if_name) != 0) {
 -		syslog(LOG_INFO, "specific IPv6 ext if %s", ext_if_name6);
-+		syslog(LOG_NOTICE, "ext_ifname6=%s", ext_if_name6);
++		syslog(LOG_INFO, "Separate ext_ifname6=%s set", ext_if_name6);
  	}
  #endif
  
@@ -163,7 +125,7 @@
  		}
  		v.port = listen_port;
 -		syslog(LOG_NOTICE, "HTTP listening on port %d", v.port);
-+		syslog(LOG_NOTICE, "Listening for UPnP IGD (SOAP/HTTP) traffic on port %d/TCP", v.port);
++		syslog(LOG_NOTICE, "Listening for UPnP IGD (SOAP/HTTP) traffic on port %d/TCP, SSDP port 1900/UDP", v.port);
  #if defined(V6SOCKETS_ARE_V6ONLY) && defined(ENABLE_IPV6)
  		if(!GETFLAG(IPV6DISABLEDMASK))
  		{
@@ -181,12 +143,12 @@
  			if(find_ipv6_addr(lan_addrs.lh_first ? lan_addrs.lh_first->ifname : NULL,
  			                  ipv6_addr_for_http_with_brackets, sizeof(ipv6_addr_for_http_with_brackets)) > 0) {
 -				syslog(LOG_NOTICE, "HTTP IPv6 address given to control points : %s",
-+				syslog(LOG_NOTICE, "IPv6 enabled with address: %s",
++				syslog(LOG_NOTICE, "IPv6 address given to UPnP IGD clients: %s",
  				       ipv6_addr_for_http_with_brackets);
  			} else {
  				memcpy(ipv6_addr_for_http_with_brackets, "[::1]", 6);
 -				syslog(LOG_WARNING, "no HTTP IPv6 address, disabling IPv6");
-+				syslog(LOG_WARNING, "No IPv6 address, disable support");
++				syslog(LOG_DEBUG, "no HTTP IPv6 address, disabling IPv6");
  				SETFLAG(IPV6DISABLEDMASK);
  			}
  		}
@@ -202,7 +164,7 @@
  #ifdef ENABLE_PCP
  		{
 -			syslog(LOG_ERR, "Failed to open sockets for NAT-PMP/PCP.");
-+			syslog(LOG_ERR, "Failed to open sockets for PCP/NAT-PMP.");
++			syslog(LOG_ERR, "Failed to open port 5351/UDP for PCP/NAT-PMP");
  		} else {
 -			syslog(LOG_NOTICE, "Listening for NAT-PMP/PCP traffic on port %u",
 +			syslog(LOG_NOTICE, "Listening for PCP/NAT-PMP traffic on port %u/UDP",
@@ -211,14 +173,14 @@
  #else
  		{
 -			syslog(LOG_ERR, "Failed to open sockets for NAT PMP.");
-+			syslog(LOG_ERR, "Failed to open sockets for NAT-PMP.");
++			syslog(LOG_ERR, "Failed to open port 5351/UDP for NAT-PMP");
  		} else {
 -			syslog(LOG_NOTICE, "Listening for NAT-PMP traffic on port %u",
 +			syslog(LOG_NOTICE, "Listening for NAT-PMP traffic on port %u/UDP",
  			       NATPMP_PORT);
  		}
  #endif
-@@ -2695,6 +2699,24 @@ main(int argc, char * * argv)
+@@ -2695,6 +2699,30 @@ main(int argc, char * * argv)
  	}
  #endif /* HAS_LIBCAP_NG */
  
@@ -228,12 +190,18 @@
 +if (GETFLAG(ENABLENATPMPMASK) && GETFLAG(PCP_ALLOWTHIRDPARTYMASK))
 +	syslog(LOG_WARNING, "WARNING: pcp_allow_thirdparty=yes, allow adding port maps for non-requesting IP addresses via PCP");
 +#endif
++#ifdef ENABLE_IPV6
++if (GETFLAG(IPV6DISABLEDMASK))
++	syslog(LOG_NOTICE, "IPv6 mapping disabled in daemon");
++#else
++syslog(LOG_NOTICE, "IPv6 mapping disabled in daemon");
++#endif
 +if (GETFLAG(ENABLEUPNPMASK)) {
 +#ifdef IGD_V2
 +	if (GETFLAG(FORCEIGDDESCV1MASK)) {
 +		syslog(LOG_NOTICE, "UPnP IGD compatiblity mode set to IGDv1 (IPv4 only)");
 +	} else {
-+		syslog(LOG_NOTICE, "UPnP IGD compatiblity mode set to IGDv2");
++		syslog(LOG_NOTICE, "UPnP IGD compatiblity mode set to IGDv2 (with workarounds)");
 +	}
 +#else
 +	syslog(LOG_NOTICE, "UPnP IGD compatiblity mode set to IGDv1 (IPv4 only)");
@@ -243,7 +211,7 @@
  #ifdef USE_SYSTEMD
  	if (v.systemd_notify) {
  		upnp_update_status();
-@@ -3162,7 +3184,7 @@ main(int argc, char * * argv)
+@@ -3162,7 +3190,7 @@ main(int argc, char * * argv)
  		/* process SSDP packets */
  		if(sudp >= 0 && FD_ISSET(sudp, &readset))
  		{
@@ -252,7 +220,7 @@
  #ifdef ENABLE_HTTPS
  			ProcessSSDPRequest(sudp, (unsigned short)v.port, (unsigned short)v.https_port);
  #else
-@@ -3172,7 +3194,7 @@ main(int argc, char * * argv)
+@@ -3172,7 +3200,7 @@ main(int argc, char * * argv)
  #ifdef ENABLE_IPV6
  		if(sudpv6 >= 0 && FD_ISSET(sudpv6, &readset))
  		{
@@ -261,29 +229,6 @@
  #ifdef ENABLE_HTTPS
  			ProcessSSDPRequest(sudpv6, (unsigned short)v.port, (unsigned short)v.https_port);
  #else
---- a/miniupnpd.conf
-+++ b/miniupnpd.conf
-@@ -88,7 +88,8 @@
- # 120s and 86400s (24h) are suggested values from PCP-base
- #min_lifetime=120
- #max_lifetime=86400
--# allow THIRD_PARTY Option for MAP and PEER Opcodes (default is no)
-+# PCP allow third-party mapping option (default no)
-+# Allow adding port maps for non-requesting IP addresses
- #pcp_allow_thirdparty=yes
- 
- # table names for netfilter nft. Default is "filter" for both
-@@ -131,8 +132,8 @@
- #bitrate_up=1000000
- #bitrate_down=10000000
- 
--# Secure Mode, UPnP clients can only add mappings to their own IP
--# Enabled by default
-+# UPnP IGD secure mode (default yes)
-+# Allow adding port maps for requesting IP addresses only
- #secure_mode=no
- 
- # Default presentation URL is HTTP address on port 80
 --- a/natpmp.c
 +++ b/natpmp.c
 @@ -231,7 +231,7 @@ void ProcessIncomingNATPMPPacket(int s,
@@ -304,6 +249,15 @@
  		FillPublicAddressResponse(resp, senderaddr->sin_addr.s_addr);
  		resplen = 12;
  		break;
+@@ -319,7 +319,7 @@ void ProcessIncomingNATPMPPacket(int s,
+ 								resp[3] = 2;	/* Not Authorized/Refused */
+ 								break;
+ 							} else {
+-								syslog(LOG_INFO, "NAT-PMP %s port %hu mapping removed",
++								syslog(LOG_DEBUG, "NAT-PMP %s port %hu mapping removed",
+ 								       proto2==IPPROTO_TCP?"TCP":"UDP", eport2);
+ 								index--;
+ 							}
 @@ -340,7 +340,7 @@ void ProcessIncomingNATPMPPacket(int s,
  						eport_first = eport;
  					} else if(eport == eport_first) { /* no eport available */
@@ -313,6 +267,83 @@
  							       eport, proto_itoa(proto), senderaddrstr, iport);
  							resp[3] = 2;	/* Not Authorized/Refused */
  						} else { /* at least one eport allowed (but none available) */
+--- a/netfilter/iptcrdr.c
++++ b/netfilter/iptcrdr.c
+@@ -711,7 +711,7 @@ delete_filter_rule(const char * ifname,
+ 						continue;
+ 				}
+ 				index = i;
+-				/*syslog(LOG_INFO, "Trying to delete filter rule at index %u", index);*/
++				/*syslog(LOG_DEBUG, "Trying to delete filter rule at index %u", index);*/
+ 				r = delete_rule_and_commit(index, h, miniupnpd_forward_chain, "delete_filter_rule");
+ 				h = NULL;
+ 				break;
+@@ -804,7 +804,7 @@ delete_redirect_and_filter_rules(unsigne
+ #endif
+ 	if(r == 0)
+ 	{
+-		syslog(LOG_INFO, "Trying to delete nat rule at index %u", index);
++		syslog(LOG_DEBUG, "Trying to delete nat rule at index %u", index);
+ 		/* Now delete both rules */
+ 		/* first delete the nat rule */
+ 		h = iptc_init("nat");
+@@ -848,7 +848,7 @@ delete_redirect_and_filter_rules(unsigne
+ 					if(iaddr != e->ip.dst.s_addr)
+ 						continue;
+ 					index = i;
+-					syslog(LOG_INFO, "Trying to delete filter rule at index %u", index);
++					syslog(LOG_DEBUG, "Trying to delete filter rule at index %u", index);
+ 					r = delete_rule_and_commit(index, h, miniupnpd_forward_chain, "delete_filter_rule");
+ 					h = NULL;
+ 					break;
+@@ -906,7 +906,7 @@ delete_redirect_and_filter_rules(unsigne
+ 				}
+ 
+ 				index = i;
+-				syslog(LOG_INFO, "Trying to delete peer rule at index %u", index);
++				syslog(LOG_DEBUG, "Trying to delete peer rule at index %u", index);
+ 				r2 = delete_rule_and_commit(index, h, miniupnpd_nat_postrouting_chain, "delete_peer_rule");
+ 				h = NULL;
+ 				break;
+@@ -958,7 +958,7 @@ delete_redirect_and_filter_rules(unsigne
+ 				if(iaddr != e->ip.src.s_addr)
+ 					continue;
+ 				index = i;
+-				syslog(LOG_INFO, "Trying to delete dscp rule at index %u", index);
++				syslog(LOG_DEBUG, "Trying to delete dscp rule at index %u", index);
+ 				r2 = delete_rule_and_commit(index, h, miniupnpd_nat_chain, "delete_dscp_rule");
+ 				h = NULL;
+ 				break;
+--- a/netfilter/iptpinhole.c
++++ b/netfilter/iptpinhole.c
+@@ -295,14 +295,14 @@ find_pinhole(const char * ifname,
+ 
+ 	if(rem_host && (rem_host[0] != '\0')) {
+ 		if (inet_pton(AF_INET6, rem_host, &saddr) < 1) {
+-			syslog(LOG_WARNING, "Failed to parse INET6 address \"%s\"", rem_host);
++			syslog(LOG_INFO, "Failed to parse INET6 address \"%s\"", rem_host);
+ 			memset(&saddr, 0, sizeof(struct in6_addr));
+ 		}
+ 	} else {
+ 		memset(&saddr, 0, sizeof(struct in6_addr));
+ 	}
+ 	if (inet_pton(AF_INET6, int_client, &daddr) < 1) {
+-		syslog(LOG_WARNING, "Failed to parse INET6 address \"%s\"", int_client);
++		syslog(LOG_INFO, "Failed to parse INET6 address \"%s\"", int_client);
+ 		memset(&daddr, 0, sizeof(struct in6_addr));
+ 	}
+ 	for(p = pinhole_list.lh_first; p != NULL; p = p->entries.le_next) {
+--- a/netfilter_nft/nftnlrdr.c
++++ b/netfilter_nft/nftnlrdr.c
+@@ -353,7 +353,7 @@ delete_redirect_and_filter_rules(unsigne
+ 			}
+ 		}
+ 	} else {
+-		syslog(LOG_WARNING, "%s: redirect rule with eport=%hu proto %d NOT FOUND",
++		syslog(LOG_INFO, "%s: redirect rule with eport=%hu proto %d NOT FOUND",
+ 		       "delete_redirect_and_filter_rules", eport, proto);
+ 	}
+ 
 --- a/netfilter_nft/nftnlrdr_misc.c
 +++ b/netfilter_nft/nftnlrdr_misc.c
 @@ -104,7 +104,7 @@ nft_mnl_connect(void)
@@ -326,27 +357,48 @@
  
 --- a/netfilter_nft/nftpinhole.c
 +++ b/netfilter_nft/nftpinhole.c
-@@ -159,7 +159,6 @@ find_pinhole(const char * ifname,
+@@ -129,7 +129,7 @@ find_pinhole(const char * ifname,
+ 
+ 	if (rem_host && rem_host[0] != '\0' && rem_host[0] != '*') {
+ 		if (inet_pton(AF_INET6, rem_host, &saddr) < 1) {
+-			syslog(LOG_WARNING, "Failed to parse INET6 address \"%s\"", rem_host);
++			syslog(LOG_INFO, "Failed to parse INET6 address \"%s\"", rem_host);
+ 			memset(&saddr, 0, sizeof(struct in6_addr));
+ 		}
+ 	} else {
+@@ -137,7 +137,7 @@ find_pinhole(const char * ifname,
+ 	}
+ 
+ 	if (inet_pton(AF_INET6, int_client, &daddr) < 1) {
+-		syslog(LOG_WARNING, "Failed to parse INET6 address \"%s\"", int_client);
++		syslog(LOG_INFO, "Failed to parse INET6 address \"%s\"", int_client);
+ 		memset(&daddr, 0, sizeof(struct in6_addr));
+ 	}
+ 
+@@ -159,7 +159,7 @@ find_pinhole(const char * ifname,
  		   (0 == memcmp(&daddr, &p->daddr6, sizeof(struct in6_addr)))) {
  
  			if (sscanf(p->desc, PINEHOLE_LABEL_FORMAT_SKIPDESC, &uid, &ts) != 2) {
 -				syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", p->desc);
++				/*syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", p->desc);*/
  				continue;
  			}
  
-@@ -397,7 +396,6 @@ get_pinhole_info(unsigned short uid,
+@@ -397,7 +397,7 @@ get_pinhole_info(unsigned short uid,
  			if (timestamp) {
  				int uid_temp;
  				if (sscanf(p->desc, PINEHOLE_LABEL_FORMAT_SKIPDESC, &uid_temp, &ts) != 2) {
 -					syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", p->desc);
++					/*syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", p->desc);*/
  					continue;
  				}
  
-@@ -461,7 +459,6 @@ clean_pinhole_list(unsigned int * next_t
+@@ -461,7 +461,7 @@ clean_pinhole_list(unsigned int * next_t
  			continue;
  
  		if (sscanf(p->desc, PINEHOLE_LABEL_FORMAT_SKIPDESC, &uid, &ts) != 2) {
 -			syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", p->desc);
++			/*syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", p->desc);*/
  			continue;
  		}
  
@@ -361,34 +413,82 @@
  	      "PCP MAP: %s mapping %s %hu->%s:%hu '%s'",
  	       r == PCP_SUCCESS ? "added" : "failed to add",
  	       proto_itoa(pcp_msg_info->protocol),
+@@ -1129,7 +1129,7 @@ static void DeletePCPMap(pcp_info_t *pcp
+ 				if(0 != strcmp(desc, pcp_msg_info->desc)) {
+ 					/* nonce does not match */
+ 					pcp_msg_info->result_code = PCP_ERR_NOT_AUTHORIZED;
+-					syslog(LOG_ERR, "Unauthorized to remove PCP mapping internal port %hu, protocol %s",
++					syslog(LOG_INFO, "Unauthorized to remove PCP mapping internal port %hu, protocol %s",
+ 					       iport, proto_itoa(pcp_msg_info->protocol));
+ 					return;
+ 				} else {
+@@ -1147,14 +1147,14 @@ static void DeletePCPMap(pcp_info_t *pcp
+ 						desc, sizeof(desc),
+ 						NULL /* lifetime */);
+ 		if (uid < 0) {
+-			syslog(LOG_ERR, "Failed to find mapping to %s:%hu, protocol %s",
++			syslog(LOG_INFO, "Failed to find mapping to %s:%hu, protocol %s",
+ 			       pcp_msg_info->mapped_str, iport, proto_itoa(pcp_msg_info->protocol));
+ 			return;
+ 		} else {
+ 			if(0 != strcmp(desc, pcp_msg_info->desc)) {
+ 				/* nonce does not match */
+ 				pcp_msg_info->result_code = PCP_ERR_NOT_AUTHORIZED;
+-				syslog(LOG_ERR, "Unauthorized to remove PCP mapping internal port %hu, protocol %s",
++				syslog(LOG_INFO, "Unauthorized to remove PCP mapping internal port %hu, protocol %s",
+ 				       iport, proto_itoa(pcp_msg_info->protocol));
+ 				return;
+ 			} else {
+@@ -1169,7 +1169,7 @@ static void DeletePCPMap(pcp_info_t *pcp
+ 		syslog(LOG_INFO, "PCP: %s port %hu mapping removed",
+ 		       proto==IPPROTO_TCP?"TCP":"UDP", (pcp_msg_info->is_fw ? iport : eport2));
+ 	} else {
+-		syslog(LOG_ERR, "Failed to remove PCP mapping to %s:%hu %s",
++		syslog(LOG_INFO, "Failed to remove PCP mapping to %s:%hu %s",
+ 		       pcp_msg_info->mapped_str, iport, proto_itoa(proto));
+ 		pcp_msg_info->result_code = PCP_ERR_NO_RESOURCES;
+ 	}
+@@ -1392,7 +1392,7 @@ static int processPCPRequest(void * req,
+ 					CreatePCPMap(pcp_msg_info);
+ 				}
+ 			} else {
+-				syslog(LOG_ERR, "PCP: Invalid PCP v2 MAP message.");
++				syslog(LOG_INFO, "PCP: Invalid PCP v2 MAP message.");
+ 				return pcp_msg_info->result_code;
+ 			}
+ 
 --- a/pf/pfpinhole.c
 +++ b/pf/pfpinhole.c
-@@ -246,12 +246,10 @@ int find_pinhole(const char * ifname,
+@@ -246,12 +246,12 @@ int find_pinhole(const char * ifname,
  		   (0 == memcmp(&daddr, &RULE.dst.addr.v.a.addr.v6, sizeof(struct in6_addr)))) {
  #ifdef USE_LIBPFCTL
  			if(sscanf(RULE.label[0], PINEHOLE_LABEL_FORMAT_SKIPDESC, &uid, &ts) != 2) {
 -				syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", RULE.label[0]);
++				/*syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", RULE.label[0]);*/
  				continue;
  			}
  #else /* USE_LIBPFCTL */
  			if(sscanf(RULE.label, PINEHOLE_LABEL_FORMAT_SKIPDESC, &uid, &ts) != 2) {
 -				syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", RULE.label);
++				/*syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", RULE.label);*/
  				continue;
  			}
  #endif /* USE_LIBPFCTL */
-@@ -563,7 +561,6 @@ int clean_pinhole_list(unsigned int * ne
+@@ -563,7 +563,7 @@ int clean_pinhole_list(unsigned int * ne
  			return -1;
  		}
  		if(sscanf(RULE.label[0], PINEHOLE_LABEL_FORMAT_SKIPDESC, &uid, &ts) != 2) {
 -			syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", RULE.label[0]);
++			/*syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", RULE.label[0]);*/
  			continue;
  		}
  #else /* USE_LIBPFCTL */
-@@ -574,7 +571,6 @@ int clean_pinhole_list(unsigned int * ne
+@@ -574,7 +574,7 @@ int clean_pinhole_list(unsigned int * ne
  			return -1;
  		}
  		if(sscanf(RULE.label, PINEHOLE_LABEL_FORMAT_SKIPDESC, &uid, &ts) != 2) {
 -			syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", RULE.label);
++			/*syslog(LOG_DEBUG, "rule with label '%s' is not a IGD pinhole", RULE.label);*/
  			continue;
  		}
  #endif /* USE_LIBPFCTL */
@@ -412,8 +512,299 @@
  	       h->clientaddr_str, HttpCommand, HttpUrl, HttpVer);
  	ParseHttpHeaders(h);
  	if(h->req_HostOff > 0 && h->req_HostLen > 0) {
+@@ -898,7 +898,7 @@ ProcessHttpQuery_upnphttp(struct upnphtt
+ 			return;
+ 		}
+ #endif
+-		syslog(LOG_NOTICE, "%s not found, responding ERROR 404", HttpUrl);
++		syslog(LOG_DEBUG, "%s not found, responding ERROR 404", HttpUrl);
+ 		Send404(h);
+ 	}
+ #ifdef ENABLE_EVENTS
+--- a/upnppinhole.c
++++ b/upnppinhole.c
+@@ -110,7 +110,7 @@ lease_file6_add(const char * rem_client,
+ 
+ 	fd = fopen( lease_file6, "a");
+ 	if (fd==NULL) {
+-		syslog(LOG_ERR, "could not open lease file: %s", lease_file);
++		syslog(LOG_DEBUG, "could not open lease file: %s", lease_file);
+ 		return -1;
+ 	}
+ 
+@@ -189,13 +189,13 @@ lease_file6_update(int uid, unsigned int
+ 		proto = line;
+ 		p = strchr(line, ';');
+ 		if(!p) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p++) = '\0';
+ 		p2 = strchr(p, ';');
+ 		if(!p2) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p2++) = '\0';
+@@ -203,13 +203,13 @@ lease_file6_update(int uid, unsigned int
+ 		int_client = p;
+ 		p = strchr(p2, ';');
+ 		if(!p) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p++) = '\0';
+ 		p2 = strchr(p, ';');
+ 		if(!p2) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p2++) = '\0';
+@@ -217,20 +217,20 @@ lease_file6_update(int uid, unsigned int
+ 		rem_client = p;
+ 		p = strchr(p2, ';');
+ 		if(!p) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p++) = '\0';
+ 		p2 = strchr(p, ';');
+ 		if(!p2) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p2++) = '\0';
+ 		desc = strchr(p2, ';');
+ 		uid_rule = atoi(p);
+ 		if(!desc) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(desc++) = '\0';
+@@ -385,49 +385,49 @@ int lease_file6_expire(void)
+ 		// Internal Host
+ 		p = strchr(line, ';');
+ 		if(!p) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p++) = '\0';
+ 		// Internal Port
+ 		p2 = strchr(p, ';');
+ 		if(!p2) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p2++) = '\0';
+ 		// External Host
+ 		p = strchr(p2, ';');
+ 		if(!p) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p++) = '\0';
+ 		// External Port
+ 		p2 = strchr(p, ';');
+ 		if(!p2) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p2++) = '\0';
+ 		// uid
+ 		p = strchr(p2, ';');
+ 		if(!p) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p++) = '\0';
+ 		// Timestamp
+ 		p2 = strchr(p, ';');
+ 		if(!p2) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p2++) = '\0';
+ 		// descr
+ 		desc = strchr(p2, ';');
+ 		if(!desc) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(desc++) = '\0';
+@@ -476,7 +476,7 @@ int reload_from_lease_file6(void)
+ 	if(!lease_file6) return -1;
+ 	fd = fopen( lease_file6, "r");
+ 	if (fd==NULL) {
+-		syslog(LOG_ERR, "could not open lease file: %s", lease_file6);
++		syslog(LOG_DEBUG, "could not open lease file: %s", lease_file6);
+ 		return -1;
+ 	}
+ 	if(unlink(lease_file6) < 0) {
+@@ -491,13 +491,13 @@ int reload_from_lease_file6(void)
+ 		proto = line;
+ 		p = strchr(line, ';');
+ 		if(!p) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p++) = '\0';
+ 		p2 = strchr(p, ';');
+ 		if(!p2) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p2++) = '\0';
+@@ -505,13 +505,13 @@ int reload_from_lease_file6(void)
+ 		int_client = p;
+ 		p = strchr(p2, ';');
+ 		if(!p) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p++) = '\0';
+ 		p2 = strchr(p, ';');
+ 		if(!p2) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p2++) = '\0';
+@@ -519,20 +519,20 @@ int reload_from_lease_file6(void)
+ 		rem_client = p;
+ 		p = strchr(p2, ';');
+ 		if(!p) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p++) = '\0';
+ 		p2 = strchr(p, ';');
+ 		if(!p2) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p2++) = '\0';
+ 		desc = strchr(p2, ';');
+ 		uid = atoi(p);
+ 		if(!desc) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(desc++) = '\0';
+@@ -549,7 +549,7 @@ int reload_from_lease_file6(void)
+ 
+ 		if(timestamp > 0) {
+ 			if(timestamp <= (unsigned int)current_unix_time) {
+-				syslog(LOG_NOTICE, "already expired lease in lease file");
++				syslog(LOG_INFO, "already expired lease in lease file");
+ 				continue;
+ 			} else {
+ 				leaseduration = timestamp - current_unix_time;
 --- a/upnpredirect.c
 +++ b/upnpredirect.c
+@@ -66,7 +66,7 @@ lease_file_add(unsigned short eport,
+ 
+ 	fd = fopen( lease_file, "a");
+ 	if (fd==NULL) {
+-		syslog(LOG_ERR, "could not open lease file: %s", lease_file);
++		syslog(LOG_DEBUG, "could not open lease file: %s", lease_file);
+ 		return -1;
+ 	}
+ 
+@@ -168,7 +168,7 @@ int reload_from_lease_file(void)
+ 	if(!lease_file) return -1;
+ 	fd = fopen( lease_file, "r");
+ 	if (fd==NULL) {
+-		syslog(LOG_ERR, "could not open lease file: %s", lease_file);
++		syslog(LOG_DEBUG, "could not open lease file: %s", lease_file);
+ 		return -1;
+ 	}
+ 	if(unlink(lease_file) < 0) {
+@@ -184,33 +184,33 @@ int reload_from_lease_file(void)
+ 		proto = line;
+ 		p = strchr(line, ':');
+ 		if(!p) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p++) = '\0';
+ 		iaddr = strchr(p, ':');
+ 		if(!iaddr) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(iaddr++) = '\0';
+ 		eport = (unsigned short)atoi(p);
+ 		p = strchr(iaddr, ':');
+ 		if(!p) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p++) = '\0';
+ 		iport = (unsigned short)atoi(p);
+ 		p = strchr(p, ':');
+ 		if(!p) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(p++) = '\0';
+ 		desc = strchr(p, ':');
+ 		if(!desc) {
+-			syslog(LOG_ERR, "unrecognized data in lease file");
++			syslog(LOG_DEBUG, "unrecognized data in lease file");
+ 			continue;
+ 		}
+ 		*(desc++) = '\0';
+@@ -231,7 +231,7 @@ int reload_from_lease_file(void)
+ 			timestamp += current_time;	/* convert to our time */
+ #else
+ 			if(timestamp <= (unsigned int)current_unix_time) {
+-				syslog(LOG_NOTICE, "already expired lease in lease file (%hu=>%s:%hu %s)",
++				syslog(LOG_INFO, "already expired lease in lease file (%hu=>%s:%hu %s)",
+ 				       eport, iaddr, iport, proto);
+ 				continue;
+ 			} else {
+@@ -391,7 +391,7 @@ upnp_redirect(const char * rhost, unsign
+ #endif /* CHECK_PORTINUSE */
+ 	} else {
+ 		timestamp = (leaseduration > 0) ? upnp_time() + leaseduration : 0;
+-		syslog(LOG_INFO, "redirecting port %hu to %s:%hu protocol %s for: %s",
++		syslog(LOG_DEBUG, "redirecting port %hu to %s:%hu protocol %s for: %s",
+ 			eport, iaddr, iport, protocol, desc);
+ 		return upnp_redirect_internal(rhost, eport, iaddr, iport, proto,
+ 		                              desc, timestamp);
+@@ -404,7 +404,7 @@ upnp_redirect_internal(const char * rhos
+                        int proto, const char * desc,
+                        unsigned int timestamp)
+ {
+-	/*syslog(LOG_INFO, "redirecting port %hu to %s:%hu protocol %s for: %s",
++	/*syslog(LOG_DEBUG, "redirecting port %hu to %s:%hu protocol %s for: %s",
+ 		eport, iaddr, iport, protocol, desc);			*/
+ 	if(disable_port_forwarding)
+ 		return -1;
 @@ -641,7 +641,7 @@ get_upnp_rules_state_list(int max_rules_
  	{
  		if(tmp->to_remove)
@@ -425,6 +816,24 @@
  			*p = tmp->next;
 --- a/upnpsoap.c
 +++ b/upnpsoap.c
+@@ -491,7 +491,7 @@ AddPortMapping(struct upnphttp * h, cons
+ 		}
+ 		else
+ 		{
+-			syslog(LOG_ERR, "Failed to convert hostname '%s' to ip address", int_ip);
++			syslog(LOG_INFO, "Failed to convert hostname '%s' to ip address", int_ip);
+ 			ClearNameValueList(&data);
+ 			SoapError(h, 402, "Invalid Args");
+ 			return;
+@@ -690,7 +690,7 @@ AddAnyPortMapping(struct upnphttp * h, c
+ 		}
+ 		else
+ 		{
+-			syslog(LOG_ERR, "Failed to convert hostname '%s' to ip address", int_ip);
++			syslog(LOG_INFO, "Failed to convert hostname '%s' to ip address", int_ip);
+ 			ClearNameValueList(&data);
+ 			SoapError(h, 402, "Invalid Args");
+ 			return;
 @@ -847,7 +847,7 @@ GetSpecificPortMappingEntry(struct upnph
  	}
  	else
@@ -434,6 +843,24 @@
  		       action,
  		       r_host ? r_host : "NULL", ext_port, protocol, int_ip,
  		       (unsigned int)iport, desc, leaseduration);
+@@ -931,7 +931,7 @@ DeletePortMapping(struct upnphttp * h, c
+ 		return;
+ 	}
+ 
+-	syslog(LOG_INFO, "%s: external port: %hu, protocol: %s",
++	syslog(LOG_DEBUG, "%s: external port: %hu, protocol: %s",
+ 		action, eport, protocol);
+ 
+ 	/* if in secure mode, check the IP
+@@ -1047,7 +1047,7 @@ DeletePortMappingRange(struct upnphttp *
+ 	for(i = 0; i < number; i++)
+ 	{
+ 		r = upnp_delete_redirection(port_list[i], protocol);
+-		syslog(LOG_INFO, "%s: deleting external port: %hu, protocol: %s: %s",
++		syslog(LOG_DEBUG, "%s: deleting external port: %hu, protocol: %s: %s",
+ 		       action, port_list[i], protocol, r < 0 ? "failed" : "ok");
+ 	}
+ 	free(port_list);
 @@ -1112,7 +1112,7 @@ GetGenericPortMappingEntry(struct upnpht
  		return;
  	}
@@ -443,8 +870,68 @@
  
  	rhost[0] = '\0';
  	r = upnp_get_redirection_infos_by_index((int)index, &eport, protocol, &iport,
-@@ -2486,4 +2486,3 @@ SoapError(struct upnphttp * h, int errCo
+@@ -1635,7 +1635,7 @@ PinholeVerification(struct upnphttp * h,
+ 		int r;
+ 		struct addrinfo hints, *ai, *p;
+ 
+-		syslog(LOG_INFO, "%s: InternalClient %s is not an IPv6, assume hostname and convert",
++		syslog(LOG_DEBUG, "%s: InternalClient %s is not an IPv6, assume hostname and convert",
+ 		       "PinholeVerification", int_ip);
+ 
+ 		memset(&hints, 0, sizeof(hints));
+@@ -1655,8 +1655,8 @@ PinholeVerification(struct upnphttp * h,
+ 					{
+ 						result_ip = ((struct sockaddr_in6 *)p->ai_addr)->sin6_addr;
+ 						if (inet_ntop(AF_INET6, &result_ip, int_ip, sizeof(struct in6_addr)) == NULL)
+-							syslog(LOG_WARNING, "%s: inet_ntop(): %m", "PinholeVerification");
+-						syslog(LOG_INFO, "%s: InternalClient resolved as %s",
++							syslog(LOG_DEBUG, "%s: inet_ntop(): %m", "PinholeVerification");
++						syslog(LOG_DEBUG, "%s: InternalClient resolved as %s",
+ 						       "PinholeVerification", int_ip);
+ 						found = 1;
+ 					}
+@@ -1672,7 +1672,7 @@ PinholeVerification(struct upnphttp * h,
+ 			freeaddrinfo(ai);
+ 			if (!found)
+ 			{
+-				syslog(LOG_NOTICE, "%s: No IPv6 address for hostname '%s'",
++				syslog(LOG_INFO, "%s: No IPv6 address for hostname '%s'",
+ 				       "PinholeVerification", int_ip);
+ 				SoapError(h, 402, "Invalid Args");
+ 				return -1;
+@@ -1680,7 +1680,7 @@ PinholeVerification(struct upnphttp * h,
+ 		}
+ 		else
+ 		{
+-			syslog(LOG_WARNING, "%s: Failed to convert hostname '%s' to IP address : %s",
++			syslog(LOG_INFO, "%s: Failed to convert hostname '%s' to IP address : %s",
+ 			       "PinholeVerification", int_ip, gai_strerror(r));
+ 			SoapError(h, 402, "Invalid Args");
+ 			return -1;
+@@ -1813,7 +1813,7 @@ AddPinhole(struct upnphttp * h, const ch
+ 					inet_ntop(AF_INET6,
+ 					          &(((struct sockaddr_in6 *)p->ai_addr)->sin6_addr),
+ 					          rem_ip, sizeof(rem_ip));
+-					syslog(LOG_INFO, "resolved '%s' to '%s'", rem_host, rem_ip);
++					syslog(LOG_DEBUG, "resolved '%s' to '%s'", rem_host, rem_ip);
+ 					rem_host = rem_ip;
+ 					break;
+ 				}
+@@ -1822,7 +1822,7 @@ AddPinhole(struct upnphttp * h, const ch
+ 		}
+ 		else
+ 		{
+-			syslog(LOG_WARNING, "AddPinhole : getaddrinfo(%s) : %s",
++			syslog(LOG_INFO, "AddPinhole : getaddrinfo(%s) : %s",
+ 			       rem_host, gai_strerror(err));
+ #if 0
+ 			SoapError(h, 402, "Invalid Args");
+@@ -2481,7 +2481,7 @@ SoapError(struct upnphttp * h, int errCo
+ 	char body[2048];
+ 	int bodylen;
+ 
+-	syslog(LOG_INFO, "Returning UPnPError %d: %s", errCode, errDesc);
++	syslog(LOG_DEBUG, "Returning UPnPError %d: %s", errCode, errDesc);
+ 	bodylen = snprintf(body, sizeof(body), resp, errCode, errDesc);
  	BuildResp2_upnphttp(h, 500, "Internal Server Error", body, bodylen);
  	SendRespAndClose_upnphttp(h);
- }
--

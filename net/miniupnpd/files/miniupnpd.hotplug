@@ -6,7 +6,6 @@
 # - running: check only on ifup (otherwise lease updates etc. would cause daemon state loss)
 
 [ "$ACTION" != "ifup" ] && /etc/init.d/miniupnpd running && exit 0
-uci -q get upnpd.settings.config_file >/dev/null && exit 0
 
 tmpconf="/var/etc/miniupnpd.conf"
 external_iface=$(uci -q get upnpd.settings.external_iface)

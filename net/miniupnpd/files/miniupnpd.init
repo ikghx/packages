@@ -68,7 +68,7 @@ upnpd_generate_config() {
 	config_get allow_third_party_mapping settings allow_third_party_mapping 0
 	config_get ipv6_disable settings ipv6_disable 0
 	config_get system_uptime settings system_uptime 1
-	config_get lease_file settings lease_file /run/miniupnpd.leases
+	config_get lease_file settings lease_file /var/run/miniupnpd.leases
 
 	# UPnP IGD
 	local upnp_igd_compat download_kbps upload_kbps friendly_name model_number serial_number presentation_url uuid http_port notify_interval
@@ -111,13 +111,23 @@ upnpd_generate_config() {
 		log "No external network interface found, not starting" daemon.err
 		return 1
 	fi
+	# Workaround for daemon bug with UPnP IGDv2 if IPv6 is not ready at start
+	if [ "$ipv6_disable" = "0" ] && [ "$(uci -q get network.wan6.disabled)" != "1" ]; then
+		local pass=0
+		while ! ip addr show dev "${ifname6:-$ifname}" | grep -q "inet6 [23]"; do
+			log "IPv6 not ready yet; delay start"
+			sleep 5
+			pass=$((pass + 1))
+			[ "$pass" = "4" ] && log "IPv6 GUA not yet available, UPnP IGD mapping not possible" && break
+		done
+	fi
 	if ! uci -q get upnpd.@internal_network[0].interface >/dev/null; then
 		log "No internal networks configured, not starting" daemon.err
 		return 1
 	fi
 	# Only perform an STUN CGNAT test if necessary, with a private/CGNAT external IPv4
 	local extipv4 extipv4private
-	network_get_ipaddr extipv4 "$external_iface"
+	network_get_ipaddr extipv4 "$external_iface" # Todo: Handling external_zone
 	case "$extipv4" in
 	10.* | 172.1[6-9].* | 172.2[0-9].* | 172.3[0-1].* | 192.168.* | 100.6[4-9].* | 100.[7-9][0-9].* | 100.1[0-1][0-9].* | 100.12[0-7].*) extipv4private=1 ;;
 	esac
