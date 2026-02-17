@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nginx
 PKG_VERSION:=1.26.3
-PKG_RELEASE:=1
+PKG_RELEASE:=3
 
 PKG_SOURCE:=nginx-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://nginx.org/download/
@@ -98,9 +98,7 @@ define Package/nginx/default
   CATEGORY:=Network
   SUBMENU:=Web Servers/Proxies
   TITLE:=Nginx web server
-  URL:=http://nginx.org/
-  DEPENDS:=+libopenssl +libpthread
-  PROVIDES:=nginx
+  URL:=https://nginx.org/
 endef
 
 define Package/nginx/description
@@ -115,9 +113,15 @@ endef
 define Package/nginx-ssl
   $(Package/nginx/default)
   TITLE += with SSL support
+  DEPENDS:= \
+    +libopenssl \
+    +NGINX_PCRE:libpcre2 \
+    +libpthread \
+    +NGINX_DAV:libxml2 \
+    +NGINX_HTTP_GZIP:zlib
+  PROVIDES:=nginx
   VARIANT:=ssl
-  DEPENDS+= +NGINX_PCRE:libpcre2 \
-	+NGINX_HTTP_GZIP:zlib +NGINX_DAV:libxml2
+  DEFAULT_VARIANT:=1
   CONFLICTS:=nginx-full
 endef
 
@@ -143,6 +147,7 @@ config_files := mime.types \
 define Package/nginx-ssl/install
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/nginx $(1)/usr/sbin/
+	$(INSTALL_DIR) $(1)/etc/nginx/module.d
 	$(INSTALL_DIR) $(1)/etc/nginx/conf.d
 	$(INSTALL_DATA) $(addprefix $(PKG_INSTALL_DIR)/etc/nginx/,$(config_files)) $(1)/etc/nginx/
 	$(INSTALL_DIR) $(1)/etc/init.d
@@ -165,9 +170,14 @@ endef
 define Package/nginx-full
   $(Package/nginx/default)
   TITLE += with ALL config selected
-  DEPENDS+=+libpcre2 +zlib +libxml2
+  DEPENDS:= \
+    +libopenssl \
+    +libpcre2 \
+    +libpthread \
+    +libxml2 \
+    +zlib
+  PROVIDES=nginx
   VARIANT:=full
-  PROVIDES += nginx-ssl
 endef
 
 Package/nginx-full/description = $(Package/nginx/description) \
@@ -185,10 +195,8 @@ define Package/nginx-mod-luci
   CATEGORY:=Network
   SUBMENU:=Web Servers/Proxies
   TITLE:=Support file for Nginx
-  URL:=http://nginx.org/
-  DEPENDS:=+uwsgi +uwsgi-luci-support +nginx-ssl +nginx-mod-ubus
-  # TODO: add PROVIDES when removing nginx-mod-luci-ssl
-  # PROVIDES:=nginx-mod-luci-ssl
+  URL:=https://nginx.org/
+  DEPENDS:=+uwsgi +uwsgi-luci-support nginx +nginx-mod-ubus
 endef
 
 define Package/nginx-mod-luci/description
@@ -224,14 +232,14 @@ endef
 
 define Package/nginx-mod-lua-resty-lrucache
   $(call Package/nginx/default)
-  DEPENDS:=@HAS_LUAJIT_ARCH +luajit2
   TITLE:=Nginx Lua OpenResty lrucache module
+  DEPENDS:=@HAS_LUAJIT_ARCH +luajit2
 endef
 
 define Package/nginx-mod-lua-resty-core
   $(call Package/nginx/default)
-  DEPENDS:=+nginx-mod-lua-resty-lrucache
   TITLE:=Nginx Lua OpenResty core module
+  DEPENDS:=+nginx-mod-lua-resty-lrucache
 endef
 
 define Package/nginx-mod-lua-resty-lrucache/install
@@ -341,7 +349,7 @@ define Module/Download
   define Download/nginx-mod-$(1) +=
 
     SUBDIR:=nginx-mod-$(1)
-    FILE:=nginx-mod-$(1)-$$$$(subst -,.,$$$$(SOURCE_DATE))~$$$$(call version_abbrev,$$$$(VERSION)).tar.zst
+    FILE:=nginx-mod-$(1)-$$$$(subst -,.,$$$$(SOURCE_DATE))~$$$$(call version_abbrev,$$$$(SOURCE_VERSION)).tar.zst
   endef
 endef
 $(foreach m,$(PKG_MOD_EXTRA),$(eval $(call Module/Download,$(m))))
@@ -393,12 +401,12 @@ endef
 
 # $(1) module name
 # $(2) module additional dependency
-# $(3) module so name (stripped of the finaly _module.so)
+# $(3) module so name (stripped of the finally _module.so)
 # $(4) module description
 define BuildModule
   define Package/nginx-mod-$(1)
     $(call Package/nginx/default)
-    DEPENDS:=+nginx-ssl $(2)
+    DEPENDS:=nginx $(2)
     TITLE:=Nginx $(1) module
   endef
 
@@ -502,7 +510,7 @@ $(eval $(call BuildModule,stream,+@NGINX_STREAM_CORE_MODULE, \
 	ngx_stream, Add support for NGINX request streaming.))
 $(eval $(call BuildModule,lua,+nginx-mod-lua-resty-core,ngx_http_lua, \
 	Enable Lua module (luajit2 based, OpenResty patches)))
-$(eval $(call BuildModule,ubus,+libubus +libjson-c +libblobmsg-json +@NGINX_UBUS, \
+$(eval $(call BuildModule,ubus,+libubus +libjson-c +libblobmsg-json, \
 	ngx_http_ubus,Enable UBUS api support directly from the server.))
 $(eval $(call BuildModule,dav-ext,+@NGINX_DAV +libxml2,ngx_http_dav_ext, \
 	Enable the WebDAV methods PROPFIND OPTIONS LOCK UNLOCK.))
