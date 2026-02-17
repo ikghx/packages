@@ -341,7 +341,7 @@ define Download/nginx-mod-njs
   SOURCE_DATE:=2024-10-03
   SOURCE_VERSION:=c5a29a7af8894ee1ec44ebda71ef0ea1f2a31af6
   URL:=https://github.com/nginx/njs.git
-  MIRROR_HASH:=69bc424d4bfd8b7a0a70feeb4787ff8b503ac893fb730f07f3244e35fde876e4
+  MIRROR_HASH:=6c94ec6b1c119e0c7a85ec395a4987a8a61739e1f9256ce6d92a16804c5d4637
   PROTO:=git
 endef
 
