@@ -1,7 +1,4 @@
-#
-# This is free software, licensed under the GNU General Public License v2.
-# See /LICENSE for more information.
-#
+# SPDX-License-Identifier: GPL-2.0-only
 
 include $(TOPDIR)/rules.mk
 
@@ -79,14 +76,14 @@ define Package/adguardhome/install
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/adguardhome.config $(1)/etc/config/adguardhome
 
-	$(INSTALL_DIR) $(1)/etc/adguardhome
-	$(INSTALL_CONF) ./files/adguardhome.yaml $(1)/etc/adguardhome/adguardhome.yaml
-
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/adguardhome.init $(1)/etc/init.d/adguardhome
 
 	$(INSTALL_DIR) $(1)/etc/sysctl.d
 	$(INSTALL_CONF) ./files/adguardhome.sysctl $(1)/etc/sysctl.d/50-adguardhome.conf
+
+	$(INSTALL_DIR) $(1)/etc/adguardhome
+	$(INSTALL_CONF) ./files/adguardhome.yaml $(1)/etc/adguardhome/adguardhome.yaml
 endef
 
 $(eval $(call Download,adguardhome-frontend))
