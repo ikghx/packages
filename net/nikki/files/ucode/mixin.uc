@@ -25,7 +25,6 @@ config['tcp-concurrent'] = uci_bool(uci.get('nikki', 'mixin', 'tcp_concurrent'))
 config['disable-keep-alive'] = uci_bool(uci.get('nikki', 'mixin', 'disable_tcp_keep_alive'));
 config['keep-alive-idle'] = uci_int(uci.get('nikki', 'mixin', 'tcp_keep_alive_idle'));
 config['keep-alive-interval'] = uci_int(uci.get('nikki', 'mixin', 'tcp_keep_alive_interval'));
-config['global-client-fingerprint'] = uci.get('nikki', 'mixin', 'global_client_fingerprint');
 
 config['external-ui'] = uci.get('nikki', 'mixin', 'ui_path');
 config['external-ui-name'] = uci.get('nikki', 'mixin', 'ui_name');
@@ -68,10 +67,13 @@ if (uci_bool(uci.get('nikki', 'proxy', 'enabled'))) {
 
 config['dns'] = {};
 config['dns']['enable'] = uci_bool(uci.get('nikki', 'mixin', 'dns_enabled'));
+config['dns']['cache-algorithm'] = uci.get('nikki', 'mixin', 'dns_cache_algorithm');
 config['dns']['listen'] = uci.get('nikki', 'mixin', 'dns_listen');
 config['dns']['ipv6'] = uci_bool(uci.get('nikki', 'mixin', 'dns_ipv6'));
 config['dns']['enhanced-mode'] = uci.get('nikki', 'mixin', 'dns_mode');
 config['dns']['fake-ip-range'] = uci.get('nikki', 'mixin', 'fake_ip_range');
+config['dns']['fake-ip-range6'] = uci.get('nikki', 'mixin', 'fake_ip6_range');
+config['dns']['fake-ip-ttl'] = uci_int(uci.get('nikki', 'mixin', 'fake_ip_ttl'));
 if (uci_bool(uci.get('nikki', 'mixin', 'fake_ip_filter'))) {
 	config['dns']['fake-ip-filter'] = uci_array(uci.get('nikki', 'mixin', 'fake_ip_filters'));
 }
@@ -103,6 +105,16 @@ if (uci_bool(uci.get('nikki', 'mixin', 'dns_nameserver'))) {
 		push(config['dns'][section.type], ...uci_array(section.nameserver));
 	})
 }
+if (uci_bool(uci.get('nikki', 'mixin', 'dns_proxy_server_nameserver_policy'))) {
+	config['dns']['proxy-server-nameserver-policy'] = {};
+	uci.foreach('nikki', 'proxy_server_nameserver_policy', (section) => {
+		if (!uci_bool(section.enabled)) {
+			return;
+		}
+		config['dns']['proxy-server-nameserver-policy'][section.matcher] = uci_array(section.nameserver);
+	});
+}
+config['dns']['direct-nameserver-follow-policy'] = uci_bool(uci.get('nikki', 'mixin', 'dns_direct_nameserver_follow_policy'));
 if (uci_bool(uci.get('nikki', 'mixin', 'dns_nameserver_policy'))) {
 	config['dns']['nameserver-policy'] = {};
 	uci.foreach('nikki', 'nameserver_policy', (section) => {
@@ -173,7 +185,7 @@ if (uci_bool(uci.get('nikki', 'mixin', 'rule'))) {
 		if (!uci_bool(section.enabled)) {
 			return;
 		}
-		const rule = [ section.type, section.matcher, section.node, uci_bool(section.no_resolve) ? 'no_resolve' : null ];
+		const rule = [ section.type, section.matcher, section.node, uci_bool(section.no_resolve) ? 'no-resolve' : null ];
 		push(config['nikki-rules'], join(',', filter(rule, (item) => item != null && item != '')));
 	})
 }

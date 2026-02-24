@@ -140,12 +140,6 @@ uci show nikki | grep -o -E 'nikki\.@router_access_control\[[[:digit:]]+\]=route
 	done
 done
 
-# since v1.23.2
-
-env_disable_safe_path_check=$(uci -q get nikki.env.disable_safe_path_check); [ -n "$env_disable_safe_path_check" ] && uci del nikki.env.disable_safe_path_check
-
-env_skip_system_ipv6_check=$(uci -q get nikki.env.skip_system_ipv6_check); [ -z "$env_skip_system_ipv6_check" ] && uci set nikki.env.skip_system_ipv6_check=0
-
 # since v1.23.3
 
 uci show nikki | grep -o -E 'nikki\.@router_access_control\[[[:digit:]]+\]=router_access_control' | cut -d '=' -f 1 | while read -r router_access_control; do
@@ -210,6 +204,10 @@ procd=$(uci -q get nikki.procd); [ -z "$procd" ] && {
 	uci del nikki.config.fast_reload
 	uci del nikki.env
 }
+
+# since v1.25.1
+
+dummy_device=$(uci -q get nikki.routing.dummy_device); [ -z "$dummy_device" ] && uci set nikki.routing.dummy_device=nikki-dummy
 
 # commit
 uci commit nikki

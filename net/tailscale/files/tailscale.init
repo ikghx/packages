@@ -98,7 +98,7 @@ start_instance() {
 	[ -n "$state_file" ] && procd_append_param command --state "$state_file"
 
 	procd_set_param env TS_DEBUG_FIREWALL_MODE="$fw_mode"
-	procd_set_param env TS_NO_LOGS_NO_SUPPORT="true"
+	procd_append_param env TS_NO_LOGS_NO_SUPPORT="true"
 	
 	procd_set_param respawn
 	procd_set_param stdout "$std_out"
