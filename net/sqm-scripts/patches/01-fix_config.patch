@@ -1,6 +1,6 @@
 --- a/platform/openwrt/sqm-uci
 +++ b/platform/openwrt/sqm-uci
-@@ -1,16 +1,12 @@
+@@ -1,17 +1,13 @@
  
 -config queue 'eth1'
 -        option enabled '0'
@@ -26,4 +26,5 @@
 +	option verbosity '5'
 +	option qdisc 'cake'
 +	option script 'piece_of_cake.qos'
+         option use_mq '0'
  
