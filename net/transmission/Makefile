@@ -13,7 +13,7 @@ PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://github.com/transmission/transmission/releases/download/$(PKG_VERSION)/
-PKG_HASH:=d67f239edcb85b7e62ae5f00f8a9f64f9d45154ed6512993f0577939c70aa52b
+PKG_HASH:=e743283ee03a42c4d0b08fed2bd52b554aa6c9f65b4d4d45b795c32d98762a79
 
 PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 PKG_LICENSE:=GPL-2.0-or-later
