@@ -137,7 +137,7 @@ upnpd_generate_config() {
 		[ "$enable_protocols" = "all" ] && echo "enable_upnp=yes" && echo "enable_pcp_pmp=yes"
 		[ "$enable_protocols" = "upnp-igd" ] && echo "enable_upnp=yes" && echo "enable_pcp_pmp=no"
 		[ "$enable_protocols" = "pcp+nat-pmp" ] && echo "enable_upnp=no" && echo "enable_pcp_pmp=yes"
-		if [ "$extipv4private" = "1" ] && [ "$allow_cgnat" != "0" ] && [ "$external_ip" = "" ]; then
+		if [ "$extipv4private" = "1" ] && [ "$allow_cgnat" != "0" ]; then
 			[ "$allow_cgnat" = "1" ] && echo "ext_perform_stun=yes"
 			[ "$allow_cgnat" = "allow-filtered" ] && echo "ext_perform_stun=allow-filtered"
 			# Alternatively, as allow-filtered detects the public IPv4 required by various clients, e.g. PCP/NAT-PMP
