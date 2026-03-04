@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=rust
 PKG_VERSION:=1.90.0
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=rustc-$(PKG_VERSION)-src.tar.xz
 PKG_SOURCE_URL:=https://static.rust-lang.org/dist/
@@ -75,7 +75,7 @@ HOST_CONFIGURE_ARGS = \
 	--release-channel=stable \
 	--enable-cargo-native-static \
 	--bootstrap-cache-path=$(DL_DIR)/rustc \
-	--set=llvm.download-ci-llvm=true \
+	--set=llvm.download-ci-llvm=false \
 	$(TARGET_CONFIGURE_ARGS)
 
 define Host/Uninstall
@@ -89,6 +89,7 @@ define Host/Compile
 	CARGO_HOME=$(CARGO_HOME) \
 	TARGET_CFLAGS="$(TARGET_CFLAGS)" \
 	$(PYTHON) $(HOST_BUILD_DIR)/x.py \
+		--ci false \
 		--build-dir $(HOST_BUILD_DIR)/build \
 		dist build-manifest rustc rust-std cargo llvm-tools rust-src
 endef
