@@ -29,10 +29,6 @@ config FFMPEG_CUSTOM_NONFREE
 		Use this with care.
 	default n
 
-config FFMPEG_CUSTOM_PATENTED
-	bool "Include patented codecs and technologies"
-	default BUILD_PATENTED
-
 comment "Build Properties"
 
 config FFMPEG_CUSTOM_LARGE
@@ -153,7 +149,7 @@ config FFMPEG_CUSTOM_SELECT_libshine
 
 config FFMPEG_CUSTOM_SELECT_libx264
 	bool "Libx264"
-	depends on FFMPEG_CUSTOM_PATENTED
+	depends on BUILD_PATENTED
 	depends on FFMPEG_CUSTOM_GPL
 	depends on PACKAGE_libx264
 	select FFMPEG_CUSTOM_DECODER_h264
@@ -229,11 +225,11 @@ config FFMPEG_CUSTOM_DECODER_gif
 
 config FFMPEG_CUSTOM_DECODER_h264
 	bool "H.264"
-	depends on FFMPEG_CUSTOM_PATENTED
+	depends on BUILD_PATENTED
 
 config FFMPEG_CUSTOM_DECODER_hevc
 	bool "HEVC / H.265 Video"
-	depends on FFMPEG_CUSTOM_PATENTED
+	depends on BUILD_PATENTED
 
 config FFMPEG_CUSTOM_DECODER_jpegls
 	bool "JPEG-LS"
@@ -279,7 +275,7 @@ config FFMPEG_CUSTOM_DECODER_png
 
 config FFMPEG_CUSTOM_DECODER_vc1
 	bool "VC-1 / WMV9"
-	depends on FFMPEG_CUSTOM_PATENTED
+	depends on BUILD_PATENTED
 
 config FFMPEG_CUSTOM_DECODER_vorbis
 	bool "Vorbis"
@@ -307,11 +303,11 @@ config FFMPEG_CUSTOM_MUXER_avi
 
 config FFMPEG_CUSTOM_MUXER_h264
 	bool "H.264 Raw Video"
-	depends on FFMPEG_CUSTOM_PATENTED
+	depends on BUILD_PATENTED
 
 config FFMPEG_CUSTOM_MUXER_hevc
 	bool "HEVC / H265 Raw Video"
-	depends on FFMPEG_CUSTOM_PATENTED
+	depends on BUILD_PATENTED
 
 config FFMPEG_CUSTOM_MUXER_mp3
 	bool "MP3 (MPEG Audio Layer 3)"
@@ -356,11 +352,11 @@ config FFMPEG_CUSTOM_DEMUXER_flac
 
 config FFMPEG_CUSTOM_DEMUXER_h264
 	bool "H.264 Raw Video"
-	depends on FFMPEG_CUSTOM_PATENTED
+	depends on BUILD_PATENTED
 
 config FFMPEG_CUSTOM_DEMUXER_hevc
 	bool "HEVC / H265 Raw Video"
-	depends on FFMPEG_CUSTOM_PATENTED
+	depends on BUILD_PATENTED
 
 config FFMPEG_CUSTOM_DEMUXER_matroska
 	bool "Matroska (MKA,MKV)"
@@ -411,7 +407,7 @@ config FFMPEG_CUSTOM_DEMUXER_rtp
 
 config FFMPEG_CUSTOM_DEMUXER_vc1
 	bool "VC-1 / WMV9 Raw Video"
-	depends on FFMPEG_CUSTOM_PATENTED
+	depends on BUILD_PATENTED
 
 config FFMPEG_CUSTOM_DEMUXER_wav
 	bool "WAV"
@@ -432,12 +428,12 @@ config FFMPEG_CUSTOM_PARSER_flac
 
 config FFMPEG_CUSTOM_PARSER_h264
 	bool "H.264"
-	depends on FFMPEG_CUSTOM_PATENTED
+	depends on BUILD_PATENTED
 	select FFMPEG_CUSTOM_DECODER_h264
 
 config FFMPEG_CUSTOM_PARSER_hevc
 	bool "HEVC / H265"
-	depends on FFMPEG_CUSTOM_PATENTED
+	depends on BUILD_PATENTED
 	select FFMPEG_CUSTOM_DECODER_hevc
 
 config FFMPEG_CUSTOM_PARSER_mpegaudio
@@ -454,7 +450,7 @@ config FFMPEG_CUSTOM_PARSER_opus
 
 config FFMPEG_CUSTOM_PARSER_vc1
 	bool "VC-1 / WMV9"
-	depends on FFMPEG_CUSTOM_PATENTED
+	depends on BUILD_PATENTED
 	select FFMPEG_CUSTOM_DECODER_vc1
 
 comment "Protocols"

@@ -234,12 +234,14 @@ define Package/ffmpeg/Default
 endef
 
 define Package/ffmpeg/Default/description
- FFmpeg is a a software package that can record, convert and stream digital
- audio and video in numerous formats.
+FFmpeg is a a software package that can record, convert and stream digital
+audio and video in numerous formats.
 
- FFmpeg licensing / patent issues are complex. It is the responsibility of the
- user to understand any requirements in this regard with its usage. See:
- https://ffmpeg.org/legal.html for further information.
+FFmpeg licensing / patent issues are complex. It is the responsibility of the
+user to understand any requirements in this regard with its usage. See:
+https://ffmpeg.org/legal.html for further information.
+
+Patented codecs and technologies are only available when CONFIG_BUILD_PATENTED=y.
 endef
 
 
@@ -263,8 +265,8 @@ endef
 
 define Package/ffmpeg/description
 $(call Package/ffmpeg/Default/description)
- .
- This package contains the FFmpeg command line tool.
+.
+This package contains the FFmpeg command line tool.
 endef
 
 Package/ffmpeg-custom/description = $(Package/ffmpeg/description)
@@ -289,8 +291,8 @@ endef
 
 define Package/ffprobe/description
 $(call Package/ffmpeg/Default/description)
- .
- This package contains the FFprobe command line tool.
+.
+This package contains the FFprobe command line tool.
 endef
 
 Package/ffprobe-custom/description = $(Package/ffprobe/description)
@@ -324,8 +326,8 @@ endef
 
 define Package/libffmpeg-custom/description
 $(call Package/ffmpeg/Default/description)
- .
- This package contains customized FFmpeg shared libraries.
+.
+This package contains customized FFmpeg shared libraries.
 endef
 
 
@@ -338,8 +340,8 @@ endef
 
 define Package/libffmpeg-audio-dec/description
 $(call Package/ffmpeg/Default/description)
- .
- This package contains FFmpeg shared libraries for audio decoding
+.
+This package contains FFmpeg shared libraries for audio decoding.
 endef
 
 
@@ -359,8 +361,8 @@ endef
 
 define Package/libffmpeg-full/description
 $(call Package/ffmpeg/Default/description)
- .
- This package contains full-featured FFmpeg shared libraries.
+.
+This package contains full-featured FFmpeg shared libraries.
 endef
 
 
@@ -373,8 +375,8 @@ endef
 
 define Package/libffmpeg-mini/description
 $(call Package/ffmpeg/Default/description)
- .
- This package contains minimal-featured FFmpeg shared libraries.
+.
+This package contains minimal-featured FFmpeg shared libraries.
 endef
 
 
