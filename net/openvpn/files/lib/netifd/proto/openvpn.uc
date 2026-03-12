@@ -8,6 +8,7 @@ const OPENVPN_PASS   = '/var/run/openvpn.%s.pass';
 const OPENVPN_AUTH   = '/var/run/openvpn.%s.auth';
 const OPENVPN_PID    = '/var/run/openvpn.%s.pid';
 const OPENVPN_STATUS = '/var/run/openvpn.%s.status';
+const OPENVPN_CONF   = '/var/run/openvpn.%s.conf';
 
 
 function openvpn_exists() {
@@ -87,7 +88,6 @@ const OPENVPN_STRING_PARAMS = [
 	{ name: 'proto_force' },
 	{ name: 'providers' },
 	{ name: 'pull_filter' },
-	{ name: 'push' },
 	{ name: 'push_remove' },
 	{ name: 'redirect_gateway' },
 	{ name: 'redirect_private' },
@@ -303,7 +303,10 @@ function add_param(params, key, value) {
 	let flag = `--${replace(key, '_', '-')}`;
 	push(params, flag);
 	if (value)
-		push(params, value);
+		if (key === "push")
+			push(params, `"${value}"`);
+		else
+			push(params, value);
 }
 
 function build_exec_params(cfg) {
@@ -440,26 +443,71 @@ function proto_setup(proto) {
 	if (cfg.config && cfg.config !== '') {
 		if (index(cfg.config, '/') >= 0) {
 			let parts = split(cfg.config, '/');
-			parts.pop();
+			pop(parts);
 			cd_dir = join('/', parts);
 			if (cd_dir == '') cd_dir = `/etc/openvpn/${iface}`;
 		}
 	}
 
+	// hotplug handler scripts
+	if (cfg.script_security >= 2) {
+		push(params, '--setenv', 'INTERFACE', iface);
+		push(params, '--up', '/usr/libexec/openvpn-hotplug');
+		if (cfg.up) push(params, '--setenv', 'user_up', cfg.up);
+		push(params, '--down', '/usr/libexec/openvpn-hotplug');
+		if (cfg.down) push(params, '--setenv', 'user_down', cfg.down);
+		push(params, '--route-up', '/usr/libexec/openvpn-hotplug');
+		if (cfg.route_up) push(params, '--setenv', 'user_route_up', cfg.route_up);
+		push(params, '--route-pre-down', '/usr/libexec/openvpn-hotplug');
+		if (cfg.route_pre_down) push(params, '--setenv', 'user_route_pre_down', cfg.route_pre_down);
+		push(params, '--tls-crypt-v2-verify', '/usr/libexec/openvpn-hotplug');
+		if (cfg.tls_crypt_v2_verify) push(params, '--setenv', 'user_tls_crypt_v2_verify', cfg.tls_crypt_v2_verify);
+
+		if (cfg.mode === 'server') {
+			push(params, '--learn-address', '/usr/libexec/openvpn-hotplug');
+			if (cfg.learn_address) push(params, '--setenv', 'user_learn_address', cfg.learn_address);
+			push(params, '--client-connect', '/usr/libexec/openvpn-hotplug');
+			if (cfg.client_connect) push(params, '--setenv', 'user_client_connect', cfg.client_connect);
+			push(params, '--client-crresponse', '/usr/libexec/openvpn-hotplug');
+			if (cfg.client_crresponse) push(params, '--setenv', 'user_client_crresponse', cfg.client_crresponse);
+			push(params, '--client-disconnect', '/usr/libexec/openvpn-hotplug');
+			if (cfg.client_disconnect) push(params, '--setenv', 'user_client_disconnect', cfg.client_disconnect);
+			push(params, '--auth-user-pass-verify', '/usr/libexec/openvpn-hotplug', 'via-file');
+			if (cfg.auth_user_pass_verify) push(params, '--setenv', 'user_auth_user_pass_verify', cfg.auth_user_pass_verify);
+		}
+
+		if (cfg.tls_client || cfg.tls_server) {
+			push(params, '--tls-verify', '/usr/libexec/openvpn-hotplug');
+			if (cfg.tls_verify) push(params, '--setenv', 'user_tls_verify', cfg.tls_verify);
+		}
+
+		if (cfg.client || cfg.tls_client) {
+			push(params, '--ipchange', '/usr/libexec/openvpn-hotplug');
+			if (cfg.ipchange) push(params, '--setenv', 'user_ipchange', cfg.ipchange);
+		}
+	}
+
 	// assemble the final command line
 	let cmd = [
-		OPENVPN,
 		'--cd', cd_dir,
 		'--status', statusfile,
 		'--syslog', sprintf('openvpn_%s', iface),
 		'--tmp-dir', '/var/run',
 		'--writepid', sprintf(OPENVPN_PID, iface),
-		// join(' ', params)
 		...params
 	];
 
+	// netifd has an argv array length hard limit of 64 including final \0
+	if (length(cmd) > 63) {
+		let conffile = sprintf(OPENVPN_CONF, iface);
+		fs.writefile(conffile, replace(join(' ', cmd), '--', '\n'));
+		cmd = [
+			'--config', conffile,
+		];
+	}
+
 	// run_command needs an argv array
-	proto.run_command(cmd);
+	proto.run_command([OPENVPN, ...cmd]);
 
 	// do not call proto.update_link() here - OpenVPN will handle if_up
 }
@@ -487,6 +535,7 @@ function proto_teardown(proto) {
 	fs.unlink(sprintf(OPENVPN_AUTH, iface));
 	fs.unlink(sprintf(OPENVPN_STATUS, iface));
 	fs.unlink(sprintf(OPENVPN_PID, iface));
+	fs.unlink(sprintf(OPENVPN_CONF, iface));
 
 	let link_data = {
 		ifname: iface
