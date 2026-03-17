@@ -1,7 +1,7 @@
-From a5fa10bbe0dbb69bbfc47f5865238f352fa71675 Mon Sep 17 00:00:00 2001
+From ae13db60831008daf2bc3f0e35e37e6ea3a0d8da Mon Sep 17 00:00:00 2001
 From: Self-Hosting-Group
  <155233284+Self-Hosting-Group@users.noreply.github.com>
-Date: Thu, 27 Nov 2025 00:00:00 +0000
+Date: Mon, 2 Mar 2026 00:00:00 +0000
 Subject: [PATCH] miniupnpd: UPnP IGDv2 Microsoft/Apple compatibility
 
 * Add workaround to list port maps with the Windows IGDv2-incompatible

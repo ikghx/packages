@@ -38,7 +38,7 @@ start_service() {
 	procd_set_param command "$PROG"
 	procd_append_param command -f "$conf"
 	[ "$log_output" = "info" ] && procd_append_param command -v
-	[ "$log_output" = "debug" ] && procd_append_param command -vv
+	[ "$log_output" = "debug" ] && procd_append_param command -v -v
 	procd_close_instance
 }
 
@@ -226,12 +226,10 @@ upnpd_add_int_network_and_preset() {
 	local device subnet rejectport acceptpresetports acceptport
 	network_get_device device "$interface"
 	network_get_subnet subnet "$interface"
+	[ "$subnet" = "" ] && log "Cannot get IPv4 subnet for network $interface, network ignored" daemon.warn && return 0
 	if [ "$2" = "pre-acl" ]; then
 		echo "# Enable internal network $interface ($device) with preset $access_preset and ignore ACL ${ignore_acl}"
 		echo "listening_ip=$device"
-	fi
-	[ "$subnet" = "" ] && log "Cannot get IPv4 subnet for network $interface, access_preset ignored" daemon.warn && return 0
-	if [ "$2" = "pre-acl" ]; then
 		for rejectport in $reject_ports; do
 			is_port_or_range "$rejectport" && echo "deny $rejectport $subnet $rejectport # Reject port $rejectport on $interface" ||
 				log "Invalid port or port range ($rejectport) in reject_ports ignored" daemon.warn

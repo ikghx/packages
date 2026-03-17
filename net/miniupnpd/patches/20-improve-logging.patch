@@ -1,3 +1,39 @@
+From d01da1dccd6308750ca2bbc3831163debafc4378 Mon Sep 17 00:00:00 2001
+From: Self-Hosting-Group
+ <155233284+Self-Hosting-Group@users.noreply.github.com>
+Date: Mon, 2 Mar 2026 00:00:00 +0000
+Subject: [PATCH] miniupnpd: Improve logging
+
+* Clearer logging of enabled protocols/ports, IPv6 mapping, and UPnP IGD
+  compatibility mode
+* Log warnings with an enabled allow third-party mapping option
+* Log less with default/info log level
+* Remove excessive logging of normally occurring messages
+* Remove multiple log messages for the same event
+* Remove excessive logging caused by a daemon bug
+
+Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
+
+--- a/getifaddr.c
++++ b/getifaddr.c
+@@ -74,7 +74,7 @@ getifaddr(const char * ifname, char * bu
+ 		} else {
+ 			r = GETIFADDR_IOCTL_ERROR;
+ 		}
+-		syslog(LOG_ERR, "ioctl(s, SIOCGIFADDR, ...): %m");
++		syslog(LOG_DEBUG, "ioctl(s, SIOCGIFADDR, ...): %m");
+ 		close(s);
+ 		return r;
+ 	}
+@@ -149,7 +149,7 @@ getifaddr(const char * ifname, char * bu
+ 		if(addr) *addr = ((struct sockaddr_in *)candidate->ifa_addr)->sin_addr;
+ 		if(mask) *mask = ((struct sockaddr_in *)candidate->ifa_netmask)->sin_addr;
+ 	} else {
+-		syslog(LOG_WARNING, "no AF_INET address found for %s", ifname);
++		syslog(LOG_DEBUG, "no AF_INET address found for %s", ifname);
+ 		freeifaddrs(ifap);
+ 		return GETIFADDR_NO_ADDRESS;
+ 	}
 --- a/minissdp.c
 +++ b/minissdp.c
 @@ -1161,7 +1161,7 @@ ProcessSSDPData(int s, const char *bufr,
@@ -69,7 +105,7 @@
  		pidfilename = NULL;
  #endif
  
-+syslog(LOG_NOTICE, "MiniUPnP daemon " MINIUPNPD_VERSION " starting, enable protocols: %s%s%s, ext_ifname=%s BOOTID=%u",
++syslog(LOG_NOTICE, "MiniUPnP daemon " MINIUPNPD_VERSION " starting, enable protocols %s%s%s, ext_ifname=%s BOOTID=%u",
 +	GETFLAG(ENABLEUPNPMASK) ? "UPnP IGD" : "",
 +#ifdef ENABLE_NATPMP
 +	GETFLAG(ENABLEUPNPMASK) && GETFLAG(ENABLENATPMPMASK) ? " & " : "",
@@ -192,9 +228,9 @@
 +#endif
 +#ifdef ENABLE_IPV6
 +if (GETFLAG(IPV6DISABLEDMASK))
-+	syslog(LOG_NOTICE, "IPv6 mapping disabled in daemon");
++	syslog(LOG_NOTICE, "IPv6 mapping disabled");
 +#else
-+syslog(LOG_NOTICE, "IPv6 mapping disabled in daemon");
++syslog(LOG_NOTICE, "IPv6 mapping disabled");
 +#endif
 +if (GETFLAG(ENABLEUPNPMASK)) {
 +#ifdef IGD_V2
@@ -229,8 +265,26 @@
  #ifdef ENABLE_HTTPS
  			ProcessSSDPRequest(sudpv6, (unsigned short)v.port, (unsigned short)v.https_port);
  #else
+@@ -3274,7 +3302,7 @@ main(int argc, char * * argv)
+ 
+ shutdown:
+ 
+-	syslog(LOG_NOTICE, "shutting down MiniUPnPd");
++	syslog(LOG_NOTICE, "Shutting down MiniUPnPd");
+ #ifdef USE_SYSTEMD
+ 	if (v.systemd_notify) {
+ 		sd_notify(0,
 --- a/natpmp.c
 +++ b/natpmp.c
+@@ -106,7 +106,7 @@ static void FillPublicAddressResponse(un
+ 			resp[3] = 3;	/* Network Failure (e.g. NAT box itself
+ 			                 * has not obtained a DHCP lease) */
+ 		} else if(getifaddr(ext_if_name, tmp, INET_ADDRSTRLEN, &addr, NULL) < 0) {
+-			syslog(LOG_ERR, "Failed to get IP for interface %s", ext_if_name);
++			syslog(LOG_DEBUG, "Failed to get IP for interface %s", ext_if_name);
+ 			resp[3] = 3;	/* Network Failure (e.g. NAT box itself
+ 			                 * has not obtained a DHCP lease) */
+ 		} else if (!GETFLAG(ALLOWPRIVATEIPV4MASK) && addr_is_reserved(&addr)) {
 @@ -231,7 +231,7 @@ void ProcessIncomingNATPMPPacket(int s,
  		syslog(LOG_ERR, "inet_ntop(natpmp): %m");
  	}
@@ -267,6 +321,33 @@
  							       eport, proto_itoa(proto), senderaddrstr, iport);
  							resp[3] = 2;	/* Not Authorized/Refused */
  						} else { /* at least one eport allowed (but none available) */
+@@ -443,7 +443,7 @@ void SendNATPMPPublicAddressChangeNotifi
+ 	FillPublicAddressResponse(notif, 0);
+ 	if(notif[3])
+ 	{
+-		syslog(LOG_WARNING, "%s: cannot get public IP address, stopping",
++		syslog(LOG_DEBUG, "%s: cannot get public IP address, stopping",
+ 		       "SendNATPMPPublicAddressChangeNotification");
+ 		return;
+ 	}
+@@ -471,7 +471,7 @@ void SendNATPMPPublicAddressChangeNotifi
+ 		           (struct sockaddr *)&sockname, sizeof(struct sockaddr_in));
+ 		if(n < 0)
+ 		{
+-			syslog(LOG_ERR, "%s: sendto(s_udp=%d, port=%d): %m",
++			syslog(LOG_DEBUG, "%s: sendto(s_udp=%d, port=%d): %m",
+ 			       "SendNATPMPPublicAddressChangeNotification", sockets[j], NATPMP_PORT);
+ 			return;
+ 		}
+@@ -481,7 +481,7 @@ void SendNATPMPPublicAddressChangeNotifi
+ 		           (struct sockaddr *)&sockname, sizeof(struct sockaddr_in));
+ 		if(n < 0)
+ 		{
+-			syslog(LOG_ERR, "%s: sendto(s_udp=%d, port=%d): %m",
++			syslog(LOG_DEBUG, "%s: sendto(s_udp=%d, port=%d): %m",
+ 			       "SendNATPMPPublicAddressChangeNotification", sockets[j], NATPMP_NOTIF_PORT);
+ 			return;
+ 		}
 --- a/netfilter/iptcrdr.c
 +++ b/netfilter/iptcrdr.c
 @@ -711,7 +711,7 @@ delete_filter_rule(const char * ifname,
@@ -453,10 +534,28 @@
  				}
  			} else {
 -				syslog(LOG_ERR, "PCP: Invalid PCP v2 MAP message.");
-+				syslog(LOG_INFO, "PCP: Invalid PCP v2 MAP message.");
++				syslog(LOG_DEBUG, "PCP: Invalid PCP v2 MAP message.");
  				return pcp_msg_info->result_code;
  			}
  
+@@ -1723,7 +1723,7 @@ void PCPSendUnsolicitedAnnounce(int * so
+ 		}
+ 		len = sendto_or_schedule(sockets[i], buff, PCP_MIN_LEN, 0, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
+ 		if( len < 0 ) {
+-			syslog(LOG_ERR, "PCPSendUnsolicitedAnnounce(sockets[%d]) sendto(): %m", i);
++			syslog(LOG_DEBUG, "PCPSendUnsolicitedAnnounce(sockets[%d]) sendto(): %m", i);
+ 		}
+ 	}
+ #ifdef ENABLE_IPV6
+@@ -1734,7 +1734,7 @@ void PCPSendUnsolicitedAnnounce(int * so
+ 		addr6.sin6_port = htons(5350);
+ 		len = sendto_or_schedule(socket6, buff, PCP_MIN_LEN, 0, (struct sockaddr *)&addr6, sizeof(struct sockaddr_in6));
+ 		if( len < 0 ) {
+-			syslog(LOG_ERR, "PCPSendUnsolicitedAnnounce() IPv6 sendto(): %m");
++			syslog(LOG_DEBUG, "PCPSendUnsolicitedAnnounce() IPv6 sendto(): %m");
+ 		}
+ 	}
+ #endif /* ENABLE_IPV6 */
 --- a/pf/pfpinhole.c
 +++ b/pf/pfpinhole.c
 @@ -246,12 +246,12 @@ int find_pinhole(const char * ifname,
@@ -816,6 +915,15 @@
  			*p = tmp->next;
 --- a/upnpsoap.c
 +++ b/upnpsoap.c
+@@ -366,7 +366,7 @@ GetExternalIPAddress(struct upnphttp * h
+ 		struct in_addr addr;
+ 		if(getifaddr(ext_if_name, ext_ip_addr, INET_ADDRSTRLEN, &addr, NULL) < 0)
+ 		{
+-			syslog(LOG_ERR, "Failed to get ip address for interface %s",
++			syslog(LOG_DEBUG, "Failed to get ip address for interface %s",
+ 				ext_if_name);
+ 			ext_ip_addr[0] = '\0';
+ 		} else if (addr_is_reserved(&addr)) {
 @@ -491,7 +491,7 @@ AddPortMapping(struct upnphttp * h, cons
  		}
  		else
