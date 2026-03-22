@@ -29,6 +29,7 @@ start_service() {
 		'ext_address:string' \
 		'gc:uinteger:0' \
 		'global_rate:string' \
+		'group:string:syncthing' \
 		'keys:string:/etc/strelaysrv' \
 		'listen:string::22067' \
 		'maxprocs:uinteger:0' \
@@ -39,7 +40,7 @@ start_service() {
 		'nat_renewal:string' \
 		'nat_timeout:string' \
 		'network_timeout:string' \
-		'nice:uinteger:0' \
+		'nice:range(-20,19):0' \
 		'per_session_rate:string' \
 		'ping_interval:string' \
 		'pools:string' \
@@ -52,8 +53,7 @@ start_service() {
 
 	[ "$enabled" = 1 ] || return 0
 
-	local group
-	group=$(id -gn "$user")
+	[ -z "$group" ] && group=$(id -gn "$user")
 
 	mkdir -p "$keys"
 	[ -d "$keys" ] && chown -R "$user:$group" "$keys"

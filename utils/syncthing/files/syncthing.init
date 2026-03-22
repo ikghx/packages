@@ -26,6 +26,7 @@ start_service() {
 		'db_maintenance_interval:string' \
 		'enabled:bool:0' \
 		'gc:uinteger:0' \
+		'group:string:syncthing' \
 		'gui_address:string:http://0.0.0.0:8384' \
 		'gui_apikey:string' \
 		'home:string:/etc/syncthing' \
@@ -37,7 +38,7 @@ start_service() {
 		'macprocs:uinteger' \
 		'maxprocs:uinteger:0' \
 		'memlimit:uinteger:0' \
-		'nice:uinteger:0' \
+		'nice:range(-20,19):0' \
 		'user:string:syncthing'
 
 	[ "$enabled" = 1 ] || return 0
@@ -46,8 +47,7 @@ start_service() {
 	[ -n "$logfile" ] && log_file="$logfile"
 	[ -n "$macprocs" ] && maxprocs="$macprocs"
 
-	local group
-	group=$(id -gn "$user")
+	[ -z "$group" ] && group=$(id -gn "$user")
 
 	mkdir -p "$home"
 	# A separate step to handle an upgrade use case

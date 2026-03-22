@@ -58,6 +58,7 @@ case "$script_type" in
 		for i in $(seq 1 32); do
 			eval "net=\$route_network_$i mask=\$route_netmask_$i gw=\$route_gateway_$i"
 			[ -z "$net" ] && break
+			[ -z "$mask" ] && continue
 
 			plen=$(mask2prefix "$mask")
 			proto_add_ipv4_route "$net" "$plen" "$gw"
