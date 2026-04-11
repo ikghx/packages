@@ -106,7 +106,6 @@ upnpd_generate_config() {
 	else
 		network_find_wan6 external_iface6 && network_get_device ifname6 "$external_iface6"
 	fi
-
 	if [ "$ifname" = "" ]; then
 		log "No external network interface found, not starting" daemon.err
 		return 1
@@ -114,7 +113,7 @@ upnpd_generate_config() {
 	# Workaround for daemon bug with UPnP IGDv2 if IPv6 is not ready at start
 	if [ "$ipv6_disable" = "0" ] && [ "$(uci -q get network.wan6.disabled)" != "1" ]; then
 		local pass=0
-		while ! ip addr show dev "${ifname6:-$ifname}" | grep -q "inet6 [23]"; do
+		while ! ip -6 addr show dev "${ifname6:-$ifname}" | grep -q "inet6 [23]"; do
 			log "IPv6 not ready yet; delay start"
 			sleep 5
 			pass=$((pass + 1))
@@ -127,10 +126,11 @@ upnpd_generate_config() {
 	fi
 	# Only perform an STUN CGNAT test if necessary, with a private/CGNAT external IPv4
 	local extipv4 extipv4private
-	network_get_ipaddr extipv4 "$external_iface" # Todo: Handling external_zone
+	extipv4="$(ip -4 addr show dev "$ifname" | grep inet | head -1 | sed -E "s/.*inet ([0-9.]+).*/\1/")"
 	case "$extipv4" in
 	10.* | 172.1[6-9].* | 172.2[0-9].* | 172.3[0-1].* | 192.168.* | 100.6[4-9].* | 100.[7-9][0-9].* | 100.1[0-1][0-9].* | 100.12[0-7].*) extipv4private=1 ;;
 	esac
+	[ "$extipv4private" = "1" ] && log "Private/CGNAT external IPv4 detected ($extipv4)"
 
 	{
 		echo "# Daemon"
@@ -217,26 +217,26 @@ is_port_or_range() {
 
 upnpd_add_int_network_and_preset() {
 	local cfg="$1"
-	local interface access_preset accept_ports reject_ports ignore_acl
+	local interface access_preset accept_ports reject_ports check_acl
 	config_get interface "$cfg" interface
 	config_get access_preset "$cfg" access_preset none
 	config_get accept_ports "$cfg" accept_ports
 	config_get reject_ports "$cfg" reject_ports "21 23 135 137-139 445 3389"
-	config_get ignore_acl "$cfg" ignore_acl 0
+	config_get check_acl "$cfg" check_acl 1
 	local device subnet rejectport acceptpresetports acceptport
 	network_get_device device "$interface"
 	network_get_subnet subnet "$interface"
 	[ "$subnet" = "" ] && log "Cannot get IPv4 subnet for network $interface, network ignored" daemon.warn && return 0
 	if [ "$2" = "pre-acl" ]; then
-		echo "# Enable internal network $interface ($device) with preset $access_preset and ignore ACL ${ignore_acl}"
+		echo "# Enable internal network $interface ($device) with preset $access_preset and check ACL $check_acl"
 		echo "listening_ip=$device"
 		for rejectport in $reject_ports; do
 			is_port_or_range "$rejectport" && echo "deny $rejectport $subnet $rejectport # Reject port $rejectport on $interface" ||
 				log "Invalid port or port range ($rejectport) in reject_ports ignored" daemon.warn
 		done
 	fi
-	if { [ "$2" = "post-acl" ] && [ "$ignore_acl" = "0" ]; } ||
-		{ [ "$2" = "pre-acl" ] && [ "$ignore_acl" = "1" ]; }; then
+	if { [ "$2" = "post-acl" ] && [ "$check_acl" = "1" ]; } ||
+		{ [ "$2" = "pre-acl" ] && [ "$check_acl" = "0" ]; }; then
 		if [ "$access_preset" = "accept-high-ports" ]; then
 			acceptpresetports="1024-65535"
 		elif [ "$access_preset" = "accept-web+high-ports" ]; then
@@ -253,7 +253,7 @@ upnpd_add_int_network_and_preset() {
 				log "Invalid port or port range ($acceptport) in accept_ports ignored" daemon.warn
 		done
 	fi
-	if [ "$2" = "pre-acl" ] && [ "$ignore_acl" = "1" ]; then
+	if [ "$2" = "pre-acl" ] && [ "$check_acl" = "0" ]; then
 		echo "deny 1-65535 $subnet 1-65535 # Reject ACL by default on $interface"
 	fi
 }

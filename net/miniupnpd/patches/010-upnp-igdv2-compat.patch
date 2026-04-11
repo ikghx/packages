@@ -1,7 +1,7 @@
-From ae13db60831008daf2bc3f0e35e37e6ea3a0d8da Mon Sep 17 00:00:00 2001
+From 4ff4c1131d62fee273f157ac287db05553afd813 Mon Sep 17 00:00:00 2001
 From: Self-Hosting-Group
  <155233284+Self-Hosting-Group@users.noreply.github.com>
-Date: Mon, 2 Mar 2026 00:00:00 +0000
+Date: Wed, 25 Mar 2026 00:00:00 +0000
 Subject: [PATCH] miniupnpd: UPnP IGDv2 Microsoft/Apple compatibility
 
 * Add workaround to list port maps with the Windows IGDv2-incompatible
@@ -15,7 +15,7 @@ Link: https://github.com/Self-Hosting-Group/miniupnp/tree/upnp-igdv2-compat
 
 --- a/upnphttp.c
 +++ b/upnphttp.c
-@@ -303,9 +303,22 @@ ParseHttpHeaders(struct upnphttp * h)
+@@ -304,9 +304,22 @@ ParseHttpHeaders(struct upnphttp * h)
  			}
  			else if(strncasecmp(line, "user-agent:", 11) == 0)
  			{
