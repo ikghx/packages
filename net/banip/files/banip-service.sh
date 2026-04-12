@@ -7,7 +7,8 @@
 # shellcheck disable=all
 
 ban_action="${1}"
-ban_starttime="$(date "+%s")"
+read -r ban_starttime _ < "/proc/uptime"
+ban_starttime="${ban_starttime%%.*}"
 ban_funlib="/usr/lib/banip-functions.sh"
 [ -z "${ban_bver}" ] && . "${ban_funlib}"
 
@@ -43,7 +44,7 @@ fi
 #
 f_log "info" "start banIP download processes"
 f_getfeed
-[ "${ban_deduplicate}" = "1" ] && printf "\n" >"${ban_tmpfile}.deduplicate"
+[ "${ban_deduplicate}" = "1" ] && printf '\n' >"${ban_tmpfile}.deduplicate"
 
 # handle downloads
 #
@@ -62,9 +63,19 @@ for feed in allowlist ${ban_feed} blocklist; do
 	# skip external feeds in allowlistonly mode
 	#
 	if [ "${ban_allowlistonly}" = "1" ]; then
-		case " ${ban_feedin} " in *" allowlist "*) ;; *)
-			case " ${ban_feedout} " in *" allowlist "*) ;; *) continue ;; esac
-		;; esac
+		case "${ban_feedin}" in
+			*" allowlist "*)
+				;;
+			*)
+				case "${ban_feedout}" in
+					*" allowlist "*)
+						;;
+					*)
+						continue
+						;;
+				esac
+				;;
+		esac
 	fi
 
 	# external feeds (parallel processing on multicore hardware)
@@ -77,7 +88,7 @@ for feed in allowlist ${ban_feed} blocklist; do
 	fi
 	json_objects="url_4 url_6 rule chain flag"
 	for object in ${json_objects}; do
-		eval json_get_var feed_"${object}" '${object}' >/dev/null 2>&1
+		json_get_var "feed_${object}" "${object}" >/dev/null 2>&1
 	done
 	json_select ..
 
