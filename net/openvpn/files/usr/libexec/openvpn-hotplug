@@ -57,7 +57,9 @@ case "$script_type" in
 
 		[ -n "$route_vpn_gateway" ] && proto_add_ipv4_route "0.0.0.0" 0 "$route_vpn_gateway"
 
-		for i in $(seq 1 128); do
+		i=0
+		while :; do
+			i=$((i+1))
 			eval "net=\$route_network_$i mask=\$route_netmask_$i gw=\$route_gateway_$i"
 			[ -z "$net" ] && break
 			[ -z "$mask" ] && continue
@@ -82,7 +84,9 @@ case "$script_type" in
 
 			[ -n "$ifconfig_ipv6_remote" ] && proto_add_ipv6_route "::" 0 "$ifconfig_ipv6_remote"
 
-			for i in $(seq 1 128); do
+			i=0
+			while :; do
+				i=$((i+1))
 				eval "net=\$route_ipv6_network_$i gw=\$route_ipv6_gateway_$i"
 				[ -z "$net" ] && break
 
@@ -95,7 +99,9 @@ case "$script_type" in
 
 		[ -n "$tun_mtu" ] && json_add_int mtu "$tun_mtu"
 
-		for i in $(seq 1 32); do
+		i=0
+		while :; do
+			i=$((i+1))
 			eval "option=\$foreign_option_$i"
 			[ -z "$option" ] && break
 
