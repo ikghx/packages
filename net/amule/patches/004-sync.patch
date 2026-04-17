@@ -99,17 +99,6 @@
  rm -rf intl/*
  #if [ ! -d intl ]; then
      echo "Setting up internationalization files."
---- a/BUILDING_MACOSX.txt
-+++ b/BUILDING_MACOSX.txt
-@@ -9,7 +9,7 @@ WXVERSION=svn WXPORT=cocoa MULECLEAN=YES
- 
- 
- Those commands would build a MacOSX 10.6 (Snow Leopard) compatible application bundle for aMule and aMuleGUI
--using the architecture of the build system ( i386 or x86_64 ), with the latest SVN vesion of wxWidgets.
-+using the architecture of the build system ( i386 or x86_64 ), with the latest SVN version of wxWidgets.
- 
- Other parameters are explained upon execution of the script.
- 
 --- a/cmake/boost.cmake
 +++ b/cmake/boost.cmake
 @@ -1,5 +1,4 @@
@@ -1795,6 +1784,20 @@
  
  	bool CopyTextToClipboard(wxString strText);
  
+--- a/src/amule-remote-gui.cpp
++++ b/src/amule-remote-gui.cpp
+@@ -2000,6 +2000,11 @@ m_kadPublishInfo(0)
+ 	m_abyFileHash = tag->FileHash();
+ 	SetFileSize(tag->SizeFull());
+ 
++	uint8 rating = 0;
++	if (tag->GetRating(rating)) {
++		m_iUserRating = rating;
++	}
++
+ 	m_searchID = theApp->searchlist->m_curr_search;
+ 	uint32 parentID = tag->ParentID();
+ 	if (parentID) {
 --- a/src/amule-remote-gui.h
 +++ b/src/amule-remote-gui.h
 @@ -253,7 +253,7 @@ public:
@@ -2744,6 +2747,18 @@
  	mutable wxMutex m_mutex;
  
  
+--- a/src/ECSpecialCoreTags.cpp
++++ b/src/ECSpecialCoreTags.cpp
+@@ -366,6 +366,9 @@ CEC_SearchFile_Tag::CEC_SearchFile_Tag(c
+ 	if (file->GetParent()) {
+ 		AddTag(EC_TAG_SEARCH_PARENT, file->GetParent()->ECID(), valuemap);
+ 	}
++	if (file->HasRating()) {
++		AddTag(CECTag(EC_TAG_KNOWNFILE_RATING, (uint8)file->UserRating()), valuemap);
++	}
+ }
+ 
+ //
 --- a/src/EMSocket.cpp
 +++ b/src/EMSocket.cpp
 @@ -405,6 +405,22 @@ uint64 CEMSocket::GetSentPayloadSinceLas
@@ -6197,6 +6212,16 @@
  		FormatValue(tmp_format, tmp_tag);
  		extra = tmp_format.GetString();
  	}
+--- a/src/libs/ec/cpp/ECSpecialTags.h
++++ b/src/libs/ec/cpp/ECSpecialTags.h
+@@ -370,6 +370,7 @@ class CEC_SearchFile_Tag : public CECTag
+ 		uint32		CompleteSourceCount(uint32 *target = 0)	const { return AssignIfExist(EC_TAG_PARTFILE_SOURCE_COUNT_XFER, target); }
+ 		bool		AlreadyHave()	const { return GetTagByNameSafe(EC_TAG_PARTFILE_STATUS)->GetInt() != 0; /* == CSearchFile::NEW */ }
+ 		uint32		DownloadStatus(uint32 *target = 0)	const { return AssignIfExist(EC_TAG_PARTFILE_STATUS, target); }
++		bool		GetRating(uint8 &target) const { return AssignIfExist(EC_TAG_KNOWNFILE_RATING, target); }
+ 	private:
+ 		CMD4Hash	GetMD4Data();	// Block it, because it doesn't work anymore!
+ };
 --- a/src/libs/ec/cpp/ECTag.cpp
 +++ b/src/libs/ec/cpp/ECTag.cpp
 @@ -1113,7 +1113,7 @@ void CECTag::DebugPrint(int level, bool
@@ -12078,17 +12103,6 @@
  
    a = buf[0];
    b = buf[1];
---- a/src/utils/amps/README
-+++ b/src/utils/amps/README
-@@ -28,7 +28,7 @@ distribution!
- 
- Sometime in the near future I will complete the theme support I have stubbed
- into the script. If you have a colour scheme that you think looks good, modify
--'style.css' and be sure to send me a copy of your new syle so I can include it
-+'style.css' and be sure to send me a copy of your new style so I can include it
- in future versions!
- 
- Please send any bugs, translations, or verbal abuse to <uberpenguin@hotpop.com>
 --- a/src/utils/cas/cas.c
 +++ b/src/utils/cas/cas.c
 @@ -222,7 +222,7 @@ int main(int argc, char *argv[])
@@ -12177,17 +12191,6 @@
   * almost everything is taken from libgd examples
   */
  int createimage(CONF *config, char *lines[IMG_TEXTLINES], char *path_for_picture)
---- a/src/utils/cas/README
-+++ b/src/utils/cas/README
-@@ -2,7 +2,7 @@ C AMULE STATS
- 
- 
- 
--This is a little app that i've been doing cause i really didnt liked aStats.
-+This is a little app that i've been using because I really didn't like aStats.
- I was too slow, so i tried to do a little remake of it in c just to learn a 
- bit more of c and do a nice app too.
- 
 --- a/src/utils/cas/tmp.html
 +++ b/src/utils/cas/tmp.html
 @@ -146,7 +146,7 @@
@@ -13216,35 +13219,6 @@
   * This is where user should declare members accessible by TESTF,
   * SETUP and TEARDOWN.
   *
---- a/unittests/README
-+++ b/unittests/README
-@@ -11,7 +11,7 @@ How to use:
-  This section describes the step-by-step of creating a new testcase.
- 
-  It is recommended that each test-case (a collection of tests) is
-- placed in a seperate .cpp file, in general, one test-case per class.
-+ placed in a separate .cpp file, in general, one test-case per class.
- 
-  In the following examples, I will test a non-existing stack template
-  class which has the member-functions push (back) and pop (front).
-@@ -21,7 +21,7 @@ How to use:
-     Test-cases exist in two flavors: With a fixture and without.
-     A fixture is a way to ease the preparation before and after
-     each test and consists of (optionally) a setUp function which
--    is run before each unittest, a tearDown function wich is run
-+    is run before each unittest, a tearDown function which is run
-     after each unittest and any number of member-variables and
-     helper-functions.
- 
-@@ -80,7 +80,7 @@ How to use:
-       }
- 
- 
--    A test-case can have any number of unittests assosiated with it,
-+    A test-case can have any number of unittests associated with it,
-     but each test in a test-case must be uniquely named.
- 
- 
 --- a/unittests/tests/CTagTest.cpp
 +++ b/unittests/tests/CTagTest.cpp
 @@ -576,11 +576,7 @@ TEST_M(CTag, KadTagNames, wxT("Kad: Test

@@ -5,4 +5,4 @@
 # Example for NFSv4:
 #  /srv/nfs4	    hostname1(rw,sync,fsid=0)
 #  /srv/nfs4/home   hostname1(rw,sync,nohide)
-/mnt/sda1 *(ro,all_squash,insecure,sync,no_subtree_check)
+/mnt/sda *(ro,all_squash,insecure,sync,no_subtree_check)
