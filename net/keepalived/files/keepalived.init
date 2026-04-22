@@ -16,13 +16,17 @@ INDENT_4="${INDENT_1}${INDENT_1}${INDENT_1}${INDENT_1}"
 config_section_open() {
 	local tag="$1"
 	local name="$2"
+	local indent="$3"
 
+	[ -n "$indent" ] && printf '%b' "$indent" >> "$KEEPALIVED_CONF"
 	printf '%s' "$tag" >> "$KEEPALIVED_CONF"
 	[ -n "$name" ] && printf ' %s' "$name" >> "$KEEPALIVED_CONF"
 	printf ' {\n' >> "$KEEPALIVED_CONF"
 }
 
 config_section_close() {
+	local indent="$1"
+	[ -n "$indent" ] && printf '%b' "$indent" >> "$KEEPALIVED_CONF"
 	printf '}\n\n' >> "$KEEPALIVED_CONF"
 }
 
@@ -266,7 +270,7 @@ print_unicast_peer_indent() {
 	local section="$1"
 	local curr_track_elem="$2"
 	local indent="$3"
-	local name address
+	local name address max_ttl min_ttl
 
 	config_get name "$section" name
 	[ "$name" != "$curr_track_elem" ] && return 0
@@ -274,7 +278,15 @@ print_unicast_peer_indent() {
 	config_get address "$section" address
 	[ -z "$address" ] && return 0
 
-	printf '%b%s\n' "${indent}" "$address">> "$KEEPALIVED_CONF"
+	printf '%b%s' "${indent}" "$address" >> "$KEEPALIVED_CONF"
+	
+	config_get min_ttl "$section" min_ttl
+	config_get max_ttl "$section" max_ttl
+	
+	[ -n "$min_ttl" ] && printf ' min_ttl %s' "$min_ttl" >> "$KEEPALIVED_CONF"
+	[ -n "$max_ttl" ] && printf ' max_ttl %s' "$max_ttl" >> "$KEEPALIVED_CONF"
+	printf '\n' >> "$KEEPALIVED_CONF"
+	
 }
 
 static_routes() {
@@ -331,7 +343,7 @@ vrrp_sync_group() {
 	config_get group "$1" group
 	[ -z "$group" ] && return 0
 
-	# Check if we have 'vrrp_instance's defined for
+	# Check if we have 'vrrp_instance's defined for 
 	# each member and remove names with not vrrp_instance defined
 	for m in $group; do
 		vrrp_instance_check "$m" && valid_group="$valid_group $m"
@@ -349,11 +361,11 @@ vrrp_sync_group() {
 	local track_script_val
 	config_get track_script_val "$1" track_script
 	if [ -n "$track_script_val" ]; then
-		printf '%btrack_script {\n' "${INDENT_1}" >> "$KEEPALIVED_CONF"
+		config_section_open "track_script" "" "$INDENT_1"
 		for t in $track_script_val; do
 			config_foreach print_track_script_indent vrrp_script "$t" "$INDENT_2"
 		done
-		printf '%b}\n' "${INDENT_1}" >> "$KEEPALIVED_CONF"
+		config_section_close "$INDENT_1"
 	fi
 
 	print_notify "GROUP" "$name" "$INDENT_1" notify_backup notify_master \
@@ -396,11 +408,11 @@ vrrp_instance() {
 		config_get "$opt" "$1" "$opt"
 		eval optval=\$$opt
 		[ -z "$optval" ] && continue
-		printf '%b%s {\n' "${INDENT_1}" "$opt" >> "$KEEPALIVED_CONF"
+		config_section_open "$opt" "" "$INDENT_1"
 		for a in $optval; do
 			config_foreach print_ipaddress_indent ipaddress "$a" "$INDENT_2"
 		done
-		printf '%b}\n' "${INDENT_1}" >> "$KEEPALIVED_CONF"
+		config_section_close "$INDENT_1"
 	done
 
 	# Handle virtual_routes
@@ -408,11 +420,11 @@ vrrp_instance() {
 		config_get "$opt" "$1" "$opt"
 		eval optval=\$$opt
 		[ -z "$optval" ] && continue
-		printf '%b%s {\n' "${INDENT_1}" "$opt" >> "$KEEPALIVED_CONF"
+		config_section_open "$opt" "" "$INDENT_1"
 		for r in $optval; do
 			config_foreach print_route_indent route "$r" "$INDENT_2"
 		done
-		printf '%b}\n' "${INDENT_1}" >> "$KEEPALIVED_CONF"
+		config_section_close "$INDENT_1"
 	done
 
 	# Handle track_script lists
@@ -420,11 +432,11 @@ vrrp_instance() {
 		config_get "$opt" "$1" "$opt"
 		eval optval=\$$opt
 		[ -z "$optval" ] && continue
-		printf '%b%s {\n' "${INDENT_1}" "$opt" >> "$KEEPALIVED_CONF"
+		config_section_open "$opt" "" "$INDENT_1"
 		for t in $optval; do
 			config_foreach print_track_script_indent vrrp_script "$t" "$INDENT_2"
 		done
-		printf '%b}\n' "${INDENT_1}" >> "$KEEPALIVED_CONF"
+		config_section_close "$INDENT_1"
 	done
 
 	# Handle track_interface lists
@@ -432,11 +444,11 @@ vrrp_instance() {
 		config_get "$opt" "$1" "$opt"
 		eval optval=\$$opt
 		[ -z "$optval" ] && continue
-		printf '%b%s {\n' "${INDENT_1}" "$opt" >> "$KEEPALIVED_CONF"
+		config_section_open "$opt" "" "$INDENT_1"
 		for t in $optval; do
 			config_foreach print_track_elem_indent track_interface "$t" "$INDENT_2"
 		done
-		printf '%b}\n' "${INDENT_1}" >> "$KEEPALIVED_CONF"
+		config_section_close "$INDENT_1"
 	done
 
 	# Handle track_bfd lists
@@ -444,11 +456,11 @@ vrrp_instance() {
 		config_get "$opt" "$1" "$opt"
 		eval optval=\$$opt
 		[ -z "$optval" ] && continue
-		printf '%b%s {\n' "${INDENT_1}" "$opt" >> "$KEEPALIVED_CONF"
+		config_section_open "$opt" "" "$INDENT_1"
 		for t in $optval; do
 			config_foreach print_track_bfd_indent bfd_instance "$t" "$INDENT_2"
 		done
-		printf '%b}\n' "${INDENT_1}" >> "$KEEPALIVED_CONF"
+		config_section_close "$INDENT_1"
 	done
 
 	# Handle simple lists of strings (with no spaces in between)
@@ -456,11 +468,11 @@ vrrp_instance() {
 		config_get "$opt" "$1" "$opt"
 		eval optval=\$$opt
 		[ -z "$optval" ] && continue
-		printf '%b%s {\n' "${INDENT_1}" "$opt" >> "$KEEPALIVED_CONF"
+		config_section_open "$opt" "" "$INDENT_1"
 		for t in $optval; do
 			config_foreach print_unicast_peer_indent peer "$t" "$INDENT_2"
 		done
-		printf '%b}\n' "${INDENT_1}" >> "$KEEPALIVED_CONF"
+		config_section_close "$INDENT_1"
 	done
 	unset optval
 

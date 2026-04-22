@@ -56,6 +56,7 @@ option_builder() {
 					;;
 				file)
 					json_get_var v "$f"
+					openvpn_is_hotplug_hook_option "$f" && continue
 					[ -f "$v" ] || continue
 					[ -n "$v" ] && append exec_params "--${f//_/-} '$v'"
 					;;
@@ -86,6 +87,18 @@ option_builder() {
 			esac
 		fi
 	done
+}
+
+openvpn_is_hotplug_hook_option() {
+	case "$1" in
+		up|down|route_up|route_pre_down|ipchange|learn_address|client_connect|\
+		client_crresponse|client_disconnect|auth_user_pass_verify|\
+		tls_crypt_v2_verify|tls_verify)
+			return 0
+		;;
+	esac
+
+	return 1
 }
 
 
@@ -188,30 +201,38 @@ proto_openvpn_setup() {
 
 	# Check 'script_security' option
 	json_get_var script_security script_security
-	[ -z "$script_security" ] && script_security=3
+	# Match the pre-netifd init script: default to the minimum level
+	# required for external up/down/route hooks.
+	[ -z "$script_security" ] && script_security=2
 
-	# Add default hotplug handling if 'script_security' option is equal '3'
-	if [ "$script_security" -eq '3' ]; then
+	# Add default hotplug handling if 'script_security' allows user scripts.
+	# OpenVPN requires script-security >= 2 for up/down/route hooks; requiring 3
+	# prevents netifd from bringing the tunnel interface up for common client
+	# configurations using script_security=2.
+	if [ "$script_security" -ge '2' ]; then
 		local ipv6
 		local up down route_up route_pre_down
 		local client tls_client tls_server
 		local tls_crypt_v2_verify mode learn_address client_connect
 		local client_crresponse client_disconnect auth_user_pass_verify
+		local defaultroute
 
 		logger -t "openvpn(proto)" \
-			-p daemon.info "Enabled default hotplug processing, as the openvpn configuration 'script_security' is '3'"
+			-p daemon.info "Enabled default hotplug processing, as the openvpn configuration 'script_security' is '$script_security'"
 
 		append exec_params "--setenv INTERFACE $config"
-		append exec_params "--script-security 3"
+		append exec_params "--script-security $script_security"
 
 		json_get_vars up down route_up route_pre_down
 		json_get_vars tls_crypt_v2_verify mode learn_address client_connect
 		json_get_vars client_crresponse client_disconnect auth_user_pass_verify
 
-		json_get_vars ipv6
+		json_get_vars ipv6 defaultroute
 		#default ipv6 is enabled
 		[ -n "$ipv6" ] || ipv6=1
+		[ -n "$defaultroute" ] || defaultroute=1
 		append exec_params "--setenv IPV6 '$ipv6'"
+		append exec_params "--setenv DEFAULTROUTE '$defaultroute'"
 
 		json_get_vars ifconfig_noexec route_noexec
 		[ -z "$ifconfig_noexec" ] && append exec_params "--ifconfig-noexec"
@@ -262,7 +283,7 @@ proto_openvpn_setup() {
 		fi
 	else
 		logger -t "openvpn(proto)" \
-			-p daemon.warn "Default hotplug processing disabled, as the openvpn configuration 'script_security' is less than '3'"
+			-p daemon.warn "Default hotplug processing disabled, as the openvpn configuration 'script_security' is less than '2'"
 	fi
 
 	eval "set -- $exec_params"
@@ -284,6 +305,17 @@ proto_openvpn_renew() {
 
 proto_openvpn_teardown() {
 	local iface="$1"
+	local pid
+
+	pid="$(cat "/var/run/openvpn.$iface.pid" 2>/dev/null)"
+	if [ -n "$pid" ]; then
+		daemon_pid="$pid" /usr/libexec/openvpn-hotplug cleanup "$iface"
+	else
+		/usr/libexec/openvpn-hotplug cleanup "$iface" 1
+	fi
+	proto_init_update "*" 0
+	proto_send_update "$iface"
+
 	rm -f \
 		"/var/run/openvpn.$iface.conf" \
 		"/var/run/openvpn.$iface.pass" \
