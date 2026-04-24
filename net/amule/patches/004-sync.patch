@@ -18,6 +18,27 @@
      echo "    cryptopp  : $CRYPTOPP_DISTRO"
      echo "    libupnp   : $LIBUPNP_DISTRO"
      echo "    wxWidgets : $WXWIDGETS_DISTRO"
+--- a/amule.desktop
++++ b/amule.desktop
+@@ -5,6 +5,7 @@ Icon=amule
+ Terminal=false
+ Type=Application
+ Categories=Network;P2P;
++StartupWMClass=amule
+ Comment=A client for the eD2k network
+ Comment[fr]=Un client pour le réseau eD2k
+ Comment[tr]=eD2k ağı için istemci
+--- a/amulegui.desktop
++++ b/amulegui.desktop
+@@ -1,7 +1,7 @@
+ [Desktop Entry]
+ Name=aMuleGUI
+ Exec=amulegui
+-Icon=amulegui
++Icon=amule
+ Terminal=false
+ Type=Application
+ Categories=Network;P2P;
 --- a/autogen.sh
 +++ b/autogen.sh
 @@ -35,7 +35,7 @@ if expr "$confver" \> "$gettext_version"
@@ -654,29 +675,20 @@
  include (cmake/CmDaB.cmake)
  include (cmake/manpage_install.cmake)
  include (cmake/options.cmake)
-@@ -91,6 +104,21 @@ if (wx_NEEDED)
- 	include (cmake/wx.cmake)
+@@ -124,6 +137,12 @@ if (BUILD_MONOLITHIC)
+ 	install (FILES amule.desktop
+ 		DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
+ 	)
++	# Ship the PNG application icon in the XDG hicolor theme so
++	# desktop environments (GTK, KDE, Wayland shells, file managers)
++	# can resolve `Icon=amule` from amule.desktop.
++	install (FILES amule.png
++		DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/128x128/apps"
++	)
  endif()
  
-+# libcurl is used for the startup HTTP downloads (supports HTTPS, avoids a
-+# wxSocket/wxEpollDispatcher lifecycle race that causes intermittent startup
-+# crashes with wxHTTP when remote servers force an HTTPS redirect).
-+# Opt-in is controlled by ENABLE_LIBCURL (default ON). Setting it explicitly
-+# OFF falls back to the legacy wxHTTP code path (no HTTPS support, known
-+# crash path preserved).
-+option (ENABLE_LIBCURL "Use libcurl for HTTP downloads (HTTPS support)" ON)
-+if (ENABLE_LIBCURL)
-+	find_package (CURL REQUIRED)
-+	message (STATUS "libcurl ${CURL_VERSION_STRING} — HTTP downloads will use libcurl")
-+	set (HAVE_LIBCURL 1)
-+else()
-+	message (STATUS "ENABLE_LIBCURL=OFF — HTTP downloads will use wxHTTP (no HTTPS)")
-+endif()
-+
- if (NOT SVNDATE)
- 	find_package (Git)
- 
-@@ -132,6 +160,15 @@ if (BUILD_REMOTEGUI)
+ if (BUILD_REMOTEGUI)
+@@ -132,6 +151,15 @@ if (BUILD_REMOTEGUI)
  	)
  endif()
  
@@ -691,18 +703,6 @@
 +
  add_subdirectory (docs)
  add_subdirectory (src)
- 
---- a/config.h.cm
-+++ b/config.h.cm
-@@ -24,6 +24,9 @@
- /* Define if you have the <bfd.h> header file. */
- #cmakedefine  HAVE_BFD
- 
-+/* Define if libcurl is available (preferred for HTTP downloads). */
-+#cmakedefine HAVE_LIBCURL 1
-+
- /* Define if you have the <cxxabi.h> header file */
- #cmakedefine HAVE_CXXABI
  
 --- a/configure.ac
 +++ b/configure.ac
@@ -776,6 +776,27 @@
  	AS_IF([test $USE_INCLUDED_LIBINTL = yes], [INCINTL=-I\${top_builddir}/intl])
  
  	AS_IF([test x$USE_NLS = xyes], [MULE_CHECK_AUTOPOINT(, [USE_NLS=no])])
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -14,11 +14,18 @@ EXTRA_DIST = amule.rc amule.ico amule.pn
+ dist_icon_DATA =
+ icondir = $(datadir)/pixmaps
+ 
++# Ship a PNG copy of the application icon in the XDG hicolor theme so
++# desktop environments can resolve `Icon=amule` from amule.desktop.
++# The legacy XPM under $(datadir)/pixmaps is kept as a fallback.
++dist_icon128_DATA =
++icon128dir = $(datadir)/icons/hicolor/128x128/apps
++
+ dist_util_DATA =
+ utildir = $(datadir)/applications
+ 
+ if MONOLITHIC
+ dist_icon_DATA += amule.xpm
++dist_icon128_DATA += amule.png
+ dist_util_DATA += amule.desktop
+ endif
+ 
 --- a/po/CMakeLists.txt
 +++ b/po/CMakeLists.txt
 @@ -1,66 +1,71 @@
@@ -909,7 +930,18 @@
 +gettext_process_po_files ("" ALL PO_FILES ${PO_BUILD})
 --- a/src/amule.cpp
 +++ b/src/amule.cpp
-@@ -75,7 +75,9 @@
+@@ -42,6 +42,10 @@
+ #include <wx/tokenzr.h>
+ #include <wx/wfstream.h>
+ #include <wx/stopwatch.h>		// Needed for wxStopWatch
++#ifdef __WINDOWS__
++#include <wx/stdpaths.h>		// Needed for wxStandardPaths (CA bundle lookup)
++#include <wx/filename.h>		// Needed for wxFileName (CA bundle lookup)
++#endif
+ 
+ 
+ #include <common/Format.h>		// Needed for CFormat
+@@ -75,7 +79,9 @@
  #include "TerminationProcessAmuleweb.h"	// Needed for CTerminationProcessAmuleweb
  #include "ThreadTasks.h"
  #include "UploadQueue.h"		// Needed for CUploadQueue
@@ -919,7 +951,7 @@
  #include "UserEvents.h"
  #include "ScopedPtr.h"
  
-@@ -95,11 +97,7 @@
+@@ -95,11 +101,7 @@
  #ifndef AMULE_DAEMON
  	#ifdef __WXMAC__
  		#include <CoreFoundation/CFBundle.h>  // Do_not_auto_remove
@@ -932,7 +964,7 @@
  	#endif
  	#include <wx/msgdlg.h>
  
-@@ -199,6 +197,7 @@ CamuleApp::CamuleApp()
+@@ -199,6 +201,7 @@ CamuleApp::CamuleApp()
  	glob_prefs	= NULL;
  	m_statistics	= NULL;
  	uploadBandwidthThrottler = NULL;
@@ -940,7 +972,7 @@
  #ifdef ENABLE_UPNP
  	m_upnp		= NULL;
  	m_upnpMappings.resize(4);
-@@ -228,6 +227,16 @@ CamuleApp::~CamuleApp()
+@@ -228,6 +231,16 @@ CamuleApp::~CamuleApp()
  
  int CamuleApp::OnExit()
  {
@@ -957,7 +989,7 @@
  	if (m_app_state!=APP_STATE_STARTING) {
  		AddLogLineNS(_("Now, exiting main app..."));
  	}
-@@ -297,9 +306,25 @@ int CamuleApp::OnExit()
+@@ -297,9 +310,25 @@ int CamuleApp::OnExit()
  	delete clientlist;
  	clientlist = NULL;
  
@@ -983,7 +1015,7 @@
  	delete downloadqueue;
  	downloadqueue = NULL;
  
-@@ -321,6 +346,13 @@ int CamuleApp::OnExit()
+@@ -321,6 +350,13 @@ int CamuleApp::OnExit()
  	glob_prefs = NULL;
  	CPreferences::EraseItemList();
  
@@ -997,7 +1029,60 @@
  	delete uploadBandwidthThrottler;
  	uploadBandwidthThrottler = NULL;
  
-@@ -520,6 +552,7 @@ bool CamuleApp::OnInit()
+@@ -352,6 +388,25 @@ int CamuleApp::OnExit()
+ 
+ 	StopTickTimer();
+ 
++#if defined(__APPLE__)
++	// wx 3.3.2 has a bug in wxWebSessionURLSession::~wxWebSessionURLSession:
++	// it releases the NSURLSession and the delegate separately without
++	// first calling -invalidateAndCancel. NSURLSession retains its
++	// delegate strongly, so the session's dealloc already drops the
++	// delegate ref — wx's subsequent release hits a freed object and the
++	// process aborts with "pointer being freed was not allocated". This
++	// fires in wx module cleanup / atexit / __cxa_finalize on any Mac
++	// build after any HTTP download (version check, server.met, ...).
++	//
++	// By this point in OnExit we have saved state, joined threads, and
++	// flushed logs — nothing aMule-owned remains to clean up. _Exit
++	// bypasses atexit and static destructors, so the buggy wx dtor never
++	// runs and the process terminates cleanly. Linux / Windows continue
++	// through wx's normal cleanup; remove this block once the upstream
++	// fix lands in a wx release we depend on.
++	std::_Exit(0);
++#endif
++
+ 	// Return 0 for successful program termination
+ 	return AMULE_APP_BASE::OnExit();
+ }
+@@ -395,6 +450,26 @@ bool CamuleApp::OnInit()
+ 	wxSystemOptions::SetOption(wxT("mac.listctrl.always_use_generic"), 1);
+ #endif
+ 
++#ifdef __WINDOWS__
++	// wxWebRequest is backed by libcurl on MSYS2 (MINGW64 / CLANGARM64)
++	// builds. MSYS2 libcurl is compiled with `--with-ca-bundle=` pointing
++	// at an absolute MSYS2 path that does not exist on end-user machines,
++	// so HTTPS (and any HTTP→HTTPS redirect — e.g. SourceForge) fails
++	// with "libcurl error 77: Problem with the SSL CA cert". CMake's
++	// install step ships a ca-bundle.crt next to the .exe; point
++	// CURL_CA_BUNDLE at it here if the user has not set one explicitly.
++	{
++		wxString existing;
++		if (!wxGetEnv(wxT("CURL_CA_BUNDLE"), &existing) || existing.IsEmpty()) {
++			wxFileName caFile(wxStandardPaths::Get().GetExecutablePath());
++			caFile.SetFullName(wxT("ca-bundle.crt"));
++			if (caFile.FileExists()) {
++				wxSetEnv(wxT("CURL_CA_BUNDLE"), caFile.GetFullPath());
++			}
++		}
++	}
++#endif
++
+ 	// Handle uncaught exceptions
+ 	InstallMuleExceptionHandler();
+ 
+@@ -520,6 +595,7 @@ bool CamuleApp::OnInit()
  	// bugfix - do this before creating the uploadqueue
  	downloadqueue	= new CDownloadQueue();
  	uploadqueue	= new CUploadQueue();
@@ -1005,7 +1090,7 @@
  	ipfilter	= new CIPFilter();
  
  	//DLP initialization - Bill Lee
-@@ -560,6 +593,10 @@ bool CamuleApp::OnInit()
+@@ -560,6 +636,10 @@ bool CamuleApp::OnInit()
  	// and the UBT constructor creates a thread.
  	uploadBandwidthThrottler = new UploadBandwidthThrottler();
  
@@ -1016,7 +1101,7 @@
  #ifdef ASIO_SOCKETS
  	m_AsioService = new CAsioService;
  #endif
-@@ -638,11 +675,7 @@ bool CamuleApp::OnInit()
+@@ -638,11 +718,7 @@ bool CamuleApp::OnInit()
  			if (absoluteUrl) {
  				CFStringRef amulewebCfstr = CFURLCopyFileSystemPath(absoluteUrl, kCFURLPOSIXPathStyle);
  				CFRelease(absoluteUrl);
@@ -1029,7 +1114,7 @@
  			}
  		}
  #endif
-@@ -1052,7 +1085,7 @@ void CamuleApp::Localize_mule()
+@@ -1052,7 +1128,7 @@ void CamuleApp::Localize_mule()
  // Is called when the user runs a new version of aMule
  void CamuleApp::Trigger_New_version(wxString new_version)
  {
@@ -1940,7 +2025,111 @@
  
 --- a/src/amule-remote-gui.cpp
 +++ b/src/amule-remote-gui.cpp
-@@ -2000,6 +2000,11 @@ m_kadPublishInfo(0)
+@@ -119,6 +119,8 @@ DEFINE_LOCAL_EVENT_TYPE(wxEVT_EC_INIT_DO
+ BEGIN_EVENT_TABLE(CamuleRemoteGuiApp, wxApp)
+ 	// Core timer
+ 	EVT_TIMER(ID_CORE_TIMER_EVENT, CamuleRemoteGuiApp::OnPollTimer)
++	// Watchdog on the initial EC connect attempt
++	EVT_TIMER(ID_REMOTE_CONNECT_TIMEOUT_TIMER, CamuleRemoteGuiApp::OnConnectTimeout)
+ 
+ 	EVT_CUSTOM(wxEVT_EC_CONNECTION, -1, CamuleRemoteGuiApp::OnECConnection)
+ 	EVT_CUSTOM(wxEVT_EC_INIT_DONE, -1, CamuleRemoteGuiApp::OnECInitDone)
+@@ -219,6 +221,9 @@ void CamuleRemoteGuiApp::ShutDown(wxClos
+ 	delete poll_timer;
+ 	poll_timer = NULL;
+ 
++	delete connect_timeout_timer;
++	connect_timeout_timer = NULL;
++
+ #ifdef ASIO_SOCKETS
+ 	m_AsioService->Stop();
+ 	delete m_AsioService;
+@@ -244,6 +249,7 @@ bool CamuleRemoteGuiApp::OnInit()
+ {
+ 	StartTickTimer();
+ 	amuledlg = NULL;
++	connect_timeout_timer = NULL;
+ 
+ 	// Get theApp
+ 	theApp = &wxGetApp();
+@@ -281,10 +287,38 @@ bool CamuleRemoteGuiApp::OnInit()
+ 	InitLocale(m_locale, StrLang2wx(thePrefs::GetLanguageID()));
+ 
+ 	if (ShowConnectionDialog()) {
++		// Watchdog on the EC connect. When the host is unreachable the TCP
++		// SYN can silently time out over several minutes while the main
++		// loop is running with no visible window, which the OS reports as
++		// "not responding". Fire a shorter timeout so we can show an error
++		// and shut down cleanly instead.
++		connect_timeout_timer = new wxTimer(this, ID_REMOTE_CONNECT_TIMEOUT_TIMER);
++		connect_timeout_timer->StartOnce(15000);
+ 		AddLogLineNS(_("Going to event loop..."));
+ 		return true;
+ 	}
+ 
++	// User cancelled (or ShowConnectionDialog failed before reaching the
++	// connect step). Tear down the partial init so the Asio thread pool,
++	// poll timer and remote-connect socket don't leak — wx will never
++	// call ShutDown() / OnExit() because the main loop isn't entered when
++	// OnInit() returns false, so we have to unwind manually here. Without
++	// this, wx reports "4 threads were not terminated by the application".
++#ifdef ASIO_SOCKETS
++	if (m_AsioService) {
++		m_AsioService->Stop();
++		delete m_AsioService;
++		m_AsioService = NULL;
++	}
++#endif
++	if (m_connect) {
++		m_connect->Destroy();
++		m_connect = NULL;
++	}
++	if (poll_timer) {
++		delete poll_timer;
++		poll_timer = NULL;
++	}
+ 	return false;
+ }
+ 
+@@ -321,6 +355,12 @@ bool CamuleRemoteGuiApp::ShowConnectionD
+ 
+ 
+ void CamuleRemoteGuiApp::OnECConnection(wxEvent& event) {
++	// Connect attempt resolved one way or the other — kill the watchdog.
++	if (connect_timeout_timer) {
++		connect_timeout_timer->Stop();
++		delete connect_timeout_timer;
++		connect_timeout_timer = NULL;
++	}
+ 	wxECSocketEvent& evt = *((wxECSocketEvent*)&event);
+ 	AddLogLineNS(_("Remote GUI EC event handler"));
+ 	wxString reply = evt.GetServerReply();
+@@ -344,6 +384,24 @@ void CamuleRemoteGuiApp::OnECConnection(
+ }
+ 
+ 
++void CamuleRemoteGuiApp::OnConnectTimeout(wxTimerEvent&)
++{
++	delete connect_timeout_timer;
++	connect_timeout_timer = NULL;
++
++	wxString host = dialog ? dialog->Host() : wxString();
++	long     port = dialog ? dialog->Port() : 0;
++	wxMessageBox(
++		CFormat(_("Connection timed out. Unable to reach %s:%d within the allotted time.\nPlease check the host, port and that aMule is running with External Connections enabled."))
++			% host % port,
++		_("ERROR"), wxOK | wxICON_ERROR);
++
++	wxCloseEvent ev;
++	ShutDown(ev);
++	ExitMainLoop();
++}
++
++
+ void CamuleRemoteGuiApp::OnECInitDone(wxEvent& )
+ {
+ 	Startup();
+@@ -2000,6 +2058,11 @@ m_kadPublishInfo(0)
  	m_abyFileHash = tag->FileHash();
  	SetFileSize(tag->SizeFull());
  
@@ -1952,7 +2141,7 @@
  	m_searchID = theApp->searchlist->m_curr_search;
  	uint32 parentID = tag->ParentID();
  	if (parentID) {
-@@ -2075,7 +2080,7 @@ bool CSearchListRem::Phase1Done(const CE
+@@ -2075,7 +2138,7 @@ bool CSearchListRem::Phase1Done(const CE
  }
  
  
@@ -1961,7 +2150,7 @@
  {
  	ResultMap::iterator it = m_results.find(nSearchID);
  	if (it != m_results.end()) {
-@@ -2088,7 +2093,7 @@ void CSearchListRem::RemoveResults(long
+@@ -2088,7 +2151,7 @@ void CSearchListRem::RemoveResults(long
  }
  
  
@@ -1998,6 +2187,27 @@
  	//
  	// Actions
  	//
+@@ -622,6 +622,12 @@ public:
+ 
+ class CamuleRemoteGuiApp : public wxApp, public CamuleGuiBase, public CamuleAppCommon {
+ 	wxTimer*	poll_timer;
++	// Watchdog on the initial EC connect attempt. Started when the user
++	// clicks OK on the connection dialog; fires if no OnECConnection
++	// event has arrived within the timeout, so a wrong host / firewalled
++	// daemon doesn't leave amulegui "not responding" indefinitely with
++	// no visible window while TCP SYN silently times out over minutes.
++	wxTimer*	connect_timeout_timer;
+ 
+ 	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
+ 
+@@ -630,6 +636,7 @@ class CamuleRemoteGuiApp : public wxApp,
+ 	int OnExit();
+ 
+ 	void OnPollTimer(wxTimerEvent& evt);
++	void OnConnectTimeout(wxTimerEvent& evt);
+ 
+ 	void OnECConnection(wxEvent& event);
+ 	void OnECInitDone(wxEvent& event);
 --- a/src/antiLeech_wx.h
 +++ b/src/antiLeech_wx.h
 @@ -23,10 +23,10 @@
@@ -2506,7 +2716,7 @@
  	endif()
  
  	install (TARGETS amulecmd
-@@ -118,23 +122,27 @@ if (BUILD_DAEMON)
+@@ -118,23 +122,23 @@ if (BUILD_DAEMON)
  	)
  
  	target_link_libraries (amuled
@@ -2531,10 +2741,6 @@
  		)
  	endif()
  
-+	if (HAVE_LIBCURL)
-+		target_link_libraries (amuled PRIVATE CURL::libcurl)
-+	endif()
-+
  	if (WIN32)
  		target_link_libraries (amuled
 -			shlwapi.lib
@@ -2542,7 +2748,7 @@
  		)
  	endif()
  
-@@ -162,7 +170,13 @@ if (BUILD_ED2K)
+@@ -162,7 +166,13 @@ if (BUILD_ED2K)
  
  	if (WIN32)
  		target_link_libraries (ed2k
@@ -2557,7 +2763,13 @@
  		)
  	endif()
  
-@@ -189,32 +203,73 @@ if (BUILD_MONOLITHIC)
+@@ -184,37 +194,90 @@ if (BUILD_MONOLITHIC)
+ 
+ 	if (WIN32)
+ 		target_sources (amule
+-			PRIVATE ${CMAKE_SOURCE_DIR}/version.rc
++			PRIVATE ${CMAKE_SOURCE_DIR}/version.rc ${CMAKE_SOURCE_DIR}/amule.rc
+ 		)
  	endif()
  
  	target_link_libraries (amule
@@ -2584,10 +2796,6 @@
 +		target_link_libraries (amule
 +			PRIVATE ${LIBBFD}
 +		)
-+	endif()
-+
-+	if (HAVE_LIBCURL)
-+		target_link_libraries (amule PRIVATE CURL::libcurl)
  	endif()
  
  	if (WIN32)
@@ -2624,6 +2832,22 @@
 +		target_link_libraries (amule
 +			PRIVATE "-framework CoreServices"
 +			PRIVATE "-framework ApplicationServices"
++		)
++
++		# aMule performs HTTP downloads to user-configurable URLs
++		# (server.met, IP filter, Kad nodes) and the upstream defaults for
++		# some of these are plaintext http://. wxWebRequest is backed by
++		# NSURLSession on macOS, which enforces App Transport Security and
++		# blocks plaintext HTTP unless the bundle opts out. Inject the
++		# opt-out into the CMake-generated Info.plist. This matches the
++		# legacy wxHTTP/wxSocket path's behaviour, which bypassed ATS by
++		# going through raw BSD sockets.
++		add_custom_command (TARGET amule POST_BUILD
++			COMMAND /usr/bin/plutil -replace NSAppTransportSecurity
++				-json "{\"NSAllowsArbitraryLoads\": true}"
++				"$<TARGET_BUNDLE_CONTENT_DIR:amule>/Info.plist"
++			COMMENT "Opting aMule.app out of App Transport Security"
++			VERBATIM
  		)
  	endif()
  
@@ -2643,7 +2867,16 @@
  	)
  endif (BUILD_MONOLITHIC)
  
-@@ -241,24 +296,28 @@ if (BUILD_REMOTEGUI)
+@@ -228,7 +291,7 @@ if (BUILD_REMOTEGUI)
+ 
+ 	if (WIN32)
+ 		target_sources (amulegui
+-			PRIVATE ${CMAKE_SOURCE_DIR}/version.rc
++			PRIVATE ${CMAKE_SOURCE_DIR}/version.rc ${CMAKE_SOURCE_DIR}/amule.rc
+ 		)
+ 	endif()
+ 
+@@ -241,29 +304,71 @@ if (BUILD_REMOTEGUI)
  	)
  
  	target_link_libraries (amulegui
@@ -2670,19 +2903,62 @@
  		)
  	endif()
  
-+	if (HAVE_LIBCURL)
-+		target_link_libraries (amulegui PRIVATE CURL::libcurl)
-+	endif()
-+
  	if (WIN32)
 -		set_target_properties (amulegui
 -			PROPERTIES WIN32_EXECUTABLE TRUE
 +		set_target_properties (amulegui PROPERTIES
 +			WIN32_EXECUTABLE TRUE
++		)
++	endif()
++
++	if (APPLE)
++		# amulegui is a GUI wxApp (remote-control UI) — bundle it as a
++		# .app so macOS gives it an icon in the Dock, a menu bar and
++		# normal application lifecycle events, matching the monolithic
++		# aMule.app. Shares the same .icns because it's the same visual
++		# identity.
++		set_target_properties (amulegui PROPERTIES
++			MACOSX_BUNDLE TRUE
++			MACOSX_BUNDLE_BUNDLE_NAME "aMuleGUI"
++			MACOSX_BUNDLE_GUI_IDENTIFIER "org.amule.aMuleGUI"
++			MACOSX_BUNDLE_ICON_FILE "amule.icns"
++			MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
++			MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
++			MACOSX_BUNDLE_COPYRIGHT "Copyright 2003-2026 aMule Project"
++			OUTPUT_NAME "aMuleGUI"
++		)
++
++		set (AMULEGUI_ICNS "${CMAKE_SOURCE_DIR}/platforms/MacOSX/aMule-Xcode/amule.icns")
++		target_sources (amulegui PRIVATE ${AMULEGUI_ICNS})
++		set_source_files_properties (${AMULEGUI_ICNS} PROPERTIES
++			MACOSX_PACKAGE_LOCATION "Resources"
++		)
++
++		target_link_libraries (amulegui
++			PRIVATE "-framework CoreServices"
++			PRIVATE "-framework ApplicationServices"
++		)
++
++		# Same ATS opt-out as the monolithic amule.app: wxWebRequest on
++		# macOS is backed by NSURLSession which blocks plaintext HTTP
++		# by default; amulegui uses the same HTTP download path for its
++		# own version checks via CHTTPDownloadThread.
++		add_custom_command (TARGET amulegui POST_BUILD
++			COMMAND /usr/bin/plutil -replace NSAppTransportSecurity
++				-json "{\"NSAllowsArbitraryLoads\": true}"
++				"$<TARGET_BUNDLE_CONTENT_DIR:amulegui>/Info.plist"
++			COMMENT "Opting aMuleGUI.app out of App Transport Security"
++			VERBATIM
  		)
  	endif()
  
-@@ -289,6 +348,11 @@ if (NEED_LIB_MULEAPPCOMMON)
+ 	install (TARGETS amulegui
+ 		RUNTIME DESTINATION bin
++		BUNDLE DESTINATION .
+ 	)
+ endif()
+ 
+@@ -289,6 +394,11 @@ if (NEED_LIB_MULEAPPCOMMON)
  		Timer.cpp
  	)
  
@@ -2694,7 +2970,7 @@
  	target_compile_definitions (muleappcommon
  		PRIVATE wxUSE_GUI=0
  		PRIVATE WXUSINGDLL
-@@ -299,13 +363,11 @@ if (NEED_LIB_MULEAPPCOMMON)
+@@ -299,13 +409,11 @@ if (NEED_LIB_MULEAPPCOMMON)
  		PUBLIC ${EC_INCLUDE_DIR}
  		PRIVATE ${INCLUDE_INCLUDE_DIR}
  		PRIVATE ${LIBS_INCLUDE_DIR}
@@ -2710,7 +2986,7 @@
  	)
  
  	if (ENABLE_UPNP)
-@@ -390,7 +452,6 @@ if (NEED_LIB_MULEAPPCORE)
+@@ -390,7 +498,6 @@ if (NEED_LIB_MULEAPPCORE)
  		PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
  		PRIVATE ${INCLUDE_INCLUDE_DIR}
  		PRIVATE ${LIBS_INCLUDE_DIR}
@@ -2718,7 +2994,7 @@
  	)
  
  	if (ENABLE_UPNP)
-@@ -400,8 +461,16 @@ if (NEED_LIB_MULEAPPCORE)
+@@ -400,8 +507,16 @@ if (NEED_LIB_MULEAPPCORE)
  	endif()
  
  	target_link_libraries (muleappcore
@@ -2736,7 +3012,7 @@
  endif()
  
  if (NEED_LIB_MULEAPPGUI)
-@@ -432,9 +501,9 @@ if (NEED_LIB_MULEAPPGUI)
+@@ -432,9 +547,9 @@ if (NEED_LIB_MULEAPPGUI)
  	)
  
  	target_include_directories (muleappgui
@@ -2749,7 +3025,7 @@
  	)
  
  	target_link_libraries (muleappgui
-@@ -457,24 +526,53 @@ IF (NEED_LIB_MULESOCKET)
+@@ -457,24 +572,79 @@ IF (NEED_LIB_MULESOCKET)
  	)
  	
  	target_include_directories (mulesocket
@@ -2811,6 +3087,32 @@
 +			message (WARNING \"Unresolved runtime dependencies:\\n  \${_unresolved}\")
 +		endif()
 +	")
++
++	# MSYS2's libcurl is built with an absolute --with-ca-bundle path
++	# (e.g. /clangarm64/etc/ssl/certs/ca-bundle.crt) that does not exist
++	# on end-user machines, so wxWebRequest HTTPS fails with error 77
++	# anywhere outside the dev box. Ship the MSYS2 CA bundle next to the
++	# .exe so a portable install can find it; CamuleApp::OnInit points
++	# CURL_CA_BUNDLE at it on startup when the user has not set their own.
++	find_file (MINGW_CA_BUNDLE
++		NAMES cert.pem ca-bundle.crt
++		PATHS "${MINGW_BIN_DIR}/../etc/ssl/certs"
++		      "${MINGW_BIN_DIR}/../etc/ssl"
++		      "${MINGW_BIN_DIR}/../ssl/certs"
++		      "${MINGW_BIN_DIR}/../ssl"
++		NO_DEFAULT_PATH)
++	if (MINGW_CA_BUNDLE)
++		install (FILES "${MINGW_CA_BUNDLE}"
++			DESTINATION bin
++			RENAME ca-bundle.crt)
++		message (STATUS "Will bundle CA certificates from ${MINGW_CA_BUNDLE}")
++	else()
++		message (WARNING
++			"No MSYS2 CA bundle found under ${MINGW_BIN_DIR}/../etc/ssl; "
++			"libcurl HTTPS will fail at runtime unless CURL_CA_BUNDLE is "
++			"set externally. Install mingw-w64-*-ca-certificates and "
++			"re-run cmake to populate this.")
++	endif()
 +endif()
 --- a/src/ColorFrameCtrl.cpp
 +++ b/src/ColorFrameCtrl.cpp
@@ -3825,262 +4127,758 @@
  	 * Note that the return-value of the function must be void.
 --- a/src/HTTPDownload.cpp
 +++ b/src/HTTPDownload.cpp
-@@ -24,9 +24,15 @@
+@@ -24,9 +24,8 @@
  //
  
  
-+#include "config.h"		// Needed for HAVE_LIBCURL
-+
- #include <wx/wfstream.h>
- #include <wx/protocol/http.h>
- 
-+#ifdef HAVE_LIBCURL
-+	#include <curl/curl.h>
-+#endif
-+
+-#include <wx/wfstream.h>
+-#include <wx/protocol/http.h>
+-
++#include <wx/filename.h>
++#include <wx/webrequest.h>
  
  #include "HTTPDownload.h"				// Interface declarations
  #include <common/StringFunctions.h>		// Needed for unicode2char
-@@ -185,16 +191,161 @@ wxString CHTTPDownloadThread::FormatDate
- }
+@@ -35,8 +34,7 @@
+ #include <common/Format.h>				// Needed for CFormat
+ #include "InternalEvents.h"				// Needed for CMuleInternalEvent
+ #include "Preferences.h"
+-#include "ScopedPtr.h"
+-#include <wx/filename.h>				// Needed for wxFileName
++#include "Proxy.h"
  
  
-+#ifdef HAVE_LIBCURL
-+// libcurl-based implementation. Preferred over the wxHTTP fallback because
-+// it supports HTTPS, follows redirects transparently, and has no interaction
-+// with wxEpollDispatcher (which can cause an intermittent SIGSEGV in
-+// libwx_baseu_net on wx 3.2 / Linux when a remote server forces an HTTPS
-+// redirect during startup HTTP downloads).
-+
-+size_t CHTTPDownloadThread::CurlWriteCallback(void* ptr, size_t size, size_t nmemb, void* userdata)
-+{
-+	wxFFileOutputStream* out = (wxFFileOutputStream*)userdata;
-+	const size_t bytes = size * nmemb;
-+	out->Write(ptr, bytes);
-+	return out->LastWrite();
-+}
-+
-+int CHTTPDownloadThread::CurlProgressCallback(void* clientp,
-+	curl_off_t dltotal, curl_off_t dlnow,
-+	curl_off_t /*ultotal*/, curl_off_t /*ulnow*/)
-+{
-+	CHTTPDownloadThread* self = (CHTTPDownloadThread*)clientp;
-+	if (self->TestDestroy()) {
-+		return 1;  // abort transfer
-+	}
-+#ifndef AMULE_DAEMON
-+	if (self->m_companion) {
-+		CMuleInternalEvent evt(wxEVT_HTTP_PROGRESS);
-+		evt.SetInt((int)dlnow);
-+		evt.SetExtraLong((long)dltotal);
-+		wxPostEvent(self->m_companion, evt);
-+	}
-+#else
-+	(void)dltotal; (void)dlnow;
-+#endif
-+	return 0;
-+}
-+
-+int CHTTPDownloadThread::DoDownloadCurl(int& out_response, int& out_error)
-+{
-+	wxFFileOutputStream outfile(m_tempfile);
-+	if (!outfile.Ok()) {
-+		AddLogLineC(CFormat(_("Unable to create destination file %s for download!")) % m_tempfile);
-+		out_error = 1;
-+		return HTTP_Error;
-+	}
-+
-+	CURL* curl = curl_easy_init();
-+	if (!curl) {
-+		AddLogLineC(wxT("curl_easy_init() failed"));
-+		out_error = 2;
-+		return HTTP_Error;
-+	}
-+
-+	const wxScopedCharBuffer url_utf8 = m_url.utf8_str();
-+	curl_easy_setopt(curl, CURLOPT_URL, url_utf8.data());
-+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, CurlWriteCallback);
-+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &outfile);
-+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-+	curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10L);
-+	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 15L);
-+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 300L);
-+	curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, CurlProgressCallback);
-+	curl_easy_setopt(curl, CURLOPT_XFERINFODATA, this);
-+	curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
-+	curl_easy_setopt(curl, CURLOPT_USERAGENT, "aMule");
-+
-+	const CProxyData* proxy = thePrefs::GetProxyData();
-+	if (proxy != NULL && proxy->m_proxyEnable) {
-+		const wxScopedCharBuffer proxy_host = proxy->m_proxyHostName.utf8_str();
-+		curl_easy_setopt(curl, CURLOPT_PROXY, proxy_host.data());
-+		curl_easy_setopt(curl, CURLOPT_PROXYPORT, (long)proxy->m_proxyPort);
-+
-+		long curl_proxy_type = CURLPROXY_HTTP;
-+		switch (proxy->m_proxyType) {
-+			case PROXY_SOCKS5:  curl_proxy_type = CURLPROXY_SOCKS5;  break;
-+			case PROXY_SOCKS4:  curl_proxy_type = CURLPROXY_SOCKS4;  break;
-+			case PROXY_SOCKS4a: curl_proxy_type = CURLPROXY_SOCKS4A; break;
-+			case PROXY_HTTP:    curl_proxy_type = CURLPROXY_HTTP;    break;
-+			default: break;
-+		}
-+		curl_easy_setopt(curl, CURLOPT_PROXYTYPE, curl_proxy_type);
-+
-+		if (proxy->m_enablePassword) {
-+			const wxScopedCharBuffer user = proxy->m_userName.utf8_str();
-+			const wxScopedCharBuffer pass = proxy->m_password.utf8_str();
-+			curl_easy_setopt(curl, CURLOPT_PROXYUSERNAME, user.data());
-+			curl_easy_setopt(curl, CURLOPT_PROXYPASSWORD, pass.data());
-+		}
-+	}
-+
-+	struct curl_slist* headers = NULL;
-+	if (m_lastmodified.IsValid()) {
-+		wxString ims = wxT("If-Modified-Since: ") + FormatDateHTTP(m_lastmodified);
-+		const wxScopedCharBuffer ims_utf8 = ims.utf8_str();
-+		headers = curl_slist_append(headers, ims_utf8.data());
-+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-+	}
-+
-+	const CURLcode res = curl_easy_perform(curl);
-+	long http_code = 0;
-+	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-+	out_response = (int)http_code;
-+	out_error    = (int)res;
-+
-+	if (headers) curl_slist_free_all(headers);
-+	curl_easy_cleanup(curl);
-+
-+	int result = HTTP_Error;
-+	if (res == CURLE_OK) {
-+		if (http_code == 304) {
-+			result = HTTP_Skipped;
-+			AddDebugLogLineN(logHTTP, wxT("Skipped download because requested file is not newer."));
-+		} else if (http_code >= 200 && http_code < 300) {
-+			result = HTTP_Success;
-+		} else {
-+			AddLogLineC(CFormat(_("HTTP %d returned for %s")) % http_code % m_url);
-+		}
-+	} else if (res == CURLE_ABORTED_BY_CALLBACK) {
-+		AddDebugLogLineN(logHTTP, wxT("HTTP download cancelled"));
-+	} else {
-+		AddLogLineC(CFormat(_("libcurl error %d: %s"))
-+			% (int)res % wxString::FromUTF8(curl_easy_strerror(res)));
-+	}
-+
-+	if (result != HTTP_Success && result != HTTP_Skipped) {
-+		if (wxFileExists(m_tempfile)) {
-+			wxRemoveFile(m_tempfile);
-+		}
-+	}
-+	return result;
-+}
-+#endif // HAVE_LIBCURL
-+
-+
- CMuleThread::ExitCode CHTTPDownloadThread::Entry()
+ #ifndef AMULE_DAEMON
+@@ -53,7 +51,7 @@ DECLARE_LOCAL_EVENT_TYPE(wxEVT_HTTP_SHUT
+ class CHTTPDownloadDialog : public wxDialog
  {
- 	if (TestDestroy()) {
- 		return NULL;
+ public:
+-	CHTTPDownloadDialog(CHTTPDownloadThread* thread)
++	CHTTPDownloadDialog(CHTTPDownloadThread* owner)
+ 	  : wxDialog(wxTheApp->GetTopWindow(), -1, _("Downloading..."),
+ 			wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxSYSTEM_MENU)
+ 	{
+@@ -66,49 +64,61 @@ public:
+ 		m_ani->LoadData((const char*)inetDownload, sizeof(inetDownload));
+ 		m_ani->Start();
+ 
+-		m_thread = thread;
++		m_owner = owner;
  	}
  
--	wxHTTP* url_handler = NULL;
--
- 	AddDebugLogLineN(logHTTP, wxT("HTTP download thread started"));
+ 	~CHTTPDownloadDialog() {
+-		StopThread();
++		StopDownload();
+ 	}
  
-+#ifdef HAVE_LIBCURL
-+	int resp = 0, err = 0;
-+	m_result = DoDownloadCurl(resp, err);
-+	m_response = resp;
-+	m_error    = err;
-+	if (m_result == HTTP_Success) {
-+		thePrefs::SetLastHTTPDownloadURL(m_file_id, m_url);
-+	}
-+	AddDebugLogLineN(logHTTP, wxT("HTTP download thread ended"));
-+	return 0;
-+#else
+ 	void UpdateGauge(int total, int current) {
+ 		CFormat label( wxT("( %s / %s )") );
+ 
+-		label % CastItoXBytes(current);
+-		if (total > 0) {
+-			label % CastItoXBytes(total);
++		const int safeCurrent = (current > 0) ? current : 0;
++		const int safeTotal   = (total   > 0) ? total   : 0;
 +
-+	wxHTTP* url_handler = NULL;
-+
- 	const CProxyData* proxy_data = thePrefs::GetProxyData();
- 	bool use_proxy = proxy_data != NULL && proxy_data->m_proxyEnable;
- 
-@@ -273,14 +424,14 @@ CMuleThread::ExitCode CHTTPDownloadThrea
- 
- 		if (current_read == 0) {
- 			if (download_size == -1) {
--				// Download was probably succesful.
-+				// Download was probably successful.
- 				AddLogLineN(CFormat(_("Downloaded %d bytes")) % total_read);
- 				m_result = HTTP_Success;
- 			} else if (total_read != download_size) {
- 				m_result = HTTP_Error;
- 				throw wxString(CFormat(_("Expected %d bytes, but downloaded %d bytes")) % download_size % total_read);
- 			} else {
--				// Download was succesful.
-+				// Download was successful.
- 				m_result = HTTP_Success;
- 			}
++		label % CastItoXBytes(safeCurrent);
++		if (safeTotal > 0) {
++			label % CastItoXBytes(safeTotal);
+ 		} else {
+ 			label % _("Unknown");
  		}
-@@ -304,6 +455,7 @@ CMuleThread::ExitCode CHTTPDownloadThrea
- 	AddDebugLogLineN(logHTTP, wxT("HTTP download thread ended"));
  
- 	return 0;
-+#endif // HAVE_LIBCURL
+ 		CastChild(IDC_DOWNLOADSIZE, wxStaticText)->SetLabel(label.GetString());
+ 
+-		if (total && (total != m_progressbar->GetRange())) {
+-			m_progressbar->SetRange(total);
+-		}
+-
+-		if (current && (current <= total)) {
+-			m_progressbar->SetValue(current);
++		// Only touch the gauge when we know the total. Without a known total
++		// we leave the gauge at its previous (valid) state — better than
++		// risking m_gaugePos > m_rangeMax, which trips an assertion in
++		// wxGauge::DoSetGauge on wxGTK (./src/gtk/gauge.cpp:90).
++		if (safeTotal > 0) {
++			if (safeTotal != m_progressbar->GetRange()) {
++				m_progressbar->SetRange(safeTotal);
++			}
++			const int clamped = (safeCurrent <= safeTotal) ? safeCurrent : safeTotal;
++			m_progressbar->SetValue(clamped);
+ 		}
+ 
+ 		Layout();
+ 	}
+ 
+ private:
+-	void StopThread() {
+-		if (m_thread) {
+-			m_thread->Stop();
+-			delete m_thread;
+-			m_thread = NULL;
++	// Unlink from the request owner and cancel it. Fire-and-forget: the
++	// owner will self-destroy when wxWebRequest reports State_Cancelled
++	// on the main loop. We must NOT delete the owner here — doing so
++	// while a request is in flight leaves the wxWebRequest backend
++	// calling into a dead sink.
++	void StopDownload() {
++		if (m_owner) {
++			m_owner->DetachCompanion();
++			m_owner->Stop();
++			m_owner = NULL;
+ 		}
+ 	}
+ 
+ 	void OnBtnCancel(wxCommandEvent& WXUNUSED(evt)) {
+ 		AddLogLineN(_("HTTP download cancelled"));
+ 		Show(false);
+-		StopThread();
++		StopDownload();
+ 	}
+ 
+ 	void OnProgress(CMuleInternalEvent& evt) {
+@@ -116,13 +126,17 @@ private:
+ 	}
+ 
+ 	void OnShutdown(CMuleInternalEvent& WXUNUSED(evt)) {
++		// The thread is about to self-destroy — drop our raw pointer now
++		// so our own dtor (which runs later via wxPendingDelete) does not
++		// touch a freed CHTTPDownloadThread via StopDownload().
++		m_owner = NULL;
+ 		Show(false);
+ 		Destroy();
+ 	}
+ 
+-	CMuleThread*	m_thread;
+-	MuleGifCtrl*	m_ani;
+-	wxGaugeControl* m_progressbar;
++	CHTTPDownloadThread*	m_owner;	// not owned
++	MuleGifCtrl*		m_ani;
++	wxGaugeControl*		m_progressbar;
+ 
+ 	DECLARE_EVENT_TABLE()
+ };
+@@ -140,18 +154,57 @@ DEFINE_LOCAL_EVENT_TYPE(wxEVT_HTTP_SHUTD
+ #endif
+ 
+ 
++// Apply the current proxy prefs to the shared wxWebSession.
++//
++// wxWebProxy / wxWebSession::SetProxy are wx 3.3+ only. On wx 3.2 there is
++// no programmatic way to set a proxy on wxWebRequest, so we rely on the
++// backend defaults: on Linux wxWebRequest is backed by libcurl, which
++// honours the standard http_proxy / https_proxy / all_proxy environment
++// variables. Users of the aMule Proxy pref on wx 3.2 are no worse off than
++// with the legacy wxHTTP::SetProxyMode(bool) path, which only toggled a
++// boolean and never actually consumed the host / port / auth fields either.
++//
++// SOCKS proxies are intentionally skipped even when SetProxy is available:
++// wx 3.3's wxWebProxy is HTTP-only. A libcurl backend would be required if
++// SOCKS support mattered — that is out of scope for this fix.
++static void ApplyProxyToDefaultSession()
++{
++#if wxCHECK_VERSION(3, 3, 0)
++	wxWebSession& session = wxWebSession::GetDefault();
++	const CProxyData* pd = thePrefs::GetProxyData();
++	if (!pd || !pd->m_proxyEnable || pd->m_proxyType == PROXY_NONE) {
++		session.SetProxy(wxWebProxy::FromURL(wxString()));   // clear
++		return;
++	}
++	if (pd->m_proxyType != PROXY_HTTP) {
++		AddDebugLogLineN(logHTTP, wxT("wxWebRequest: SOCKS proxies are not supported; startup HTTP will be made direct."));
++		session.SetProxy(wxWebProxy::FromURL(wxString()));
++		return;
++	}
++	wxString url;
++	if (pd->m_enablePassword && !pd->m_userName.IsEmpty()) {
++		url = CFormat(wxT("http://%s:%s@%s:%u"))
++			% pd->m_userName % pd->m_password
++			% pd->m_proxyHostName % pd->m_proxyPort;
++	} else {
++		url = CFormat(wxT("http://%s:%u"))
++			% pd->m_proxyHostName % pd->m_proxyPort;
++	}
++	session.SetProxy(wxWebProxy::FromURL(url));
++#endif
++}
++
++
+ CHTTPDownloadThread::CHTTPDownloadThread(const wxString& url, const wxString& filename, const wxString& oldfilename, HTTP_Download_File file_id,
+ 										bool showDialog, bool checkDownloadNewer)
+-#ifdef AMULE_DAEMON
+-	: CMuleThread(wxTHREAD_DETACHED),
+-#else
+-	: CMuleThread(showDialog ? wxTHREAD_JOINABLE : wxTHREAD_DETACHED),
+-#endif
+-	  m_url(url),
++	: m_url(url),
+ 	  m_tempfile(filename),
+ 	  m_result(-1),
++	  m_response(0),
++	  m_error(0),
+ 	  m_file_id(file_id),
+-	  m_companion(NULL)
++	  m_companion(NULL),
++	  m_finishPosted(false)
+ {
+ 	if (showDialog) {
+ #ifndef AMULE_DAEMON
+@@ -160,21 +213,58 @@ CHTTPDownloadThread::CHTTPDownloadThread
+ 		m_companion = dialog;
+ #endif
+ 	}
+-	// Get the date on which the original file was last modified
+-	// Only if it's the same URL we used for the last download and if the file exists.
++
++	// Conditional GET: only download if the local copy's mtime predates
++	// the server version. Same contract as the old wxHTTP path.
+ 	if (checkDownloadNewer && thePrefs::GetLastHTTPDownloadURL(file_id) == url) {
+-		wxFileName origFile = wxFileName(oldfilename);
++		wxFileName origFile(oldfilename);
+ 		if (origFile.FileExists()) {
+ 			AddDebugLogLineN(logHTTP, CFormat(wxT("URL %s matches and file %s exists, only download if newer")) % url % oldfilename);
+ 			m_lastmodified = origFile.GetModificationTime();
+ 		}
+ 	}
+-	wxMutexLocker lock(s_allThreadsMutex);
+-	s_allThreads.insert(this);
++
++	{
++		wxMutexLocker lock(s_allThreadsMutex);
++		s_allThreads.insert(this);
++	}
++
++	AddDebugLogLineN(logHTTP, CFormat(wxT("HTTP download started: %s")) % m_url);
++
++	if (m_url.IsEmpty()) {
++		AddLogLineC(_("The URL to download can't be empty"));
++		FinishAndDestroy(HTTP_Error);
++		return;
++	}
++
++	ApplyProxyToDefaultSession();
++
++	m_request = wxWebSession::GetDefault().CreateRequest(this, m_url);
++	if (!m_request.IsOk()) {
++		AddLogLineC(CFormat(_("Failed to create HTTP request for %s")) % m_url);
++		FinishAndDestroy(HTTP_Error);
++		return;
++	}
++
++	// Storage_File: wx streams the response body to an internal temp file
++	// and hands us the path on completion. We then rename it to the
++	// caller-supplied m_tempfile. Redirects (incl. HTTP→HTTPS) are
++	// followed by wx transparently — the whole recursive GetInputStream()
++	// redirect handler of the legacy code path is gone, which is the
++	// actual fix for the upstream startup crash (amule-project/amule#455).
++	m_request.SetStorage(wxWebRequest::Storage_File);
++
++	if (m_lastmodified.IsValid()) {
++		AddDebugLogLineN(logHTTP, wxT("If-Modified-Since: ") + FormatDateHTTP(m_lastmodified));
++		m_request.SetHeader(wxT("If-Modified-Since"), FormatDateHTTP(m_lastmodified));
++	}
++
++	Bind(wxEVT_WEBREQUEST_STATE, &CHTTPDownloadThread::OnStateEvent, this);
++	m_request.Start();
  }
  
  
-@@ -346,7 +498,7 @@ wxInputStream* CHTTPDownloadThread::GetI
- 	// Remove the "http://"
- 	wxString host = location.Right(location.Len() - 7); // strlen("http://") -> 7
+-// Format the given date to a RFC-2616 compliant HTTP date
++// Format the given date to a RFC-2616 compliant HTTP date.
+ // Example: Thu, 14 Jan 2010 15:40:23 GMT
+ wxString CHTTPDownloadThread::FormatDateHTTP(const wxDateTime& date)
+ {
+@@ -185,130 +275,117 @@ wxString CHTTPDownloadThread::FormatDate
+ }
+ 
+ 
+-CMuleThread::ExitCode CHTTPDownloadThread::Entry()
++void CHTTPDownloadThread::OnStateEvent(wxWebRequestEvent& evt)
+ {
+-	if (TestDestroy()) {
+-		return NULL;
+-	}
+-
+-	wxHTTP* url_handler = NULL;
+-
+-	AddDebugLogLineN(logHTTP, wxT("HTTP download thread started"));
+-
+-	const CProxyData* proxy_data = thePrefs::GetProxyData();
+-	bool use_proxy = proxy_data != NULL && proxy_data->m_proxyEnable;
+-
+-	try {
+-		wxFFileOutputStream outfile(m_tempfile);
+-
+-		if (!outfile.Ok()) {
+-			throw wxString(CFormat(_("Unable to create destination file %s for download!")) % m_tempfile);
+-		}
+-
+-		if (m_url.IsEmpty()) {
+-			// Nowhere to download from!
+-			throw wxString(_("The URL to download can't be empty"));
++	switch (evt.GetState()) {
++		case wxWebRequest::State_Active: {
++			// Periodic progress notification during the download.
++			if (m_companion) {
++#ifndef AMULE_DAEMON
++				// GetBytesExpectedToReceive() returns wxInvalidOffset (-1)
++				// when the server omits Content-Length. Forwarding -1 into
++				// the dialog ends up in wxGauge::SetRange(-1), which flips
++				// m_rangeMax invalid and trips an assertion on the next
++				// repaint (./src/gtk/gauge.cpp:90). Clamp to 0 here so the
++				// dialog treats it as "unknown" (skips the range + value
++				// update) until a real total shows up.
++				wxFileOffset expected = m_request.GetBytesExpectedToReceive();
++				CMuleInternalEvent prog(wxEVT_HTTP_PROGRESS);
++				prog.SetInt((int)m_request.GetBytesReceived());
++				prog.SetExtraLong((long)(expected > 0 ? expected : 0));
++				wxPostEvent(m_companion, prog);
++#endif
++			}
++			break;
+ 		}
+ 
+-		url_handler = new wxHTTP;
+-		url_handler->SetProxyMode(use_proxy);
+-
+-		// Build a conditional get request if the last modified date of the file being updated is known
+-		if (m_lastmodified.IsValid()) {
+-			// Set a flag in the HTTP header that we only download if the file is newer.
+-			// see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.25
+-			AddDebugLogLineN(logHTTP, wxT("If-Modified-Since: ") + FormatDateHTTP(m_lastmodified));
+-			url_handler->SetHeader(wxT("If-Modified-Since"), FormatDateHTTP(m_lastmodified));
+-		}
++		case wxWebRequest::State_Completed: {
++			wxWebResponse response = evt.GetResponse();
++			m_response = response.IsOk() ? response.GetStatus() : 0;
++			m_error    = 0;
+ 
+-		CScopedPtr<wxInputStream> url_read_stream(GetInputStream(url_handler, m_url, use_proxy));
++			AddDebugLogLineN(logHTTP, CFormat(wxT("HTTP response %d for %s")) % m_response % m_url);
+ 
+-		if (!url_read_stream.get()) {
+ 			if (m_response == 304) {
+-				m_result = HTTP_Skipped;
++				// Not Modified — nothing to write.
+ 				AddDebugLogLineN(logHTTP, wxT("Skipped download because requested file is not newer."));
+-				throw wxString(wxEmptyString);
++				FinishAndDestroy(HTTP_Skipped);
++			} else if (m_response >= 200 && m_response < 300) {
++				// Success. wx wrote the body to its own temp file; move it
++				// to the caller-supplied m_tempfile. A plain rename may
++				// fail across filesystems (wx's temp dir vs the aMule
++				// config dir), so fall back to copy + delete.
++				const wxString wxTmp = response.GetDataFile();
++				if (wxTmp.IsEmpty() || !wxFileExists(wxTmp)) {
++					AddLogLineC(CFormat(_("HTTP download: empty response body for %s")) % m_url);
++					FinishAndDestroy(HTTP_Error);
++					break;
++				}
++				if (wxFileExists(m_tempfile)) {
++					wxRemoveFile(m_tempfile);
++				}
++				bool moved = wxRenameFile(wxTmp, m_tempfile);
++				if (!moved) {
++					moved = wxCopyFile(wxTmp, m_tempfile) && wxRemoveFile(wxTmp);
++				}
++				if (!moved) {
++					AddLogLineC(CFormat(_("Could not move downloaded file to %s")) % m_tempfile);
++					FinishAndDestroy(HTTP_Error);
++					break;
++				}
++				AddLogLineN(CFormat(_("Downloaded %s (%llu bytes)"))
++					% m_url % (unsigned long long)m_request.GetBytesReceived());
++				thePrefs::SetLastHTTPDownloadURL(m_file_id, m_url);
++				FinishAndDestroy(HTTP_Success);
+ 			} else {
+-				m_result = HTTP_Error;
+-				throw wxString(CFormat(_("The URL %s returned: %i - Error (%i)!")) % m_url % m_response % m_error);
++				AddLogLineC(CFormat(_("The URL %s returned: %i")) % m_url % m_response);
++				FinishAndDestroy(HTTP_Error);
+ 			}
++			break;
+ 		}
+ 
+-		int download_size = url_read_stream->GetSize();
+-#ifdef __DEBUG__
+-		if (download_size == -1) {
+-			AddDebugLogLineN(logHTTP, wxT("Download size not received, downloading until connection is closed"));
+-		} else {
+-			AddDebugLogLineN(logHTTP, CFormat(wxT("Download size: %i")) % download_size);
++		case wxWebRequest::State_Failed: {
++			AddLogLineC(CFormat(_("HTTP download failed for %s: %s"))
++				% m_url % evt.GetErrorDescription());
++			FinishAndDestroy(HTTP_Error);
++			break;
+ 		}
+-#endif
+-
+-		// Here is our read buffer
+-		// <ken> Still, I'm sure 4092 is probably a better size.
+-		// MP: Most people can download at least at 32kb/s from http...
+-		const unsigned MAX_HTTP_READ = 32768;
+-
+-		char buffer[MAX_HTTP_READ];
+-		int current_read = 0;
+-		int total_read = 0;
+-		do {
+-			url_read_stream->Read(buffer, MAX_HTTP_READ);
+-			current_read = url_read_stream->LastRead();
+-			if (current_read) {
+-				total_read += current_read;
+-				outfile.Write(buffer,current_read);
+-				int current_write = outfile.LastWrite();
+-				if (current_read != current_write) {
+-					throw wxString(_("Critical error while writing downloaded file"));
+-				} else if (m_companion) {
+-#ifndef AMULE_DAEMON
+-					CMuleInternalEvent evt(wxEVT_HTTP_PROGRESS);
+-					evt.SetInt(total_read);
+-					evt.SetExtraLong(download_size);
+-					wxPostEvent(m_companion, evt);
+-#endif
+-				}
+-			}
+-		} while (current_read && !TestDestroy());
+ 
+-		if (current_read == 0) {
+-			if (download_size == -1) {
+-				// Download was probably succesful.
+-				AddLogLineN(CFormat(_("Downloaded %d bytes")) % total_read);
+-				m_result = HTTP_Success;
+-			} else if (total_read != download_size) {
+-				m_result = HTTP_Error;
+-				throw wxString(CFormat(_("Expected %d bytes, but downloaded %d bytes")) % download_size % total_read);
+-			} else {
+-				// Download was succesful.
+-				m_result = HTTP_Success;
+-			}
+-		}
+-	} catch (const wxString& error) {
+-		if (wxFileExists(m_tempfile)) {
+-			wxRemoveFile(m_tempfile);
++		case wxWebRequest::State_Cancelled: {
++			AddDebugLogLineN(logHTTP, CFormat(wxT("HTTP download cancelled: %s")) % m_url);
++			FinishAndDestroy(HTTP_Error);
++			break;
+ 		}
+-		if (!error.IsEmpty()) {
+-			AddLogLineC(error);
+-		}
+-	}
+ 
+-	if (m_result == HTTP_Success) {
+-		thePrefs::SetLastHTTPDownloadURL(m_file_id, m_url);
+-	}
++		case wxWebRequest::State_Unauthorized:
++			// We have no credentials to provide interactively; treat as
++			// a failure so the dispatcher reports an error to the user.
++			AddLogLineC(CFormat(_("HTTP 401 Unauthorized for %s")) % m_url);
++			m_request.Cancel();
++			FinishAndDestroy(HTTP_Error);
++			break;
+ 
+-	if (url_handler) {
+-		url_handler->Destroy();
++		case wxWebRequest::State_Idle:
++			// Initial state before Start(); nothing to do.
++			break;
+ 	}
+-
+-	AddDebugLogLineN(logHTTP, wxT("HTTP download thread ended"));
+-
+-	return 0;
+ }
+ 
+ 
+-void CHTTPDownloadThread::OnExit()
++void CHTTPDownloadThread::FinishAndDestroy(int result)
+ {
++	if (m_finishPosted) {
++		return;
++	}
++	m_finishPosted = true;
++	m_result = result;
++
++	// Clean the caller's temp file on failure so we don't leave stale
++	// half-written content around. Legacy path did the same.
++	if (m_result != HTTP_Success && wxFileExists(m_tempfile)) {
++		wxRemoveFile(m_tempfile);
++	}
++
+ #ifndef AMULE_DAEMON
+ 	if (m_companion) {
+ 		CMuleInternalEvent termEvent(wxEVT_HTTP_SHUTDOWN);
+@@ -316,143 +393,61 @@ void CHTTPDownloadThread::OnExit()
+ 	}
+ #endif
+ 
+-	// Notice the app that the file finished download
++	// Notify the app dispatcher (CamuleApp::OnFinishedHTTPDownload) so the
++	// feature-specific handler (ipfilter, serverlist, kad, ...) runs.
+ 	CMuleInternalEvent evt(wxEVT_CORE_FINISHED_HTTP_DOWNLOAD);
+ 	evt.SetInt((int)m_file_id);
+ 	evt.SetExtraLong((long)m_result);
+ 	wxPostEvent(wxTheApp, evt);
+-	wxMutexLocker lock(s_allThreadsMutex);
+-	s_allThreads.erase(this);
+-}
+-
+-
+-//! This function's purpose is to handle redirections in a proper way.
+-wxInputStream* CHTTPDownloadThread::GetInputStream(wxHTTP * & url_handler, const wxString& location, bool proxy)
+-{
+-	// Extract the protocol name
+-	wxString protocol(location.BeforeFirst(wxT(':')));
+ 
+-	if (TestDestroy()) {
+-		return NULL;
++	{
++		wxMutexLocker lock(s_allThreadsMutex);
++		s_allThreads.erase(this);
+ 	}
+ 
+-	if (protocol != wxT("http")) {
+-		// This is not a http url
+-		throw wxString(CFormat(_("Protocol not supported for HTTP download: %s")) % protocol);
+-	}
++	AddDebugLogLineN(logHTTP, wxT("HTTP download ended"));
+ 
+-	// Get the host
++	// Schedule our own destruction after the current event returns to
++	// the main loop. Must not be `delete this` — wxWebRequest may still
++	// be unwinding state after handing us the terminal event.
++	CallAfter([this]{ delete this; });
++}
+ 
+-	// Remove the "http://"
+-	wxString host = location.Right(location.Len() - 7); // strlen("http://") -> 7
  
 -	// I belive this is a bug...
-+	// I believe this is a bug...
- 	// Sometimes "Location" header looks like this:
- 	// "http://www.whatever.com:8080http://www.whatever.com/downloads/something.zip"
- 	// So let's clean it...
+-	// Sometimes "Location" header looks like this:
+-	// "http://www.whatever.com:8080http://www.whatever.com/downloads/something.zip"
+-	// So let's clean it...
++void CHTTPDownloadThread::DetachCompanion()
++{
++	m_companion = NULL;
++}
+ 
+-	int bad_url_pos = host.Find(wxT("http://"));
+-	wxString location_url;
+-	if (bad_url_pos != -1) {
+-		// Malformed Location field on header (bug above?)
+-		location_url = host.Mid(bad_url_pos);
+-		host = host.Left(bad_url_pos);
+-		// After the first '/' non-http-related, it's the location part of the URL
+-		location_url = location_url.Right(location_url.Len() - 7).AfterFirst(wxT('/'));
+-	} else {
+-		// Regular Location field
+-		// After the first '/', it's the location part of the URL
+-		location_url = host.AfterFirst(wxT('/'));
+-		// The host is everything till the first "/"
+-		host = host.BeforeFirst(wxT('/'));
+-	}
+-
+-	// Build the cleaned url now
+-	wxString url = wxT("http://") + host + wxT("/") + location_url;
+-
+-	int port = 80;
+-	if (host.Find(wxT(':')) != -1) {
+-		// This http url has a port
+-		port = wxAtoi(host.AfterFirst(wxT(':')));
+-		host = host.BeforeFirst(wxT(':'));
+-	}
+-
+-	wxIPV4address addr;
+-	addr.Hostname(host);
+-	addr.Service(port);
+-	if (!url_handler->Connect(addr, true)) {
+-		throw wxString(_("Unable to connect to HTTP download server"));
+-	}
+-
+-	wxInputStream* url_read_stream = url_handler->GetInputStream(url);
+-
+-	/* store the HTTP response code */
+-	m_response = url_handler->GetResponse();
+-
+-	/* store the HTTP error code */
+-	m_error = url_handler->GetError();
+-
+-	AddDebugLogLineN(logHTTP, CFormat(wxT("Host: %s:%i\n")) % host % port);
+-	AddDebugLogLineN(logHTTP, CFormat(wxT("URL: %s\n")) % url);
+-	AddDebugLogLineN(logHTTP, CFormat(wxT("Response: %i (Error: %i)")) % m_response % m_error);
+-
+-	if (!m_response) {
+-		AddDebugLogLineC(logHTTP, wxT("WARNING: Void response on stream creation"));
+-		// WTF? Why does this happen?
+-		// This is probably produced by an already existing connection, because
+-		// the input stream is created nevertheless. However, data is not the same.
+-		delete url_read_stream;
+-		throw wxString(_("Invalid response from HTTP download server"));
+-	}
+-
+-	if (m_response == 301  // Moved permanently
+-		|| m_response == 302 // Moved temporarily
+-		// What about 300 (multiple choices)? Do we have to handle it?
+-		) {
+-
+-		// We have to remove the current stream.
+-		delete url_read_stream;
+-
+-		wxString new_location = url_handler->GetHeader(wxT("Location"));
+-		AddDebugLogLineN(logHTTP, CFormat(wxT("Redirecting to: %s")) % new_location);
+-
+-		url_handler->Destroy();
+-		if (!new_location.IsEmpty()) {
+-			url_handler = new wxHTTP;
+-			url_handler->SetProxyMode(proxy);
+-			if (m_lastmodified.IsValid()) {
+-				// Set a flag in the HTTP header that we only download if the file is newer.
+-				// see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.25
+-				url_handler->SetHeader(wxT("If-Modified-Since"), FormatDateHTTP(m_lastmodified));
+-			}
+-			url_read_stream = GetInputStream(url_handler, new_location, proxy);
+-		} else {
+-			AddDebugLogLineC(logHTTP, wxT("ERROR: Redirection code received with no URL"));
+-			url_handler = NULL;
+-			url_read_stream = NULL;
+-		}
+-	} else if (m_response == 304) {		// "Not Modified"
+-		delete url_read_stream;
+-		url_handler->Destroy();
+-		url_read_stream = NULL;
+-		url_handler = NULL;
+-	}
+ 
+-	return url_read_stream;
++void CHTTPDownloadThread::Stop()
++{
++	if (m_request.IsOk() && !m_finishPosted) {
++		// Fire-and-forget: wxWebRequest will schedule a State_Cancelled
++		// event on the main loop. Our OnStateEvent will run
++		// FinishAndDestroy at that point.
++		m_request.Cancel();
++	} else if (!m_finishPosted) {
++		// Request never got off the ground (e.g. invalid URL, or Stop()
++		// called before Start() had a chance). Finish synchronously.
++		FinishAndDestroy(HTTP_Error);
++	}
+ }
+ 
++
+ void CHTTPDownloadThread::StopAll()
+ {
+-	ThreadSet allThreads;
++	ThreadSet snapshot;
+ 	{
+ 		wxMutexLocker lock(s_allThreadsMutex);
+-		std::swap(allThreads, s_allThreads);
++		snapshot = s_allThreads;
+ 	}
+-	for (ThreadSet::iterator it = allThreads.begin(); it != allThreads.end(); ++it) {
++	for (ThreadSet::iterator it = snapshot.begin(); it != snapshot.end(); ++it) {
+ 		(*it)->Stop();
+ 	}
+ }
+ 
++
+ CHTTPDownloadThread::ThreadSet CHTTPDownloadThread::s_allThreads;
+ wxMutex CHTTPDownloadThread::s_allThreadsMutex;
+ 
 --- a/src/HTTPDownload.h
 +++ b/src/HTTPDownload.h
-@@ -27,11 +27,16 @@
- #ifndef HTTPDOWNLOAD_H
+@@ -28,13 +28,13 @@
  #define HTTPDOWNLOAD_H
  
-+#include "config.h"			// Needed for HAVE_LIBCURL
  #include "GuiEvents.h"		// Needed for HTTP_Download_File
- #include "MuleThread.h"		// Needed for CMuleThread
+-#include "MuleThread.h"		// Needed for CMuleThread
  #include <wx/datetime.h>	// Needed for wxDateTime
++#include <wx/event.h>		// Needed for wxEvtHandler
++#include <wx/webrequest.h>	// Needed for wxWebRequest
  #include <set>
  
-+#ifdef HAVE_LIBCURL
-+#include <curl/curl.h>		// Needed for curl_off_t in static callback signatures
-+#endif
+-class wxEvtHandler;
+-class wxHTTP;
+-class wxInputStream;
++class wxWebRequestEvent;
 +
- class wxEvtHandler;
- class wxHTTP;
- class wxInputStream;
-@@ -50,6 +55,7 @@ public:
+ 
+ enum HTTPDownloadResult {
+ 	HTTP_Success = 0,
+@@ -42,32 +42,68 @@ enum HTTPDownloadResult {
+ 	HTTP_Skipped
+ };
+ 
+-class CHTTPDownloadThread : public CMuleThread
++
++//
++// Startup HTTP downloader (version check, server.met, nodes.dat, ipfilter,
++// GeoIP). Historically a wxThread running wxHTTP on a worker thread, which
++// raced wxEpollDispatcher during redirect / teardown (see upstream PR #455).
++//
++// This implementation is event-driven on the main thread: owns a
++// wxWebRequest, binds wxEVT_WEBREQUEST_STATE, and self-destroys (via
++// wxPendingDelete) after Completed / Failed / Cancelled. No thread, no
++// nested event loops, no modal dialogs — so no reentrancy surface.
++//
++// The legacy Create() / Run() / Stop() / Entry() / OnExit() names are kept
++// as thin stubs so the six existing call sites (new + Create + Run) do not
++// need to change. Once wx 3.3's wxWebRequestSync is a reasonable floor on
++// distro defaults, this whole class could be replaced with a synchronous
++// call on a worker thread with no wxSocket involvement — at that point the
++// stubs can be made real and this header collapsed.
++//
++class CHTTPDownloadThread : public wxEvtHandler
+ {
+ public:
+-	/** Note: wxChar* is used to circumvent the thread-unsafe wxString reference counting. */
++	/** Note: wxChar* was historically used here to dodge thread-unsafe
++	 *  wxString refcounting; no longer strictly required on the main
++	 *  thread, but kept for API compatibility. */
+ 	CHTTPDownloadThread(const wxString& url, const wxString& filename, const wxString& oldfilename, HTTP_Download_File file_id,
  						bool showDialog, bool checkDownloadNewer);
  
  	static void StopAll();
 +
- private:
- 	ExitCode		Entry();
- 	virtual void		OnExit();
-@@ -68,6 +74,17 @@ private:
- 
- 	wxInputStream* GetInputStream(wxHTTP * & url_handler, const wxString& location, bool proxy);
- 	static wxString FormatDateHTTP(const wxDateTime& date);
++	// Legacy wxThread-style entry points retained as stubs for the six
++	// existing call sites. The request is already started from the ctor
++	// on the main thread, so Create()/Run() have nothing to do.
++	bool	Create()	{ return true; }
++	void	Run()		{ /* request started in ctor */ }
++	void	Stop();		// fire-and-forget cancel; terminal event follows
++	void	OnExit()	{ /* no-op: we self-destroy on terminal state */ }
 +
-+#ifdef HAVE_LIBCURL
-+	// Static → C-compatible function pointers for libcurl. They receive the
-+	// thread pointer via userdata / clientp, which gives them access to
-+	// private members without needing public accessors.
-+	static size_t CurlWriteCallback(void* ptr, size_t size, size_t nmemb, void* userdata);
-+	static int    CurlProgressCallback(void* clientp,
-+		curl_off_t dltotal, curl_off_t dlnow,
-+		curl_off_t ultotal, curl_off_t ulnow);
-+	int DoDownloadCurl(int& response, int& error);
-+#endif
++	// Called by the companion dialog before it tears itself down, so that
++	// subsequent terminal-state cleanup does not post events to a dead
++	// handler.
++	void	DetachCompanion();
++
+ private:
+-	ExitCode		Entry();
+-	virtual void		OnExit();
++	void	OnStateEvent(wxWebRequestEvent& evt);
++	void	FinishAndDestroy(int result);
+ 
++	static wxString FormatDateHTTP(const wxDateTime& date);
++
++	wxWebRequest		m_request;
+ 	wxString		m_url;
+ 	wxString		m_tempfile;
+ 	wxDateTime		m_lastmodified;	//! Date on which the file being updated was last modified.
+ 	int			m_result;
+ 	int			m_response;	//! HTTP response code (e.g. 200)
+-	int			m_error;	//! Additional error code (@see wxProtocol class)
++	int			m_error;	//! Additional error code
+ 	HTTP_Download_File	m_file_id;
+ 	wxEvtHandler*		m_companion;
++	bool			m_finishPosted;	//! Guard against double-posting on terminal state
++
+ 	typedef std::set<CHTTPDownloadThread *>	ThreadSet;
+ 	static ThreadSet	s_allThreads;
+ 	static wxMutex		s_allThreadsMutex;
+-
+-	wxInputStream* GetInputStream(wxHTTP * & url_handler, const wxString& location, bool proxy);
+-	static wxString FormatDateHTTP(const wxDateTime& date);
  };
  
  #endif // HTTPDOWNLOAD_H
@@ -4100,6 +4898,18 @@
  #define	MINWAIT_BEFORE_DLDISPLAY_WINDOWUPDATE	1500
  #define	DISKSPACERECHECKTIME			60000	// checkDiskspace
  
+--- a/src/include/common/EventIDs.h
++++ b/src/include/common/EventIDs.h
+@@ -40,7 +40,8 @@ enum {
+ 	// Custom Timer Events
+ 	ID_CORE_TIMER_EVENT,
+ 	ID_GUI_TIMER_EVENT,
+-	ID_SERVER_RETRY_TIMER_EVENT
++	ID_SERVER_RETRY_TIMER_EVENT,
++	ID_REMOTE_CONNECT_TIMEOUT_TIMER
+ };
+ 
+ #endif // EVENTHANDLERS_H
 --- a/src/include/protocol/ed2k/Constants.h
 +++ b/src/include/protocol/ed2k/Constants.h
 @@ -31,7 +31,7 @@
@@ -7935,6 +8745,103 @@
  
      if (set_sizer)
      {
+@@ -1573,7 +1572,7 @@ wxSizer *PreferencesConnectionTab( wxWin
+     wxStaticText *item4 = new wxStaticText( parent, -1, _("Download"), wxDefaultPosition, wxDefaultSize, 0 );
+     item3->Add( item4, 0, wxALIGN_CENTER_VERTICAL, 0 );
+ 
+-    wxSpinCtrl *item5 = new wxSpinCtrl( parent, IDC_MAXDOWN, wxT("0"), wxDefaultPosition, wxSize(100,-1), 0, 0, 19375, 0 );
++    wxSpinCtrl *item5 = new wxSpinCtrl( parent, IDC_MAXDOWN, wxT("0"), wxDefaultPosition, wxSize(140,-1), 0, 0, 1000000, 0 );
+     item3->Add( item5, 0, wxALIGN_CENTER_VERTICAL, 0 );
+ 
+     wxStaticText *item6 = new wxStaticText( parent, -1, _("kB/s"), wxDefaultPosition, wxDefaultSize, 0 );
+@@ -1582,7 +1581,7 @@ wxSizer *PreferencesConnectionTab( wxWin
+     wxStaticText *item7 = new wxStaticText( parent, -1, _("Upload"), wxDefaultPosition, wxDefaultSize, 0 );
+     item3->Add( item7, 0, wxALIGN_CENTER_VERTICAL, 0 );
+ 
+-    wxSpinCtrl *item8 = new wxSpinCtrl( parent, IDC_MAXUP, wxT("10"), wxDefaultPosition, wxSize(100,-1), 0, 0, 19375, 10 );
++    wxSpinCtrl *item8 = new wxSpinCtrl( parent, IDC_MAXUP, wxT("10"), wxDefaultPosition, wxSize(140,-1), 0, 0, 1000000, 10 );
+     item3->Add( item8, 0, wxALIGN_CENTER_VERTICAL, 5 );
+ 
+     wxStaticText *item9 = new wxStaticText( parent, -1, _("kB/s"), wxDefaultPosition, wxDefaultSize, 0 );
+@@ -1591,7 +1590,7 @@ wxSizer *PreferencesConnectionTab( wxWin
+     wxStaticText *item10 = new wxStaticText( parent, -1, _("Slot Allocation"), wxDefaultPosition, wxDefaultSize, 0 );
+     item3->Add( item10, 0, wxALIGN_CENTER_VERTICAL|wxLEFT, 20 );
+ 
+-    wxSpinCtrl *item11 = new wxSpinCtrl( parent, IDC_SLOTALLOC, wxT("4"), wxDefaultPosition, wxSize(100,-1), 0, 1, 100, 4 );
++    wxSpinCtrl *item11 = new wxSpinCtrl( parent, IDC_SLOTALLOC, wxT("4"), wxDefaultPosition, wxSize(140,-1), 0, 1, 100000, 4 );
+     item3->Add( item11, 0, wxALIGN_CENTER_VERTICAL, 5 );
+ 
+     wxStaticText *item12 = new wxStaticText( parent, -1, _("kB/s"), wxDefaultPosition, wxDefaultSize, 0 );
+@@ -1610,7 +1609,7 @@ wxSizer *PreferencesConnectionTab( wxWin
+     wxStaticText *item16 = new wxStaticText( parent, -1, _("Standard TCP Port "), wxDefaultPosition, wxDefaultSize, 0 );
+     item15->Add( item16, 0, wxALIGN_CENTER_VERTICAL, 10 );
+ 
+-    wxSpinCtrl *item17 = new wxSpinCtrl( parent, IDC_PORT, wxT("4662"), wxDefaultPosition, wxSize(100,-1), 0, 0, 65531, 4662 );
++    wxSpinCtrl *item17 = new wxSpinCtrl( parent, IDC_PORT, wxT("4662"), wxDefaultPosition, wxDefaultSize, 0, 0, 65531, 4662 );
+     item17->SetToolTip( _("This is the standard eD2k port and cannot be disabled.") );
+     item15->Add( item17, 0, wxALIGN_CENTER_VERTICAL, 5 );
+ 
+@@ -1623,7 +1622,7 @@ wxSizer *PreferencesConnectionTab( wxWin
+     wxCheckBox *item20 = new wxCheckBox( parent, IDC_UDPENABLE, _("Extended UDP port (Kad / global search) "), wxDefaultPosition, wxDefaultSize, 0 );
+     item15->Add( item20, 0, wxALIGN_CENTER_VERTICAL, 5 );
+ 
+-    wxSpinCtrl *item21 = new wxSpinCtrl( parent, IDC_UDPPORT, wxT("4672"), wxDefaultPosition, wxSize(100,-1), 0, 0, 65535, 4672 );
++    wxSpinCtrl *item21 = new wxSpinCtrl( parent, IDC_UDPPORT, wxT("4672"), wxDefaultPosition, wxDefaultSize, 0, 0, 65535, 4672 );
+     item21->SetToolTip( _("This UDP port is used for extended eD2k requests and Kad network") );
+     item15->Add( item21, 0, wxALIGN_CENTER, 5 );
+ 
+@@ -1635,7 +1634,7 @@ wxSizer *PreferencesConnectionTab( wxWin
+     wxStaticText *item23 = new wxStaticText( parent, IDC_UPNPTCPPORTTEXT, _("UPnP TCP Port (Optional):"), wxDefaultPosition, wxDefaultSize, 0 );
+     item15->Add( item23, 0, wxALIGN_CENTER_VERTICAL|wxLEFT, 20 );
+ 
+-    wxSpinCtrl *item24 = new wxSpinCtrl( parent, IDC_UPNPTCPPORT, wxT("50000"), wxDefaultPosition, wxSize(100,-1), 0, 0, 65535, 50000 );
++    wxSpinCtrl *item24 = new wxSpinCtrl( parent, IDC_UPNPTCPPORT, wxT("50000"), wxDefaultPosition, wxDefaultSize, 0, 0, 65535, 50000 );
+     item15->Add( item24, 0, wxALIGN_CENTER, 5 );
+ 
+     item13->Add( item15, 0, wxGROW|wxALIGN_CENTER_VERTICAL|wxALL, 0 );
+@@ -1660,13 +1659,13 @@ wxSizer *PreferencesConnectionTab( wxWin
+     wxStaticText *item29 = new wxStaticText( parent, ID_TEXT, _("Max sources per downloading file:"), wxDefaultPosition, wxDefaultSize, 0 );
+     item28->Add( item29, 0, wxALIGN_CENTER_VERTICAL|wxALL, 0 );
+ 
+-    wxSpinCtrl *item30 = new wxSpinCtrl( parent, IDC_MAXSOURCEPERFILE, wxT("300"), wxDefaultPosition, wxSize(100,-1), 0, 40, 5000, 300 );
++    wxSpinCtrl *item30 = new wxSpinCtrl( parent, IDC_MAXSOURCEPERFILE, wxT("300"), wxDefaultPosition, wxDefaultSize, 0, 40, 5000, 300 );
+     item28->Add( item30, 0, wxGROW|wxALIGN_CENTER_VERTICAL, 0 );
+ 
+     wxStaticText *item31 = new wxStaticText( parent, ID_TEXT, _("Max simultaneous connections:"), wxDefaultPosition, wxDefaultSize, 0 );
+     item28->Add( item31, 0, wxALIGN_CENTER_VERTICAL|wxALL, 0 );
+ 
+-    wxSpinCtrl *item32 = new wxSpinCtrl( parent, IDC_MAXCON, wxT("500"), wxDefaultPosition, wxSize(100,-1), 0, 5, 7500, 500 );
++    wxSpinCtrl *item32 = new wxSpinCtrl( parent, IDC_MAXCON, wxT("500"), wxDefaultPosition, wxDefaultSize, 0, 5, 7500, 500 );
+     item28->Add( item32, 0, wxGROW|wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT|wxBOTTOM, 0 );
+ 
+     item0->Add( item28, 0, wxGROW|wxALIGN_CENTER_VERTICAL, 0 );
+@@ -1867,7 +1866,7 @@ wxSizer *PreferencesFilesTab( wxWindow *
+     item15->SetToolTip( _("Select this if you want aMule to check your disk space") );
+     item14->Add( item15, 0, wxALIGN_CENTER_VERTICAL, 0 );
+ 
+-    wxSpinCtrl *item16 = new wxSpinCtrl( parent, IDC_MINDISKSPACE, wxT("1"), wxDefaultPosition, wxSize(100,-1), 0, 1, 1000000, 1 );
++    wxSpinCtrl *item16 = new wxSpinCtrl( parent, IDC_MINDISKSPACE, wxT("1"), wxDefaultPosition, wxDefaultSize, 0, 1, 1000000, 1 );
+     item16->SetToolTip( _("Enter here the min disk space desired.") );
+     item14->Add( item16, 0, wxALIGN_CENTER_VERTICAL, 0 );
+ 
+@@ -1983,7 +1982,7 @@ wxSizer *PreferencesStatisticsTab( wxWin
+     wxStaticText *item10 = new wxStaticText( parent, -1, _("Download graph scale:"), wxDefaultPosition, wxDefaultSize, 0 );
+     item9->Add( item10, 0, wxALIGN_CENTER_VERTICAL, 0 );
+ 
+-    wxSpinCtrl *item11 = new wxSpinCtrl( parent, IDC_DOWNLOAD_CAP, wxT("3"), wxDefaultPosition, wxSize(100,-1), 0, 3, 19375, 3 );
++    wxSpinCtrl *item11 = new wxSpinCtrl( parent, IDC_DOWNLOAD_CAP, wxT("3"), wxDefaultPosition, wxDefaultSize, 0, 3, 1000000, 3 );
+     item9->Add( item11, 0, wxALIGN_CENTER_VERTICAL, 5 );
+ 
+     wxStaticText *item12 = new wxStaticText( parent, -1, _("kB/s"), wxDefaultPosition, wxDefaultSize, 0 );
+@@ -1992,7 +1991,7 @@ wxSizer *PreferencesStatisticsTab( wxWin
+     wxStaticText *item13 = new wxStaticText( parent, -1, _("Upload graph scale:"), wxDefaultPosition, wxDefaultSize, 0 );
+     item9->Add( item13, 0, wxALIGN_CENTER_VERTICAL|wxTOP, 5 );
+ 
+-    wxSpinCtrl *item14 = new wxSpinCtrl( parent, IDC_UPLOAD_CAP, wxT("3"), wxDefaultPosition, wxSize(100,-1), 0, 3, 19375, 3 );
++    wxSpinCtrl *item14 = new wxSpinCtrl( parent, IDC_UPLOAD_CAP, wxT("3"), wxDefaultPosition, wxDefaultSize, 0, 3, 1000000, 3 );
+     item9->Add( item14, 0, wxALIGN_CENTER_VERTICAL|wxTOP, 5 );
+ 
+     wxStaticText *item15 = new wxStaticText( parent, -1, _("kB/s"), wxDefaultPosition, wxDefaultSize, 0 );
 @@ -2075,7 +2074,7 @@ wxSizer *PreferencesaMuleTweaksTab( wxWi
  
      wxStaticText *item2 = new wxStaticText( parent, -1, _("!!! WARNING !!!"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -7944,6 +8851,51 @@
      item1->Add( item2, 0, wxALIGN_CENTER, 5 );
  
      wxStaticText *item3 = new wxStaticText( parent, IDC_AMULE_TWEAKS_WARNING, wxT(""), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE );
+@@ -2090,7 +2089,7 @@ wxSizer *PreferencesaMuleTweaksTab( wxWi
+     wxStaticText *item6 = new wxStaticText( parent, -1, _("Max new connections / 5 secs"), wxDefaultPosition, wxDefaultSize, 0 );
+     item4->Add( item6, 0, wxALIGN_CENTER_VERTICAL|wxTOP, 5 );
+ 
+-    wxSpinCtrl *item7 = new wxSpinCtrl( parent, IDC_MAXCON5SEC, wxT("20"), wxDefaultPosition, wxSize(100,-1), 0, 5, 500, 20 );
++    wxSpinCtrl *item7 = new wxSpinCtrl( parent, IDC_MAXCON5SEC, wxT("20"), wxDefaultPosition, wxDefaultSize, 0, 5, 500, 20 );
+     item4->Add( item7, 0, wxALIGN_CENTER_VERTICAL, 5 );
+ 
+     wxStaticText *item8 = new wxStaticText( parent, IDC_FILEBUFFERSIZE_STATIC, _("File Buffer Size: 240000 bytes"), wxDefaultPosition, wxDefaultSize, 0 );
+@@ -2246,7 +2245,7 @@ wxSizer *PreferencesRemoteControlsTab( w
+     wxStaticText *item8 = new wxStaticText( parent, -1, _("TCP port:"), wxDefaultPosition, wxDefaultSize, 0 );
+     item7->Add( item8, 1, wxALIGN_CENTER_VERTICAL|wxRIGHT, 0 );
+ 
+-    wxSpinCtrl *item9 = new wxSpinCtrl( parent, IDC_EXT_CONN_TCP_PORT, wxT("10000"), wxDefaultPosition, wxSize(100,-1), 0, 1025, 65535, 10000 );
++    wxSpinCtrl *item9 = new wxSpinCtrl( parent, IDC_EXT_CONN_TCP_PORT, wxT("10000"), wxDefaultPosition, wxDefaultSize, 0, 1025, 65535, 10000 );
+     item7->Add( item9, 0, wxALIGN_CENTER, 5 );
+ 
+     item1->Add( item7, 0, wxGROW|wxALIGN_CENTER_VERTICAL|wxLEFT, 5 );
+@@ -2307,7 +2306,7 @@ wxSizer *PreferencesRemoteControlsTab( w
+     wxStaticText *item26 = new wxStaticText( parent, -1, _("TCP port:"), wxDefaultPosition, wxDefaultSize, 0 );
+     item25->Add( item26, 1, wxALIGN_CENTER_VERTICAL, 5 );
+ 
+-    wxSpinCtrl *item27 = new wxSpinCtrl( parent, IDC_WEB_PORT, wxT("10000"), wxDefaultPosition, wxSize(100,-1), 0, 1025, 65535, 10000 );
++    wxSpinCtrl *item27 = new wxSpinCtrl( parent, IDC_WEB_PORT, wxT("10000"), wxDefaultPosition, wxDefaultSize, 0, 1025, 65535, 10000 );
+     item25->Add( item27, 0, wxALIGN_CENTER, 5 );
+ 
+     item14->Add( item25, 0, wxGROW|wxALIGN_CENTER_VERTICAL, 5 );
+@@ -2320,7 +2319,7 @@ wxSizer *PreferencesRemoteControlsTab( w
+     wxStaticText *item30 = new wxStaticText( parent, IDC_WEBUPNPTCPPORTTEXT, _("Web server UPnP TCP port (Optional)"), wxDefaultPosition, wxDefaultSize, 0 );
+     item29->Add( item30, 1, wxALIGN_CENTER|wxRIGHT, 5 );
+ 
+-    wxSpinCtrl *item31 = new wxSpinCtrl( parent, IDC_WEBUPNPTCPPORT, wxT("10000"), wxDefaultPosition, wxSize(100,-1), 0, 1025, 65535, 10000 );
++    wxSpinCtrl *item31 = new wxSpinCtrl( parent, IDC_WEBUPNPTCPPORT, wxT("10000"), wxDefaultPosition, wxDefaultSize, 0, 1025, 65535, 10000 );
+     item29->Add( item31, 0, wxALIGN_CENTER, 5 );
+ 
+     item14->Add( item29, 0, wxGROW|wxALIGN_CENTER_VERTICAL|wxLEFT, 20 );
+@@ -2330,7 +2329,7 @@ wxSizer *PreferencesRemoteControlsTab( w
+     wxStaticText *item33 = new wxStaticText( parent, -1, _("Page Refresh Time (in secs)"), wxDefaultPosition, wxDefaultSize, 0 );
+     item32->Add( item33, 1, wxALIGN_CENTER, 5 );
+ 
+-    wxSpinCtrl *item34 = new wxSpinCtrl( parent, IDC_WEB_REFRESH_TIMEOUT, wxT("120"), wxDefaultPosition, wxSize(100,-1), 0, 120, 600, 120 );
++    wxSpinCtrl *item34 = new wxSpinCtrl( parent, IDC_WEB_REFRESH_TIMEOUT, wxT("120"), wxDefaultPosition, wxDefaultSize, 0, 120, 600, 120 );
+     item32->Add( item34, 0, wxALIGN_CENTER, 5 );
+ 
+     item14->Add( item32, 0, wxGROW|wxALIGN_CENTER_VERTICAL, 5 );
 @@ -2677,11 +2676,7 @@ wxSizer *serverListDlgDown( wxWindow *pa
      wxStaticBoxSizer *item0 = new wxStaticBoxSizer( item1, wxVERTICAL );
  
