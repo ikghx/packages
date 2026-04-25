@@ -297,23 +297,6 @@ function is_true(v) {
 	return v === true || v === '1' || v === 1 || v === 'true';
 }
 
-function is_hotplug_hook_param(name) {
-	return index([
-		'up',
-		'down',
-		'route_up',
-		'route_pre_down',
-		'ipchange',
-		'learn_address',
-		'client_connect',
-		'client_crresponse',
-		'client_disconnect',
-		'auth_user_pass_verify',
-		'tls_crypt_v2_verify',
-		'tls_verify'
-	], name) >= 0;
-}
-
 function add_param(params, key, value) {
 	// key: option name (underscored), value: single string
 	let flag = `--${replace(key, '_', '-')}`;
@@ -353,7 +336,6 @@ function build_exec_params(cfg) {
 
 	for (let k in OPENVPN_FILE_PARAMS) {
 		if (k?.deprecated && !allow_deprecated) continue;
-		if (is_hotplug_hook_param(k.name)) continue;
 		let val = cfg[k.name];
 		if (val && type(val) == 'string') {
 			if (fs.access(val, fs.F_OK))
@@ -404,10 +386,6 @@ function pid_from_file(path) {
 	f.close();
 	if (!data) return null;
 	return data;
-}
-
-function shell_quote(value) {
-	return "'" + replace(`${value}`, "'", "'\\''") + "'";
 }
 
 function proto_setup(proto) {
@@ -470,27 +448,9 @@ function proto_setup(proto) {
 		}
 	}
 
-	let script_security = cfg.script_security;
-	if (script_security == null || script_security === '')
-		script_security = 2;
-
 	// hotplug handler scripts
-	if (script_security >= 2) {
-		let ipv6 = cfg.ipv6;
-		if (ipv6 == null || ipv6 === '')
-			ipv6 = 1;
-		let defaultroute = cfg.defaultroute;
-		if (defaultroute == null || defaultroute === '')
-			defaultroute = 1;
-
+	if (cfg.script_security >= 2) {
 		push(params, '--setenv', 'INTERFACE', iface);
-		push(params, '--setenv', 'IPV6', `${ipv6}`);
-		push(params, '--setenv', 'DEFAULTROUTE', `${defaultroute}`);
-		push(params, '--script-security', `${script_security}`);
-		if (cfg.ifconfig_noexec == null || cfg.ifconfig_noexec === '')
-			push(params, '--ifconfig-noexec');
-		if (cfg.route_noexec == null || cfg.route_noexec === '')
-			push(params, '--route-noexec');
 		push(params, '--up', '/usr/libexec/openvpn-hotplug');
 		if (cfg.up) push(params, '--setenv', 'user_up', cfg.up);
 		push(params, '--down', '/usr/libexec/openvpn-hotplug');
@@ -511,10 +471,8 @@ function proto_setup(proto) {
 			if (cfg.client_crresponse) push(params, '--setenv', 'user_client_crresponse', cfg.client_crresponse);
 			push(params, '--client-disconnect', '/usr/libexec/openvpn-hotplug');
 			if (cfg.client_disconnect) push(params, '--setenv', 'user_client_disconnect', cfg.client_disconnect);
-			if (cfg.auth_user_pass_verify) {
-				push(params, '--auth-user-pass-verify', '/usr/libexec/openvpn-hotplug', 'via-file');
-				push(params, '--setenv', 'user_auth_user_pass_verify', cfg.auth_user_pass_verify);
-			}
+			push(params, '--auth-user-pass-verify', '/usr/libexec/openvpn-hotplug', 'via-file');
+			if (cfg.auth_user_pass_verify) push(params, '--setenv', 'user_auth_user_pass_verify', cfg.auth_user_pass_verify);
 		}
 
 		if (cfg.tls_client || cfg.tls_server) {
@@ -566,13 +524,10 @@ function proto_renew(proto) {
 
 function proto_teardown(proto) {
 	let iface = proto.iface;
-	let pid = pid_from_file(sprintf(OPENVPN_PID, iface));
 
-	if (pid)
-		system(sprintf('daemon_pid=%s /usr/libexec/openvpn-hotplug cleanup %s', shell_quote(pid), shell_quote(iface)));
-	else
-		system(sprintf('/usr/libexec/openvpn-hotplug cleanup %s 1', shell_quote(iface)));
-	proto.update_link(false);
+	// Allow OpenVPN's down script to process
+
+	sleep(700);
 
 	// best-effort cleanup
 	fs.unlink(sprintf(OPENVPN_PASS, iface));
@@ -581,7 +536,14 @@ function proto_teardown(proto) {
 	fs.unlink(sprintf(OPENVPN_PID, iface));
 	fs.unlink(sprintf(OPENVPN_CONF, iface));
 
+	let link_data = {
+		ifname: iface
+	};
+
 	proto.kill_command();
+
+	// remove the link
+	proto.update_link(true, link_data);
 }
 
 netifd.add_proto({
