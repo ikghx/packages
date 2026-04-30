@@ -160,7 +160,6 @@ if ! netcup_post; then
 	write_log 3 "netcup DDNS: HTTP request failed during login"
 	return 1
 fi
-
 netcup_check_response "login" || return 1
 
 json_select "responsedata"
@@ -190,7 +189,6 @@ if ! netcup_post; then
 	write_log 3 "netcup DDNS: HTTP request failed during infoDnsRecords"
 	return 1
 fi
-
 netcup_check_response "infoDnsRecords" || return 1
 
 # --- Step 3: Find the record matching our hostname and type ----------------

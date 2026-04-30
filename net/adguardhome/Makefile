@@ -42,7 +42,7 @@ define Package/adguardhome
 	CATEGORY:=Network
 	TITLE:=Network-wide ads and trackers blocking DNS server
 	URL:=https://github.com/AdguardTeam/AdGuardHome
-	DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle
+	DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +procd-ujail
 	USERID:=adguardhome=853:adguardhome=853
 endef
 
