@@ -118,7 +118,6 @@ MESON_ARGS += \
 	-Dtcp=true \
 	-Dipv6=$(if $(CONFIG_IPV6),en,dis)abled \
 	-Dlocal_socket=true \
-	-Ddsd=false \
 	-Ddatabase=true \
 	-Dlibmpdclient=enabled \
 	-Dneighbor=false \
@@ -181,6 +180,7 @@ ifeq ($(BUILD_VARIANT),full)
   MESON_ARGS += \
 	-Dupnp=npupnp \
 	-Dmms=enabled \
+	-Ddsd=true \
 	-Dsoundcloud=enabled \
 	-Dffmpeg=enabled \
 	-Dmad=$(if $(CONFIG_BUILD_PATENTED),dis,en)abled \
@@ -207,6 +207,7 @@ ifeq ($(BUILD_VARIANT),mini)
   MESON_ARGS += \
 	-Dupnp=disabled \
 	-Dmms=disabled \
+	-Ddsd=false \
 	-Dsoundcloud=disabled \
 	-Dffmpeg=disabled \
 	-Dmad=enabled \
