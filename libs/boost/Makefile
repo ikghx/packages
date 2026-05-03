@@ -337,7 +337,7 @@ define DefineBoostLibrary
 endef
 
 $(eval $(call DefineBoostLibrary,atomic,system))
-$(eval $(call DefineBoostLibrary,charconv,,,,libquadmath))
+$(eval $(call DefineBoostLibrary,charconv,,,,$(if $(filter i386 x86_64 powerpc powerpc64,$(ARCH)),libquadmath)))
 $(eval $(call DefineBoostLibrary,chrono,system))
 $(eval $(call DefineBoostLibrary,cobalt,system container))
 $(eval $(call DefineBoostLibrary,container))
