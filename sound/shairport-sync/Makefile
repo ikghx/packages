@@ -94,7 +94,7 @@ CONFIGURE_ARGS += \
 	--with-metadata
 
 ifeq ($(BUILD_VARIANT),openssl)
-  CONFIGURE_ARGS+= --with-ssl=openssl --with-airplay-2 --with-apple-alac
+  CONFIGURE_ARGS+= --with-ssl=openssl --with-airplay-2
 endif
 
 ifeq ($(BUILD_VARIANT),mbedtls)

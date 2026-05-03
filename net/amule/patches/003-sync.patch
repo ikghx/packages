@@ -18,44 +18,6 @@
      echo "    cryptopp  : $CRYPTOPP_DISTRO"
      echo "    libupnp   : $LIBUPNP_DISTRO"
      echo "    wxWidgets : $WXWIDGETS_DISTRO"
---- a/amule.desktop
-+++ b/amule.desktop
-@@ -1,14 +1,16 @@
- [Desktop Entry]
- Name=aMule
--Exec=amule %u
-+Exec=env GDK_BACKEND=x11 amule %u
- Icon=amule
- Terminal=false
- Type=Application
- Categories=Network;P2P;
-+StartupWMClass=amule
- Comment=A client for the eD2k network
- Comment[fr]=Un client pour le réseau eD2k
- Comment[tr]=eD2k ağı için istemci
- Comment[zh_CN]=eD2k网络客户端
- Comment[it]=Un client per la rete eD2k
- Comment[it_CH]=Un client per la rete eD2k
-+Comment[es]=Un cliente para la red eD2k
- MimeType=x-scheme-handler/ed2k;
---- a/amulegui.desktop
-+++ b/amulegui.desktop
-@@ -1,7 +1,7 @@
- [Desktop Entry]
- Name=aMuleGUI
--Exec=amulegui
--Icon=amulegui
-+Exec=env GDK_BACKEND=x11 amulegui
-+Icon=amule
- Terminal=false
- Type=Application
- Categories=Network;P2P;
-@@ -13,3 +13,4 @@ Comment[tr]=aMule uzaktan kumandası
- Comment[zh_CN]=aMule远程协议
- Comment[it]=Terminale remoto per aMule
- Comment[it_CH]=Terminale remoto per aMule
-+Comment[es]=Control remoto de aMule
-\ No newline at end of file
 --- a/autogen.sh
 +++ b/autogen.sh
 @@ -35,7 +35,7 @@ if expr "$confver" \> "$gettext_version"
@@ -67,973 +29,6 @@
  rm -rf intl/*
  #if [ ! -d intl ]; then
      echo "Setting up internationalization files."
---- a/cmake/bfd.cmake
-+++ b/cmake/bfd.cmake
-@@ -5,31 +5,57 @@ if (NOT HAVE_BFD)
- 	check_include_file (bfd.h HAVE_BFD)
- 
- 	if (HAVE_BFD)
--		find_library (LIBBFD_TMP bfd)
-+		# Try pkg-config first. Some distros ship bfd.pc with the full
-+		# transitive LIBS string already enumerated; when it's there
-+		# that's the cleanest path. Tumbleweed/Ubuntu binutils-devel
-+		# currently don't ship bfd.pc, so we still need a fallback.
-+		find_package (PkgConfig QUIET)
-+		if (PKG_CONFIG_FOUND)
-+			pkg_check_modules (PC_BFD QUIET bfd)
-+		endif()
- 
--		if (NOT LIBBFD_TMP)
--			message (STATUS "No useable bfd-lib found, disabling support")
-+		if (PC_BFD_FOUND AND PC_BFD_STATIC_LIBRARIES)
-+			# Prefer the --static form: libbfd is shipped as a static
-+			# archive on most distros, so we need libbfd's private deps
-+			# (Libs.private:) on the link line, not just the public Libs:.
-+			set (BFD_LIBRARY ${PC_BFD_STATIC_LIBRARIES} CACHE STRING "Lib to use when linking to bfd")
-+			message (STATUS "bfd via pkg-config (static): ${PC_BFD_STATIC_LIBRARIES}")
-+		elseif (PC_BFD_FOUND)
-+			set (BFD_LIBRARY ${PC_BFD_LIBRARIES} CACHE STRING "Lib to use when linking to bfd")
-+			message (STATUS "bfd via pkg-config: ${PC_BFD_LIBRARIES}")
- 		else()
--			foreach (CMAKE_REQUIRED_LIBRARIES
--				"" "${LIBBFD_TMP}" "${LIBBFD_TMP};iberty" "${LIBBFD_TMP};dl" "${LIBBFD};iberty;dl" "${LIBBFD_TMP};${LIBINTL}" "${LIBBFD_TMP};iberty;${LIBINTL_TMP}" "${LIBBFD_TMP};iberty;dl;${LIBINBTL}"
--			)
--				unset (BFD_COMPILE_TEST CACHE)
--				check_c_source_compiles ("#include <ansidecl.h>
--					#include <bfd.h>
--
--					int main()
--					{
--						const char *dummy = bfd_errmsg(bfd_get_error());
--					}"
--					BFD_COMPILE_TEST
--				)
--
--				if (BFD_COMPILE_TEST)
--					set (BFD_LIBRARY ${CMAKE_REQUIRED_LIBRARIES} CACHE STRING "Lib to use when linking to bfd")
--					unset (${CMAKE_REQUIRED_LIBRARIES})
--					break()
--				endif()	
--			endforeach()
-+			# Fallback: collect every transitive dep libbfd is known to
-+			# need on modern binutils, link them all unconditionally.
-+			# A previous probe-loop approach -- "try a hardcoded
-+			# combination of subsets, pick the first that compiles" --
-+			# couldn't keep up with the per-distro mix (libbfd grew zstd
-+			# in binutils 2.40, sframe in 2.42, ...) and silently matched
-+			# at sub-minimal combinations whose toy probe linked but
-+			# whose real aMule link did not.
-+			#
-+			# Safe to over-link: --as-needed (Linux default) drops shared
-+			# libs that don't satisfy any reference; static archives that
-+			# don't satisfy any reference contribute nothing. So adding
-+			# every plausibly-needed dep is harmless on systems that
-+			# don't need it, and load-bearing on systems that do.
-+			find_library (LIBBFD_TMP bfd)
-+			if (NOT LIBBFD_TMP)
-+				message (STATUS "No useable bfd-lib found, disabling support")
-+			else()
-+				set (_bfd_libs ${LIBBFD_TMP})
-+				foreach (_dep iberty zstd sframe z ${LIBINTL} dl)
-+					if (_dep)
-+						find_library (LIB_BFD_DEP_${_dep} ${_dep})
-+						if (LIB_BFD_DEP_${_dep})
-+							list (APPEND _bfd_libs ${LIB_BFD_DEP_${_dep}})
-+						endif()
-+						unset (LIB_BFD_DEP_${_dep} CACHE)
-+					endif()
-+				endforeach()
-+				set (BFD_LIBRARY ${_bfd_libs} CACHE STRING "Lib to use when linking to bfd")
-+				message (STATUS "bfd link set: ${_bfd_libs}")
-+				unset (_bfd_libs)
-+			endif()
- 		endif()
- 
- 		if (NOT BFD_LIBRARY)
---- a/cmake/boost.cmake
-+++ b/cmake/boost.cmake
-@@ -1,5 +1,4 @@
--include (FindThreads)
--find_package (Boost ${MIN_BOOST_VERSION})
-+find_package(Boost CONFIG REQUIRED)
- 
- if (NOT ASIO_SOCKETS)
- 	include (CheckIncludeFiles)
-@@ -11,17 +10,34 @@ if (NOT ASIO_SOCKETS)
- 	if (Boost_FOUND)
- 		set (CMAKE_REQUIRED_INCLUDES ${Boost_INCLUDE_DIRS})
- 
--		if (NOT WIN32)
--			set (CMAKE_REQUIRED_FLAGS "-DBOOST_ERROR_CODE_HEADER_ONLY")
-+		if (MINGW)
-+			# check_include_files on MinGW does a link step, and boost::asio
-+			# pulls in WSAStartup/WSACleanup from ws2_32 — passing the lib
-+			# via CMAKE_REQUIRED_LIBRARIES isn't reliably honoured with this
-+			# CMake + CheckIncludeFiles combination, so the link fails and
-+			# ASIO_SOCKETS gets silently disabled.  find_package(Boost CONFIG
-+			# REQUIRED) already verified boost is usable — skip the redundant
-+			# check on MinGW only.  MSVC keeps the original check.
-+			set (ASIO_SOCKETS TRUE)
- 		else()
--			set (CMAKE_REQUIRED_FLAGS " -DBOOST_DATE_TIME_NO_LIB -DBOOST_REGEX_NO_LIB -DBOOST_SYSTEM_NO_LIB -DBOOST_ERROR_CODE_HEADER_ONLY")
--		endif (NOT WIN32)
--
--		set (CMAKE_REQUIRED_LIBRARIES "Threads::Threads")
--		check_include_files ("boost/system/error_code.hpp;boost/asio.hpp" ASIO_SOCKETS LANGUAGE CXX)
-+			if (WIN32)
-+				set (CMAKE_REQUIRED_FLAGS " -DBOOST_DATE_TIME_NO_LIB -DBOOST_REGEX_NO_LIB -DBOOST_SYSTEM_NO_LIB -DBOOST_ERROR_CODE_HEADER_ONLY")
-+			else()
-+				set (CMAKE_REQUIRED_FLAGS "-DBOOST_ERROR_CODE_HEADER_ONLY")
-+			endif()
-+			check_include_files ("boost/system/error_code.hpp;boost/asio.hpp" ASIO_SOCKETS LANGUAGE CXX)
-+		endif (MINGW)
- 
- 		if (ASIO_SOCKETS)
--			set (Boost_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} CACHE STRING "Libraries needed for linking with boost" FORCE)
-+			if (MINGW)
-+				# Carry the WinSock libs over to the real targets that link boost::asio.
-+				set (Boost_LIBRARIES "ws2_32;mswsock" CACHE STRING "Libraries needed for linking with boost" FORCE)
-+			else()
-+				set (Boost_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} CACHE STRING "Libraries needed for linking with boost" FORCE)
-+			endif()
-+			# find_package(Boost CONFIG) above sets a local non-cache Boost_LIBRARIES
-+			# that masks the cache value we just wrote — clear it so the cache shows through.
-+			unset (Boost_LIBRARIES)
- 			set (BOOST_ERROR_CODE_HEADER_ONLY TRUE CACHE INTERNAL "When true, boost_system lib is not needed for linking" FORCE)
- 			unset (CMAKE_REQUIRED_INCLUDES)
- 			unset (CMAKE_REQUIRED_FLAGS)
---- a/cmake/cryptopp.cmake
-+++ b/cmake/cryptopp.cmake
-@@ -71,6 +71,16 @@ if (WIN32)
- 	else()
- 		set (CRYPTO_COMPLETE FALSE)
- 	endif()
-+
-+	# Packages that ship only the release variant (e.g. MSYS2
-+	# mingw-w64-x86_64-crypto++ has libcryptopp.dll.a but no *d.dll.a) don't
-+	# populate IMPORTED_LOCATION_DEBUG. Set plain IMPORTED_LOCATION so CMake
-+	# falls back to the release library when building with CMAKE_BUILD_TYPE=Debug.
-+	if (CRYPTOPP_LIBRARY_RELEASE AND NOT CRYPTOPP_LIBRARY_DEBUG)
-+		set_property (TARGET CRYPTOPP::CRYPTOPP
-+			PROPERTY IMPORTED_LOCATION ${CRYPTOPP_LIBRARY_RELEASE}
-+		)
-+	endif()
- else()
- 	if (NOT CRYPTOPP_LIBRARY)
- 		unset (CRYPTOPP_LIBRARY CACHE)
---- a/cmake/gdlib.cmake
-+++ b/cmake/gdlib.cmake
-@@ -1,102 +1,14 @@
--#
--# This file is part of the aMule Project.
--#
--# Copyright (c) 2011 Werner Mahr (Vollstrecker) <amule@vollstreckernet.de>
--#
--# Any parts of this program contributed by third-party developers are copyrighted
--# by their respective authors.
--#
--# This program is free software; you can redistribute it and/or modify
--# it under the terms of the GNU General Public License as published by
--# the Free Software Foundation; either version 3 of the License, or
--# (at your option) any later version.
--#
--# This program is distributed in the hope that it will be useful,
--# but WITHOUT ANY WARRANTY; without even the implied warranty of
--# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--# GNU General Public License for more details.
--# 
--# You should have received a copy of the GNU General Public License
--# along with this program; if not, write to the Free Software
--# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
--#
--#
--# This file uses the following variables:
--#
--#     MIN_GDLIB_VERSION -- to check if gdlib is available in a recent
--#         version for usage in your project. If MIN_GDLIB_VERSION was
--#         not set, no version-check is done.
--#
--# This file defines the folling variables
--#
--#    gdlib_FOUND -- TRUE if gdlib was found, and if version-check is done
--#        if it is new enough, otherwise FALSE
--#
--#    gdlib_CONFIG_EXECUTABLE -- Contains the complete path to gdlib-config
--#        executable
--#
--#    gdlib_VERSION -- If version-check is done, the version goes here
--#
--#    gdlib_LIB_DIR -- libdir reportet by gdlib-config
--#
--#    gdlib_INCLUDE_DIR -- include-dir reportet by gdlib-config
--#
--#    gdlib_LD_FLAGS -- ldflags reportet by gdlib-config
--#
--#    gdlib_LIBS -- libs reportet by gdlib-config
--#
--#    gdlib_CFLAGS -- cflags reportet by gdlib-config
--#
-+if (NOT MSVC)
-+	find_package (PkgConfig REQUIRED)
- 
--if (NOT gdlib_FOUND)
--	if (NOT WIN32)
--		find_package (PkgConfig REQUIRED)
--		pkg_search_module (gdlib REQUIRED gdlib)
--		message (STATUS "gdlib version: ${gdlib_VERSION} -- OK")
--	endif()
-+	pkg_search_module (gdlib REQUIRED
-+		IMPORTED_TARGET GLOBAL
-+		gdlib
-+	)
-+
-+	set_property (TARGET PkgConfig::gdlib PROPERTY
-+		INTERFACE_COMPILE_DEFINITIONS __GD__
-+	)
- 
--	if (NOT gdlib_FOUND)
--		find_program (gdlib_CONFIG_EXECUTABLE gdlib-config
--			ONLY_CMAKE_FIND_ROOT_PATH
--		)
--
--		if (gdlib_CONFIG_EXECUTABLE)
--			execute_process (COMMAND ${gdlib_CONFIG_EXECUTABLE} --version
--				OUTPUT_VARIABLE gdlib_VERSION
--			)
--
--			string (REGEX REPLACE "(\r?\n)+$" "" gdlib_VERSION "${gdlib_VERSION}")
--
--			if (${gdlib_VERSION} VERSION_LESS ${MIN_GDLIB_VERSION})
--				message (FATAL_ERROR "gdlib version ${gdlib_VERSION} -- too old")
--			else()
--				message (STATUS "gdlib version ${gdlib_VERSION} -- OK")
--				set (gdlib_FOUND TRUE)
--
--				execute_process (COMMAND ${gdlib_CONFIG_EXECUTABLE} --libdir
--					OUTPUT_VARIABLE gdlib_LIB_DIR
--				)
--
--				execute_process (COMMAND ${gdlib_CONFIG_EXECUTABLE} --includedir
--					OUTPUT_VARIABLE gdlib_INCLUDE_DIR
--				)
--
--				execute_process (COMMAND ${gdlib_CONFIG_EXECUTABLE} --ldflags
--					OUTPUT_VARIABLE gdlib_LDFLAGS
--				)
--
--				execute_process (COMMAND ${gdlib_CONFIG_EXECUTABLE} --libs
--					OUTPUT_VARIABLE gdlib_LIBRARIES
--				)
--
--				execute_process (COMMAND ${gdlib_CONFIG_EXECUTABLE} --cflags
--					OUTPUT_VARIABLE gdlib_CFLAGS
--				)
--			endif()
--		endif()
--	endif()
--
--	if (gdlib_FOUND)
--		set (gdlib_CFLAGS "${gdlib_CFLAGS} __GD__")
--	endif()
-+	message (STATUS "gdlib version: ${gdlib_VERSION} -- OK")
- endif()
---- a/cmake/ip2country.cmake
-+++ b/cmake/ip2country.cmake
-@@ -1,42 +1,20 @@
--if (GEOIP_INCLUDE_DIR)
--	set (CMAKE_REQUIRED_INCLUDES ${GEOIP_INCLUDE_DIR})
--endif()
--
--if (NOT GEOIP_LIB)
--	include (CheckIncludeFile)
--
--
--	check_include_file (GeoIP.h GEOIP_H)
-+find_path (MAXMINDDB_INCLUDE_DIR maxminddb.h)
-+find_library (MAXMINDDB_LIB maxminddb)
- 
--	if (GEOIP_H)
--		find_library (GEOIP_LIB GeoIP)
-+if (MAXMINDDB_INCLUDE_DIR AND MAXMINDDB_LIB)
-+	message (STATUS "libmaxminddb found, IP2Country support enabled")
- 
--		if (NOT GEOIP_LIB AND GEOIP_INCLUDE_DIR)
--			find_library (GEOIP_LIB GeoIP
--				PATHS ${GEOIP_INCLUDE_DIR}
--			)
--		endif()
--
--		if (NOT GEOIP_LIB)
--			set (ENABLE_IP2COUNTRY FALSE)
--			message (STATUS "GeoIP lib not found, disabling support")
--		else()
--			message (STATUS "GeoIP found useable")
--		endif()
--	else()
--		set (ENABLE_IP2COUNTRY FALSE)
--		message (STATUS "GeoIP headers not found, disabling support")
--	endif()
--endif()
--
--if (ENABLE_IP2COUNTRY)
--	add_library (GeoIP::Shared UNKNOWN IMPORTED)
--
--	set_target_properties (GeoIP::Shared PROPERTIES
-+	add_library (MaxMindDB::Shared UNKNOWN IMPORTED)
-+	set_target_properties (MaxMindDB::Shared PROPERTIES
- 		INTERFACE_COMPILE_DEFINITIONS "ENABLE_IP2COUNTRY"
--		INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_REQUIRED_INCLUDES}"
--		IMPORTED_LOCATION "${GEOIP_LIB}"
-+		INTERFACE_INCLUDE_DIRECTORIES "${MAXMINDDB_INCLUDE_DIR}"
-+		IMPORTED_LOCATION "${MAXMINDDB_LIB}"
- 	)
-+else()
-+	set (ENABLE_IP2COUNTRY FALSE)
-+	if (NOT MAXMINDDB_INCLUDE_DIR)
-+		message (STATUS "maxminddb.h not found, IP2Country support disabled")
-+	else()
-+		message (STATUS "libmaxminddb not found, IP2Country support disabled")
-+	endif()
- endif()
--
--unset (CMAKE_REQUIRED_INCLUDES)
---- a/cmake/nls.cmake
-+++ b/cmake/nls.cmake
-@@ -1,58 +1,42 @@
- if (NOT YYENABLE_NLS)
- 	include (CheckIncludeFile)
- 
-+	# These header probes get recorded into config.h.cm as HAVE_* macros for
-+	# completeness (autotools historically did the same), but aMule does not
-+	# itself include any of them — translation is delegated to wxLocale,
-+	# which links libintl via wxWidgets.  argz.h and nl_types.h in particular
-+	# are glibc-only, so gating ENABLE_NLS on them silently disabled
-+	# localization on every non-glibc platform (macOS, MinGW/MSYS2, *BSD)
-+	# even when a working gettext was installed.  Probe but do not gate.
- 	check_include_file (argz.h HAVE_ARGZ_H)
--
--	if (NOT HAVE_ARGZ_H)
--		set (ENABLE_NLS FALSE)
--	endif()
--
- 	check_include_file (limits.h HAVE_LIMITS_H)
--
--	if (NOT HAVE_LIMITS_H)
--		set (ENABLE_NLS FALSE)
--	endif()
--
- 	check_include_file (locale.h HAVE_LOCALE_H)
--
--	if (NOT HAVE_LOCALE_H)
--		set (ENABLE_NLS FALSE)
--	endif()
--
- 	check_include_file (nl_types.h HAVE_NL_TYPES_H)
--
--	if (NOT HAVE_NL_TYPES_H)
--		set (ENABLE_NLS FALSE)
--	endif()
--
- 	check_include_file (stdlib.h HAVE_STDLIB_H)
--
--	if (NOT HAVE_STDLIB_H)
--		set (ENABLE_NLS FALSE)
--	endif()
--
- 	check_include_file (string.h HAVE_STRING_H)
--
--	if (NOT HAVE_STRING_H)
--		set (ENABLE_NLS FALSE)
--	endif()
--
- 	check_include_file (sys/param.h HAVE_SYS_PARAM_H)
--
--	if (NOT HAVE_SYS_PARAM_H)
--		set (ENABLE_NLS FALSE)
--	endif()
--
- 	if (NOT HAVE_STDDEF_H)
- 		check_include_file (stddef.h HAVE_STDDEF_H)
-+	endif()
- 
--		if (NOT HAVE_STDDEF_H)
--			set (ENABLE_NLS FALSE)
--		endif()
-+	# Homebrew's gettext is keg-only (not symlinked into /opt/homebrew/bin)
-+	# because it would shadow macOS's BSD gettext-runtime in libc.  Pre-find
-+	# msgfmt / msgmerge under the keg so users don't have to set PATH
-+	# manually before invoking cmake.  Skipped if the user already exported
-+	# PATH or pointed cmake at a different gettext.
-+	if (APPLE AND NOT GETTEXT_MSGFMT_EXECUTABLE)
-+		find_program (GETTEXT_MSGFMT_EXECUTABLE msgfmt
-+			HINTS /opt/homebrew/opt/gettext/bin /usr/local/opt/gettext/bin)
-+	endif()
-+	if (APPLE AND NOT GETTEXT_MSGMERGE_EXECUTABLE)
-+		find_program (GETTEXT_MSGMERGE_EXECUTABLE msgmerge
-+			HINTS /opt/homebrew/opt/gettext/bin /usr/local/opt/gettext/bin)
- 	endif()
- 
- 	include (FindGettext)
- 
-+	# msgfmt / msgmerge are required at build time for compiling the .po
-+	# catalogs into .mo files installed alongside the binaries.
- 	if (NOT GETTEXT_MSGFMT_EXECUTABLE OR NOT GETTEXT_MSGMERGE_EXECUTABLE)
- 		set (ENABLE_NLS FALSE)
- 	endif()
-@@ -60,8 +44,32 @@ if (NOT YYENABLE_NLS)
- 	if (ENABLE_NLS)
- 		message (STATUS "Everything is fine. aMule can be localized")
- 		set (YYENABLE_NLS TRUE CACHE INTERNAL "For parser, php-parser and to not recheck for nls-support" FORCE)
--		add_subdirectory (po)
- 	else()
- 		message (STATUS "You need to install GNU gettext/gettext-tools to compile aMule with i18n support.")
- 	endif()
- endif()
-+
-+# Parser.cpp and the webserver call dgettext directly, so libintl needs
-+# to be on the link line.  On glibc systems Intl_LIBRARIES is empty
-+# (gettext lives inside libc); on macOS, MinGW/MSYS2 and *BSD it points
-+# at the separate libintl.  Without this, ENABLE_NLS=ON used to link
-+# fine on Linux and fail with `_libintl_dgettext` undefined elsewhere.
-+#
-+# This block lives *outside* the YYENABLE_NLS gate above intentionally.
-+# find_package(Intl) populates Intl_FOUND / Intl_LIBRARIES / Intl_INCLUDE_DIRS
-+# as ordinary (non-cache) variables, so on every fresh `cmake` configure
-+# pass they evaporate unless re-derived.  The cache-gated upper branch
-+# skips on subsequent configures (e.g. when a SVNDATE refresh triggers
-+# CMAKE_CONFIGURE_DEPENDS), which silently dropped the libintl link
-+# wiring in src/CMakeLists.txt's `if (ENABLE_NLS AND Intl_FOUND)` guard
-+# and produced `_libintl_dgettext` undefined-symbol failures on the
-+# next incremental build.  Calling find_package(Intl) every configure
-+# is cheap: its own internal cache (Intl_INCLUDE_DIR / Intl_LIBRARY)
-+# is preserved, so subsequent runs are effectively a cache lookup.
-+if (ENABLE_NLS)
-+	find_package (Intl)
-+	if (NOT Intl_FOUND)
-+		message (STATUS "libintl headers/library not found — disabling NLS")
-+		set (ENABLE_NLS FALSE)
-+	endif()
-+endif()
---- a/cmake/options.cmake
-+++ b/cmake/options.cmake
-@@ -37,15 +37,9 @@ option (BUILD_ED2K "compile aMule ed2k l
- option (BUILD_EVERYTHING "compile all parts of aMule")
- option (BUILD_FILEVIEW "compile aMule file viewer for console (EXPERIMENTAL)")
- option (BUILD_MONOLITHIC "enable building of the monolithic aMule app" ON)
--
--if (UNIX)
--	option (BUILD_PLASMAMULE "compile aMule plasma applet and engine")
--endif()
--
- option (BUILD_REMOTEGUI "compile aMule remote GUI")
- option (BUILD_WEBSERVER "compile aMule WebServer")
- option (BUILD_WXCAS "compile aMule GUI Statistics")
--option (BUILD_XAS "install xas XChat2 plugin")
- option (BUILD_TESTING "Run Tests after compile" ON)
- 
- if (PREFIX)
-@@ -67,15 +61,9 @@ if (BUILD_EVERYTHING)
- 
- 	set (BUILD_DAEMON ON CACHE BOOL "compile aMule daemon version" FORCE)
- 	set (BUILD_FILEVIEW ON CACHE BOOL "compile aMule file viewer for console (EXPERIMENTAL)" FORCE)
--
--#	if (UNIX)
--#		set (BUILD_PLASMAMULE ON CACHE BOOL )
--#	endif()
--
- 	set (BUILD_REMOTEGUI ON CACHE BOOL "compile aMule remote GUI" FORCE)
- 	set (BUILD_WEBSERVER ON CACHE BOOL "compile aMule WebServer" FORCE)
- 	set (BUILD_WXCAS ON CACHE BOOL "compile aMule GUI Statistics" FORCE)
--	set (BUILD_XAS ON CACHE BOOL "install xas XChat2 plugin" FORCE)
- endif()
- 
- if (BUILD_AMULECMD)
-@@ -100,10 +88,6 @@ if (BUILD_ALC)
- 	set (wx_NEED_GUI TRUE)
- endif()
- 
--if (BUILD_XAS)
--	set (BUILD_UTIL TRUE)
--endif()
--
- if (BUILD_DAEMON)
- 	set (NEED_LIB_EC TRUE)
- 	set (NEED_LIB_MULEAPPCOMMON TRUE)
-@@ -139,10 +123,6 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
- 	set (INSTALL_SKINS TRUE)
- endif()
- 
--if (BUILD_PLASMAMULE)
--	set (BUILD_UTIL TRUE)
--endif()
--
- if (BUILD_REMOTEGUI)
- 	set (NEED_GLIB_CHECK TRUE)
- 	set (NEED_LIB_EC TRUE)
---- a/cmake/source-vars.cmake
-+++ b/cmake/source-vars.cmake
-@@ -15,6 +15,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
- 		ClientTCPSocket.cpp
- 		ClientUDPSocket.cpp
- 		CorruptionBlackBox.cpp
-+		DownloadBandwidthThrottler.cpp
- 		DownloadClient.cpp
- 		DownloadQueue.cpp
- 		ECSpecialCoreTags.cpp
-@@ -37,7 +38,10 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
- 		SharedFileList.cpp
- 		UploadBandwidthThrottler.cpp
- 		UploadClient.cpp
-+		UploadDiskIOThread.cpp
- 		UploadQueue.cpp
-+		PartFileWriteThread.cpp
-+		PartFileHashThread.cpp
- 		ThreadTasks.cpp
- 	)
- endif()
-@@ -96,7 +100,10 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON OR
- endif()
- 
- if (ENABLE_IP2COUNTRY)
--	set (IP2COUNTRY IP2Country.cpp)
-+	set (IP2COUNTRY
-+		IP2Country.cpp
-+		geoip/MaxMindDBDatabase.cpp
-+	)
- endif()
- 
- if (ENABLE_UPNP)
---- a/cmake/upnp.cmake
-+++ b/cmake/upnp.cmake
-@@ -3,7 +3,37 @@ if (SEARCH_DIR_UPNP)
- 	set (CMAKE_PREFIX_PATH ${SEARCH_DIR_UPNP})
- endif()
- 
--find_package (UPNP CONFIG)
-+# Some distro packages ship a broken UPNP.cmake that lists non-existent paths
-+# (e.g. /usr/COMPONENT, /mingw64/COMPONENT) in INTERFACE_INCLUDE_DIRECTORIES.
-+# Observed on Ubuntu 25.10 libupnp-dev 1.14.x and MSYS2 mingw-w64-pupnp 1.14.x.
-+# Detect this before loading the broken config by inspecting the targets file,
-+# and fall through to pkg-config if affected.
-+find_file (_upnp_cmake_targets "UPNP.cmake"
-+	PATH_SUFFIXES lib/cmake/UPNP lib64/cmake/UPNP
-+	              lib/x86_64-linux-gnu/cmake/UPNP
-+	              lib/aarch64-linux-gnu/cmake/UPNP)
-+if (_upnp_cmake_targets)
-+	file (READ "${_upnp_cmake_targets}" _upnp_cmake_content)
-+	if (_upnp_cmake_content MATCHES "INTERFACE_INCLUDE_DIRECTORIES.*COMPONENT")
-+		message (STATUS "Broken UPNP CMake config detected (bad include paths) — using pkg-config instead")
-+		set (_upnp_skip_config TRUE)
-+	endif()
-+	unset (_upnp_cmake_content)
-+endif()
-+unset (_upnp_cmake_targets CACHE)
-+
-+if (NOT _upnp_skip_config)
-+	# MSYS2's pupnp UPNPConfig.cmake references Threads::Threads in its link
-+	# interface without calling find_package(Threads) itself — load it first
-+	# so the UPNP::Shared target resolves correctly.
-+	find_package (Threads REQUIRED)
-+	find_package (UPNP CONFIG)
-+endif()
-+unset (_upnp_skip_config)
-+
-+if (UPNP_CONFIG)
-+	set (LIBUPNP_VERSION ${UPNP_VERSION})
-+endif()
- 
- if (NOT UPNP_CONFIG)
- 	include (FindPkgConfig)
-@@ -11,7 +41,13 @@ if (NOT UPNP_CONFIG)
- 	unset (CMAKE_PREFIX_PATH)
- 
- 	if (LIBUPNP_FOUND)
--		add_library (UPNP::Shared SHARED IMPORTED)
-+		if (MINGW)
-+			# On MinGW, SHARED IMPORTED without IMPORTED_IMPLIB makes
-+			# Debug-config lookups resolve to UPNP::Shared-NOTFOUND.
-+			add_library (UPNP::Shared UNKNOWN IMPORTED)
-+		else()
-+			add_library (UPNP::Shared SHARED IMPORTED)
-+		endif()
- 
- 		set_target_properties (UPNP::Shared PROPERTIES
- 			IMPORTED_LOCATION "${pkgcfg_lib_LIBUPNP_upnp}"
---- a/cmake/wx.cmake
-+++ b/cmake/wx.cmake
-@@ -15,255 +15,134 @@
- # but WITHOUT ANY WARRANTY; without even the implied warranty of
- # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- # GNU General Public License for more details.
--# 
-+#
- # You should have received a copy of the GNU General Public License
- # along with this program; if not, write to the Free Software
- # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
- #
- #
--# This file provides the CHECK_WX Macro which checks if wx is at least in a
--# version defined by MIN_WX_VERSION. This check will go away, when cmake
--# findWX module supports check of version
--# 
--# Furthermore it sets the LIBS, LIBDIR and DEFS needed for compilation.
--# This can be controled by setting wx_NEED_BASE and wx_NEED_GUI vars.
-+# Thin wrapper over CMake's stock FindwxWidgets module that exposes
-+# wxWidgets::{BASE,CORE,NET,ADV} as INTERFACE IMPORTED targets, letting
-+# callers continue to write `target_link_libraries(tgt PRIVATE wxWidgets::CORE)`.
-+# The component set is driven by wx_NEED_{BASE,GUI,NET,ADV} flags set up
-+# in cmake/options.cmake.
-+#
-+# wx 3.1.2+ merged the ADV component into CORE, so `adv` is not requested
-+# from find_package; wxWidgets::ADV is still created when asked for so that
-+# existing generator-expression references in src/ keep resolving.
- #
- 
--INCLUDE (CheckCXXSymbolExists)
--INCLUDE (ExternalProject)
-+set (_amule_wx_components)
-+set (_amule_wx_targets)
- 
--#IF (BUILT_WX)
--	#SET (BUILT_WX ${BUILT_WX} CACHE BOOL "Remeber that wx was built" FORCE)
-+if (wx_NEED_BASE)
-+	list (APPEND _amule_wx_components base)
-+	list (APPEND _amule_wx_targets BASE)
-+endif()
-+
-+if (wx_NEED_GUI)
-+	list (APPEND _amule_wx_components core)
-+	list (APPEND _amule_wx_targets CORE)
-+endif()
-+
-+if (wx_NEED_NET)
-+	list (APPEND _amule_wx_components net)
-+	list (APPEND _amule_wx_targets NET)
-+endif()
-+
-+if (wx_NEED_ADV)
-+	list (APPEND _amule_wx_targets ADV)
-+endif()
-+
-+find_package (wxWidgets ${MIN_WX_VERSION} REQUIRED COMPONENTS ${_amule_wx_components})
-+
-+# MSYS2's wx-config points at the unicode wx build but does not emit
-+# -DUNICODE / -D_UNICODE, so <wx/msw/winundef.h> ends up in a mixed
-+# ANSI/UNICODE state (LoadBitmapA vs LoadBitmapW, LPCTSTR vs LPCSTR
-+# mismatches). Stock FindwxWidgets just forwards wx-config's output, so
-+# the same gap appears here — propagate the defines manually on MinGW.
-+if (MINGW)
-+	list (APPEND wxWidgets_DEFINITIONS UNICODE _UNICODE)
-+endif()
-+
-+# Stock FindwxWidgets returns a single combined LIBRARIES / INCLUDE_DIRS /
-+# DEFINITIONS set for all requested components; it does not expose per-
-+# component flags. All per-component INTERFACE targets forward the same
-+# set — duplicate link references are harmless.
-+foreach (_target IN LISTS _amule_wx_targets)
-+	if (NOT TARGET wxWidgets::${_target})
-+		add_library (wxWidgets::${_target} INTERFACE IMPORTED)
- 
--	#EXTERNALPROJECT_ADD (WX
--		#GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets.git
--		#GIT_TAG v3.1.2
--		#CONFIGURE_COMMAND ""
--		#BUILD_COMMAND ""
--		#INSTALL_COMMAND ""
--		#EXCLUDE_FROM_ALL TRUE
--	#)
--
--	#EXTERNALPROJECT_GET_PROPERTY (WX SOURCE_DIR)
--
--	#IF (WIN32)
--		#SET (wxWidgets_ROOT_DIR ${CMAKE_INSTALL_PREFIX})
--	#ELSE (WIN32)
--		#INSTALL (CODE
--			#"EXECUTE_PROCESS (
--				#COMMAND ${CMAKE_MAKE_PROGRAM} clean
--				#WORKING_DIRECTORY ${SOURCE_DIR}
--			#)
--
--			#EXECUTE_PROCESS (
--				#COMMAND ./configure --prefix=${CMAKE_INSTALL_PREFIX}
--				#WORKING_DIRECTORY ${SOURCE_DIR}
--			#)
--
--			#EXECUTE_PROCESS (
--				#COMMAND ${CMAKE_MAKE_PROGRAM} install
--				#WORKING_DIRECTORY ${SOURCE_DIR}
--			#)"
--		#)
--
--		#SET (wxWidgets_CONFIG_EXECUTABLE ${SOURCE_DIR}/wx-config CACHE FILEPATH "Location of wxWidgets library configuration provider binary (wx-config)." FORCE)
--	#ENDIF (WIN32)
--#ENDIF (BUILT_WX)
--
--#IF (NOT DOWNLOAD_AND_BUILD_DEPS)
--	SET (wx_REQUIRED "REQUIRED")
--#ELSE (NOT DOWNLOAD_AND_BUILD_DEPS)
--#	UNSET (wx_REQUIRED)
--#ENDIF (NOT DOWNLOAD_AND_BUILD_DEPS)
--
--IF (wx_NEED_BASE)
--	SET (BASE "base")
--	LIST (APPEND WX_COMPONENTS BASE)
--
--	ADD_LIBRARY (wxWidgets::BASE
--		UNKNOWN
--		IMPORTED
--	)
--ENDIF (wx_NEED_BASE)
--
--IF (wx_NEED_ADV)
--	SET (ADV "adv")
--	LIST (APPEND WX_COMPONENTS ADV)
--
--	ADD_LIBRARY (wxWidgets::ADV
--		UNKNOWN
--		IMPORTED
--	)
--ENDIF (wx_NEED_ADV)
--
--IF (wx_NEED_GUI)
--	SET (CORE "core")
--	LIST (APPEND WX_COMPONENTS CORE)
--
--	ADD_LIBRARY (wxWidgets::CORE
--		UNKNOWN
--		IMPORTED
--	)
--ENDIF (wx_NEED_GUI)
--
--IF (wx_NEED_NET)
--	SET (NET "net")
--	LIST (APPEND WX_COMPONENTS NET)
--
--	ADD_LIBRARY (wxWidgets::NET
--		UNKNOWN
--		IMPORTED
--	)
--ENDIF (wx_NEED_NET)
--
--#IF (DOWNLOAD_AND_BUILD_DEPS)
--#	UNSET (WX_REQUIRED)
--#ELSE (DOWNLOAD_AND_BUILD_DEPS)
--	SET (WX_REQUIRED "REQUIRED")
--#ENDIF (DOWNLOAD_AND_BUILD_DEPS)
--
--IF (wxWidgets_BASE_DEFINITIONS)
--	SET (WX_QUIET QUIET)
--ENDIF (wxWidgets_BASE_DEFINITIONS)
--
--IF (WX_COMPONENTS)
--	FOREACH (COMPONENT ${WX_COMPONENTS})
--		IF (${COMPONENT} STREQUAL ADV AND wxWidgets_VERSION_STRING VERSION_GREATER_EQUAL 3.1.2 AND NOT WX_QUIET)
--			MESSAGE (STATUS "wx_Version 3.1.2 or newer detected. Disabling wx_ADV")
--			CONTINUE()
--		ENDIF (${COMPONENT} STREQUAL ADV AND wxWidgets_VERSION_STRING VERSION_GREATER_EQUAL 3.1.2 AND NOT WX_QUIET)
--
--		IF (NOT wxWidgets_${COMPONENT}_LIBRARY AND NOT (wxWidgets_${COMPONENT}_LIBRARY_RELEASE AND wxWidgets_${COMPONENT}_LIBRARY_DEBUG))
--			FIND_PACKAGE (wxWidgets ${MIN_WX_VERSION} ${WX_QUIET} ${WX_REQUIRED} COMPONENTS ${${COMPONENT}})
--		ENDIF (NOT wxWidgets_${COMPONENT}_LIBRARY AND NOT (wxWidgets_${COMPONENT}_LIBRARY_RELEASE AND wxWidgets_${COMPONENT}_LIBRARY_DEBUG))
--
--		IF (WIN32)
--			SET_PROPERTY (TARGET wxWidgets::${COMPONENT}
--							PROPERTY IMPORTED_LOCATION_RELEASE ${WX_${${COMPONENT}}}
--			)
--
--			SET_PROPERTY (TARGET wxWidgets::${COMPONENT}
--							PROPERTY IMPORTED_LOCATION_DEBUG ${WX_${${COMPONENT}}d}
--			)
--
--			SET (wxWidgets_DEFINITIONS ${wxWidgets_DEFINITIONS} WXUSINGDLL)
--
--			IF (${COMPONENT} STREQUAL CORE)
--				SET (wxWidgets_DEFINITIONS ${wxWidgets_DEFINITIONS} wxUSE_GUI=1)
--				SET (CMAKE_REQUIRED_INCLUDES ${wxWidgets_INCLUDE_DIRS})
--
--				IF (NOT UNICODE_SUPPORT)
--					UNSET (UNICODE_SUPPORT CACHE)
--
--					CHECK_CXX_SYMBOL_EXISTS (wxUSE_UNICODE
--						wx/setup.h
--						UNICODE_SUPPORT
--					)
--				ENDIF (NOT UNICODE_SUPPORT)
--
--				UNSET (CMAKE_REQUIRED_INCLUDES)
--
--				IF (UNICODE_SUPPORT)
--					SET (wxWidgets_DEFINITIONS ${wxWidgets_DEFINITIONS} _UNICODE)
--				ENDIF (UNICODE_SUPPORT)
--			ENDIF (${COMPONENT} STREQUAL CORE)
--
--			SET (wxWidgets_${COMPONENT}_LIBRARY_RELEASE ${WX_${${COMPONENT}}} CACHE STRING "Libs to use when linking to ${COMPONENT}" FORCE)
--			SET (wxWidgets_${COMPONENT}_LIBRARY_DEBUG ${WX_${${COMPONENT}}d} CACHE STRING "Libs to use when linking to ${COMPONENT}" FORCE)
--
--			MARK_AS_ADVANCED (wxWidgets_${COMPONENT}_LIBRARY_RELEASE
--				wxWidgets_${COMPONENT}_LIBRARY_DEBUG
--			)
--		ELSE (WIN32)
--			FOREACH (LIB IN LISTS wxWidgets_LIBRARIES)
--				IF ("${LIB}" MATCHES "^-l(.*)$")
--					SET (LIB_TO_SEARCH ${CMAKE_MATCH_1})
--
--					FIND_LIBRARY (${LIB_TO_SEARCH}_SEARCH
--						${LIB_TO_SEARCH}
--						PATHS ${wxWidgets_LIBRARY_DIRS}
--					)
--
--					IF (${LIB_TO_SEARCH}_SEARCH AND ${${LIB_TO_SEARCH}_SEARCH} MATCHES ${${COMPONENT}})
--						SET_PROPERTY (TARGET wxWidgets::${COMPONENT}
--							PROPERTY IMPORTED_LOCATION ${${LIB_TO_SEARCH}_SEARCH}
--						)
--					ELSE (${LIB_TO_SEARCH}_SEARCH AND ${${LIB_TO_SEARCH}_SEARCH} MATCHES ${${COMPONENT}})
--						FOREACH (TGT ${WX_COMPONENTS})
--							IF (${${LIB_TO_SEARCH}_SEARCH} MATCHES ${${TGT}} AND TARGET wxWidgets::${TGT})
--								TARGET_LINK_LIBRARIES (wxWidgets::${COMPONENT}
--									INTERFACE wxWidgets::${TGT}
--								)
--							ELSEIF (NOT TARGET wxWidgets::${TGT})
--								MESSAGE (FATAL_ERROR "Tried to add dependency for wxWidgets::${TGT} but didn't find a target wxWidgets::${COMPONENT}")
--							ENDIF (${${LIB_TO_SEARCH}_SEARCH} MATCHES ${${TGT}} AND TARGET wxWidgets::${TGT})
--						ENDFOREACH (TGT ${WX_COMPONENTS})
--					ENDIF (${LIB_TO_SEARCH}_SEARCH AND ${${LIB_TO_SEARCH}_SEARCH} MATCHES ${${COMPONENT}})
--				ENDIF ("${LIB}" MATCHES "^-l(.*)$")
--			ENDFOREACH (LIB IN LISTS wxWidgets_LIBRARIES)
--
--			SET (wxWidgets_${COMPONENT}_LIBRARY ${wxWidgets_${COMPONENT}_LIBRARY} CACHE STRING "Libs to use when linking to ${COMPONENT}" FORCE)
--
--			MARK_AS_ADVANCED (wxWidgets_${COMPONENT_NAME}_LIBRARY
--				wxWidgets_${COMPONENT_NAME}_DEFINITIONS
--			)
--		ENDIF (WIN32)
--
--		SET_TARGET_PROPERTIES (wxWidgets::${COMPONENT} PROPERTIES
--			INTERFACE_COMPILE_DEFINITIONS "${wxWidgets_DEFINITIONS};$<$<CONFIG:Debug>:__WXDEBUG__>"
--			INTERFACE_INCLUDE_DIRECTORIES "${wxWidgets_INCLUDE_DIRS}"
-+		target_link_libraries (wxWidgets::${_target}
-+			INTERFACE ${wxWidgets_LIBRARIES}
- 		)
- 
--		UNSET (wxWidgets_DEFINITIONS)
--	ENDFOREACH (COMPONENT ${WX_COMPONENTS})
-+		target_include_directories (wxWidgets::${_target}
-+			INTERFACE ${wxWidgets_INCLUDE_DIRS}
-+		)
- 
--	IF (wxWidgets_VERSION_STRING VERSION_LESS 3.1.2)
--		TARGET_LINK_LIBRARIES (wxWidgets::ADV
--			INTERFACE wxWidgets::BASE
-+		target_compile_definitions (wxWidgets::${_target}
-+			INTERFACE ${wxWidgets_DEFINITIONS}
- 		)
--	ENDIF (wxWidgets_VERSION_STRING VERSION_LESS 3.1.2)
-+	endif()
-+endforeach()
-+
-+unset (_amule_wx_components)
-+unset (_amule_wx_targets)
-+
- 
--	TARGET_LINK_LIBRARIES (wxWidgets::CORE
--		INTERFACE wxWidgets::BASE
--	)
--	TARGET_LINK_LIBRARIES (wxWidgets::NET
--		INTERFACE wxWidgets::BASE
--	)
--
--	SET (wxWidgets_INCLUDE_DIRS ${wxWidgets_INCLUDE_DIRS} CACHE STRING "Where to find wx header files" FORCE)
--
--	MARK_AS_ADVANCED (wxWidgets_INCLUDE_DIRS
--		wxWidgets_BASE_DEFINITIONS
--	)
--ENDIF (WX_COMPONENTS)
--
--#IF (DOWNLOAD_AND_BUILD_DEPS AND NOT wxWidgets_FOUND AND NOT BUILT_WX)
--	#IF (WIN32)
--		#EXTERNALPROJECT_ADD (WX
--			#GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets.git
--			#GIT_TAG v3.1.2
--			#GIT_PROGRESS TRUE
--			#BUILD_IN_SOURCE FALSE
--			#CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DwxUSE_IPV6=OFF -DwxBUILD_COMPATIBILITY=2.8
--			#BUILD_COMMAND ${CMAKE_COMMAND} --build . --config Debug
--			#COMMAND ${CMAKE_COMMAND} --build . --config Release
--			#INSTALL_COMMAND ${CMAKE_COMMAND} --install . --config Debug
--			#COMMAND ${CMAKE_COMMAND} --install . --config Release
--		#)
--	#ELSE (WIN32)
--		#EXTERNALPROJECT_ADD (WX
--			#GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets.git
--			#GIT_TAG v3.1.2
--			#GIT_PROGRESS TRUE
--			#BUILD_IN_SOURCE TRUE
--			#CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
--			#CONFIGURE_COMMAND ./autogen.sh
--			#BUILD_COMMAND ./configure --enable-debug --prefix=<SOURCE_DIR>
--			#INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM}
--		#)
--	#ENDIF (WIN32)
--
--
--	#LIST (APPEND EXTERNAL_DEPS WX)
--	#SET (RECONF_COMMAND ${RECONF_COMMAND} -DBUILT_WX=TRUE)
--#ENDIF (DOWNLOAD_AND_BUILD_DEPS AND NOT wxWidgets_FOUND AND NOT BUILT_WX)
-+# CHTTPDownloadThread (HTTPDownload.{h,cpp}) is built directly on top of
-+# wxWebRequest / wxWebSession / wxWebRequestEvent.  Those classes are gated
-+# on wxUSE_WEBREQUEST in <wx/webrequest.h>, which itself collapses to 0
-+# when wx was built without a backend — libcurl on Linux/*BSD, WinHTTP on
-+# Windows, NSURLSession on macOS.  Distro CI never sees this because the
-+# stock wx packages include the backend, but hand-rolled wx builds and
-+# Gentoo wxGTK with USE="-curl" don't.  Surface that here so the failure
-+# is one configure-time line instead of a wall of "wxWebRequest does not
-+# name a type" cascades during the build.
-+if (wx_NEED_NET)
-+	include (CheckCXXSourceCompiles)
-+	include (CMakePushCheckState)
-+
-+	# wxWidgets_DEFINITIONS is a list of bare names (e.g. WXUSINGDLL,
-+	# __WXGTK__, _FILE_OFFSET_BITS=64); CMAKE_REQUIRED_DEFINITIONS wants
-+	# each entry already prefixed with -D.  Without that, wx/defs.h trips
-+	# its own "No Target! You should use wx-config program for compilation
-+	# flags!" #error and the test fails for the wrong reason.
-+	set (_amule_wx_required_defs)
-+	foreach (_def IN LISTS wxWidgets_DEFINITIONS)
-+		list (APPEND _amule_wx_required_defs "-D${_def}")
-+	endforeach()
-+
-+	# Compile-only — we are inspecting a preprocessor symbol from
-+	# wx/setup.h, not exercising any wx symbols, so save the link step
-+	# (which would need CMAKE_REQUIRED_LIBRARIES wired up).
-+	cmake_push_check_state (RESET)
-+	set (CMAKE_REQUIRED_INCLUDES ${wxWidgets_INCLUDE_DIRS})
-+	set (CMAKE_REQUIRED_DEFINITIONS ${_amule_wx_required_defs})
-+	set (CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-+
-+	check_cxx_source_compiles ("
-+		#include <wx/webrequest.h>
-+		#if !wxUSE_WEBREQUEST
-+		#error wxUSE_WEBREQUEST is not enabled
-+		#endif
-+		int probe() { return 0; }
-+	" amule_HAVE_WXWEBREQUEST)
-+
-+	cmake_pop_check_state()
-+	unset (_amule_wx_required_defs)
-+
-+	if (NOT amule_HAVE_WXWEBREQUEST)
-+		message (FATAL_ERROR
-+			"wxWidgets was found but wxUSE_WEBREQUEST is 0 in this build.\n"
-+			"aMule's HTTP download path requires wxWebRequest, which "
-+			"needs a backend at wx-build time:\n"
-+			"  - Linux / *BSD: libcurl   (rebuild wx with --with-libcurl,\n"
-+			"                            or on Gentoo emerge net-libs/wxGTK\n"
-+			"                            with USE=\"curl\")\n"
-+			"  - Windows     : WinHTTP   (always present on supported releases)\n"
-+			"  - macOS       : NSURLSession (always present)\n"
-+			"Then re-run cmake.")
-+	endif()
-+endif()
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1,9 +1,10 @@
@@ -1091,7 +86,7 @@
  if (BUILD_WEBSERVER OR NEED_ZLIB)
  	include (cmake/zlib.cmake)
  endif()
-@@ -91,19 +96,73 @@ if (wx_NEEDED)
+@@ -91,23 +96,121 @@ if (wx_NEEDED)
  	include (cmake/wx.cmake)
  endif()
  
@@ -1172,7 +167,55 @@
  endif()
  
  include (cmake/bfd.cmake)
-@@ -118,12 +177,26 @@ if (WIN32)
+ 
++# glib-2.0 headers — needed by amule.cpp's CamuleApp::OnInit, which
++# calls g_set_prgname() under __WXGTK__ to bind the Wayland wl_app_id
++# (and X11 WM_CLASS) to the .desktop filename. amule.cpp is compiled
++# into both amule (monolithic) and amuled (daemon), so detect this
++# unconditionally on Linux rather than gating on a build flag — wxgtk
++# builds against glib transitively but doesn't always propagate the
++# include path through the wxWidgets cmake target on every distro.
++if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
++	find_package (PkgConfig QUIET)
++	if (PkgConfig_FOUND)
++		pkg_check_modules (GLIB QUIET glib-2.0)
++	endif()
++endif()
++
++# Optional StatusNotifierItem (SNI) backend for the system-tray icon.
++# wxGTK's wxTaskBarIcon talks the legacy GtkStatusIcon API, which
++# GNOME Shell removed in 3.26 and modern wlroots compositors never
++# implemented. Apps that need a visible tray icon on Ubuntu (with the
++# AppIndicators extension), KDE Plasma, and Sway speak the SNI D-Bus
++# protocol directly via libayatana-appindicator3. When the dev
++# headers are present we build a SNI backend into MuleTrayIcon; on
++# platforms where the library is missing (Windows, macOS, builds
++# without the dep) we fall back to wxTaskBarIcon.
++if (BUILD_MONOLITHIC AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
++	find_package (PkgConfig QUIET)
++	if (PkgConfig_FOUND)
++		# `0.1` is the API version (never bumped, every release uses it),
++		# not a library version pin. Try the Ayatana fork first since
++		# that's the maintained one; fall back to Canonical's legacy
++		# `appindicator3-0.1` for distros that haven't migrated yet.
++		# The two are API-compatible at the headers/symbols level.
++		pkg_check_modules (AYATANA_APPINDICATOR QUIET ayatana-appindicator3-0.1)
++		if (NOT AYATANA_APPINDICATOR_FOUND)
++			pkg_check_modules (AYATANA_APPINDICATOR QUIET appindicator3-0.1)
++		endif()
++		if (AYATANA_APPINDICATOR_FOUND)
++			message (STATUS "AppIndicator3 found: ${AYATANA_APPINDICATOR_MODULE_NAME} ${AYATANA_APPINDICATOR_VERSION} — tray icon uses SNI backend")
++			set (WITH_LIBAYATANA_APPINDICATOR ON)
++		else()
++			message (STATUS "AppIndicator3 not found (looked for ayatana-appindicator3-0.1 and appindicator3-0.1) — tray icon falls back to legacy GtkStatusIcon, invisible on modern GNOME/wlroots")
++		endif()
++	endif()
++endif()
++
+ configure_file (
+ 	config.h.cm
+ 	config.h
+@@ -118,20 +221,47 @@ if (WIN32)
  		version.rc.in
  		version.rc
  	)
@@ -1187,23 +230,30 @@
  endif()
  
  if (BUILD_MONOLITHIC)
- 	install (FILES amule.desktop
+-	install (FILES amule.desktop
++	# Files use the canonical AppStream / Flatpak / Wayland app id
++	# `org.amule.aMule`. Wayland compositors bind windows to launcher
++	# icons by matching wl_app_id (set via g_set_prgname() in amule's
++	# OnInit) against the .desktop filename without extension; the id
++	# also doubles as the AppStream component id and the Flatpak app id
++	# so AppImage, Flatpak, and distro packages all resolve to the same
++	# entity in software catalogs.
++	install (FILES org.amule.aMule.desktop
  		DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
  	)
-+	# Ship the PNG application icon in the XDG hicolor theme so
-+	# desktop environments (GTK, KDE, Wayland shells, file managers)
-+	# can resolve `Icon=amule` from amule.desktop.
-+	install (FILES amule.png
++	install (FILES org.amule.aMule.png
 +		DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/128x128/apps"
 +	)
  endif()
  
  if (BUILD_REMOTEGUI)
-@@ -132,6 +205,15 @@ if (BUILD_REMOTEGUI)
+-	install (FILES amulegui.desktop
++	install (FILES org.amule.aMule.gui.desktop
+ 		DESTINATION "${CMAKE_INSTALL_DATADIR}/applications"
  	)
  endif()
  
-+install (FILES org.amule.amule.metainfo.xml
++install (FILES org.amule.aMule.metainfo.xml
 +	DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo"
 +)
 +
@@ -1215,7 +265,7 @@
  add_subdirectory (docs)
  add_subdirectory (src)
  
-@@ -174,10 +256,6 @@ message (STATUS "
+@@ -174,10 +304,6 @@ message (STATUS "
  	Should aMule GUI Statistics (wxCas) be built?			${BUILD_WXCAS}"
  )
  
@@ -1226,7 +276,7 @@
  message ("
  	**** General Libraries and Tools ****
  	Should aMule file viewer for console be built?			${BUILD_FILEVIEW}
-@@ -204,7 +282,7 @@ endif()
+@@ -204,7 +330,7 @@ endif()
  message ("			libintl				${ENABLE_NLS}")
  
  if (ENABLE_IP2COUNTRY)
@@ -1235,6 +285,30 @@
  endif()
  
  if (BUILD_WEBSERVER)
+@@ -218,3 +344,11 @@ endif()
+ if (NEED_ZLIB)
+ 	message ("			zlib				${ZLIB_VERSION_STRING}")
+ endif()
++
++if (BUILD_MONOLITHIC AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
++	if (WITH_LIBAYATANA_APPINDICATOR)
++		message ("			tray-icon backend		StatusNotifierItem (libayatana-appindicator ${AYATANA_APPINDICATOR_VERSION})")
++	else()
++		message ("			tray-icon backend		legacy GtkStatusIcon (invisible on modern GNOME/wlroots — install libayatana-appindicator3-dev for SNI)")
++	endif()
++endif()
+--- a/config.h.cm
++++ b/config.h.cm
+@@ -185,5 +185,9 @@
+ /* Define if libpng is present is set. */
+ #cmakedefine WITH_LIBPNG
+ 
++/* Define if libayatana-appindicator3 was found at configure time —
++ * enables the StatusNotifierItem backend in MuleTrayIcon. */
++#cmakedefine WITH_LIBAYATANA_APPINDICATOR
++
+ /* Define if ENABLE_NLS is set. */
+ #cmakedefine YYENABLE_NLS 1
 --- a/configure.ac
 +++ b/configure.ac
 @@ -169,7 +169,7 @@ MULE_IF_ENABLED_ANY([monolithic, amule-d
@@ -1275,192 +349,145 @@
  MULE_CHECK_NLS
  AS_IF([test x$USE_INCLUDED_LIBINTL = xyes], [AC_CONFIG_COMMANDS([intl], [[
  	test -d intl || mkdir intl
---- a/m4/gettext.m4
-+++ b/m4/gettext.m4
-@@ -425,7 +425,7 @@ AC_DEFUN([AM_PO_SUBDIRS],
-               test -n "$as_me" && echo "$as_me: setting ALL_LINGUAS in configure.in is obsolete" || echo "setting ALL_LINGUAS in configure.in is obsolete"
-             fi
-             ALL_LINGUAS_=`sed -e "/^#/d" "$ac_given_srcdir/$ac_dir/LINGUAS"`
--            # Hide the ALL_LINGUAS assigment from automake.
-+            # Hide the ALL_LINGUAS assignment from automake.
-             eval 'ALL_LINGUAS''=$ALL_LINGUAS_'
-           fi
-           case "$ac_given_srcdir" in
---- a/m4/muleboost.m4
-+++ b/m4/muleboost.m4
-@@ -54,7 +54,7 @@ esac
- # Adds a configure flag --with-boost[=DIR]. You may optionally specify the
- # location of boost headers (or sources), if they are in a non-standard
- # location. If --with-boost if not given, nothing is done. Otherwise it
--# checks for the required minumum Boost version, and Boost.Asio. If everything
-+# checks for the required minimum Boost version, and Boost.Asio. If everything
- # is fine, defines ASIO_SOCKETS. If the Boost sources are found, also defines
- # HAVE_BOOST_SOURCES. Other flags defined for using Boost:
- #   - BOOST_CPPFLAGS
---- a/m4/nls.m4
-+++ b/m4/nls.m4
-@@ -82,7 +82,6 @@ AC_DEFUN([MULE_CHECK_NLS],
- 			[Specify a comma-separated list of languages you want to have installed. See po/LINGUAS for available languages])],
- 		[AS_IF([test "$withval" != "all"], [LINGUAS="`echo $withval | sed -e 's/,/ /g'`"])])
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -6,7 +6,7 @@ endif
  
--	AM_GNU_GETTEXT([no-libtool], [need-ngettext])
- 	AS_IF([test $USE_INCLUDED_LIBINTL = yes], [INCINTL=-I\${top_builddir}/intl])
+ SUBDIRS += docs src unittests
  
- 	AS_IF([test x$USE_NLS = xyes], [MULE_CHECK_AUTOPOINT(, [USE_NLS=no])])
---- a/po/CMakeLists.txt
-+++ b/po/CMakeLists.txt
-@@ -1,66 +1,94 @@
--FILE (GLOB PO_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.po")
-+file (GLOB PO_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.po")
-+include (CMakeDependentOption)
+-EXTRA_DIST = amule.rc amule.ico amule.png convert.ico \
++EXTRA_DIST = amule.rc amule.ico org.amule.aMule.png convert.ico \
+ 	aMule.spec \
+ 	amule_build_install.sh autogen.sh \
+ 	po/l10n.xsl
+@@ -14,19 +14,31 @@ EXTRA_DIST = amule.rc amule.ico amule.pn
+ dist_icon_DATA =
+ icondir = $(datadir)/pixmaps
  
--INCLUDE (CMakeDependentOption)
-+function (SetTranslationOption PoName DefaultMode)
-+	set (LangName "${PoName}")
-+	string (REGEX REPLACE "^ar$"	"Arabic"		LangName "${LangName}")
-+	string (REGEX REPLACE "^ast$"	"Asturian"		LangName "${LangName}")
-+	string (REGEX REPLACE "^bg$"	"Bulgarian"		LangName "${LangName}")
-+	string (REGEX REPLACE "^ca$"	"Catalan"		LangName "${LangName}")
-+	string (REGEX REPLACE "^cs$"	"Czech"			LangName "${LangName}")
-+	string (REGEX REPLACE "^da$"	"Danish"		LangName "${LangName}")
-+	string (REGEX REPLACE "^de$"	"German"		LangName "${LangName}")
-+	string (REGEX REPLACE "^el$"	"Greek"			LangName "${LangName}")
-+	string (REGEX REPLACE "^en_GB$"	"English"		LangName "${LangName}")
-+	string (REGEX REPLACE "^es$"	"Spanish"		LangName "${LangName}")
-+	string (REGEX REPLACE "^et_EE$"	"Estonian"		LangName "${LangName}")
-+	string (REGEX REPLACE "^eu$"	"Basque"		LangName "${LangName}")
-+	string (REGEX REPLACE "^fi$"	"Finnish"		LangName "${LangName}")
-+	string (REGEX REPLACE "^fr$"	"French"		LangName "${LangName}")
-+	string (REGEX REPLACE "^gl$"	"Galician"		LangName "${LangName}")
-+	string (REGEX REPLACE "^he$"	"Hebrew"		LangName "${LangName}")
-+	string (REGEX REPLACE "^hr$"	"Croatian"		LangName "${LangName}")
-+	string (REGEX REPLACE "^hu$"	"Hungarian"		LangName "${LangName}")
-+	string (REGEX REPLACE "^it$"	"Italian"		LangName "${LangName}")
-+	string (REGEX REPLACE "^it_CH$"	"Italian (Swiss)"	LangName "${LangName}")
-+	string (REGEX REPLACE "^ja$"	"Japanese"		LangName "${LangName}")
-+	string (REGEX REPLACE "^ko_KR$"	"Korean"		LangName "${LangName}")
-+	string (REGEX REPLACE "^lt$"	"Lithuanian"		LangName "${LangName}")
-+	string (REGEX REPLACE "^nl$"	"Dutch"			LangName "${LangName}")
-+	string (REGEX REPLACE "^nn$"	"Norwegian (Nynorsk)"	LangName "${LangName}")
-+	string (REGEX REPLACE "^pl$"	"Polish"		LangName "${LangName}")
-+	string (REGEX REPLACE "^pt_BR$"	"Portuguese (Brazilian)" LangName "${LangName}")
-+	string (REGEX REPLACE "^pt_PT$"	"Portuguese"		LangName "${LangName}")
-+	string (REGEX REPLACE "^ro$"	"Romanian"		LangName "${LangName}")
-+	string (REGEX REPLACE "^ru$"	"Russian"		LangName "${LangName}")
-+	string (REGEX REPLACE "^sl$"	"Slovenian"		LangName "${LangName}")
-+	string (REGEX REPLACE "^sq$"	"Albanian"		LangName "${LangName}")
-+	string (REGEX REPLACE "^sv$"	"Swedish"		LangName "${LangName}")
-+	string (REGEX REPLACE "^tr$"	"Turkish"		LangName "${LangName}")
-+	string (REGEX REPLACE "^uk$"	"Ukrainian"		LangName "${LangName}")
-+	string (REGEX REPLACE "^zh_CN$"	"Chinese (Simplified)"	LangName "${LangName}")
-+	string (REGEX REPLACE "^zh_TW$"	"Chinese (Traditional)"	LangName "${LangName}")
-+	cmake_dependent_option (TRANSLATION_${PoName} "Build ${LangName} translation" ${DefaultMode} ENABLE_NLS OFF)
-+endfunction()
- 
--FUNCTION (SetTranslationOption PoName DefaultMode)
--	SET (LangName "${PoName}")
--	STRING (REGEX REPLACE "^ar$"	"Arabic"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^ast$"	"Asturian"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^bg$"	"Bulgarian"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^ca$"	"Catalan"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^cs$"	"Czech"			LangName "${LangName}")
--	STRING (REGEX REPLACE "^da$"	"Danish"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^de$"	"German"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^el$"	"Greek"			LangName "${LangName}")
--	STRING (REGEX REPLACE "^en_GB$"	"English"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^es$"	"Spanish"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^et_EE$"	"Estonian"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^eu$"	"Basque"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^fi$"	"Finnish"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^fr$"	"French"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^gl$"	"Galician"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^he$"	"Hebrew"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^hr$"	"Croatian"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^hu$"	"Hungarian"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^it$"	"Italian"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^it_CH$"	"Italian (Swiss)"	LangName "${LangName}")
--	STRING (REGEX REPLACE "^ja$"	"Japanese"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^ko_KR$"	"Korean"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^lt$"	"Lithuanian"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^nl$"	"Dutch"			LangName "${LangName}")
--	STRING (REGEX REPLACE "^nn$"	"Norwegian (Nynorsk)"	LangName "${LangName}")
--	STRING (REGEX REPLACE "^pl$"	"Polish"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^pt_BR$"	"Portuguese (Brazilian)" LangName "${LangName}")
--	STRING (REGEX REPLACE "^pt_PT$"	"Portuguese"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^ru$"	"Russian"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^sl$"	"Slovenian"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^sq$"	"Albanian"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^sv$"	"Swedish"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^tr$"	"Turkish"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^uk$"	"Ukrainian"		LangName "${LangName}")
--	STRING (REGEX REPLACE "^zh_CN$"	"Chinese (Simplified)"	LangName "${LangName}")
--	STRING (REGEX REPLACE "^zh_TW$"	"Chinese (Traditional)"	LangName "${LangName}")
--	CMAKE_DEPENDENT_OPTION (TRANSLATION_${PoName} "Build ${LangName} translation" ${DefaultMode} ENABLE_NLS OFF)
--ENDFUNCTION (SetTranslationOption)
-+foreach (PO_FILE ${PO_FILES})
-+	string (REGEX REPLACE ".po" "" PO_FILE ${PO_FILE})
- 
--FOREACH (PO_FILE ${PO_FILES})
--	STRING (REGEX REPLACE ".po" "" PO_FILE ${PO_FILE})
-+	if (TRANSLATIONS)
-+		string (REGEX MATCH "${PO_FILE}," TRANS "${TRANSLATIONS}")
- 
--	IF (TRANSLATIONS)
--		STRING (REGEX MATCH "${PO_FILE}," TRANS "${TRANSLATIONS}")
--
--		IF (TRANS)
-+		if (TRANS)
- 			SetTranslationOption ("${PO_FILE}" ON)
--		ELSE (TRANS)
-+		else()
- 			SetTranslationOption ("${PO_FILE}" OFF)
--		ENDIF (TRANS)
--	ELSE (TRANSLATIONS)
-+		endif()
-+	else()
- 		SetTranslationOption ("${PO_FILE}" ON)
--	ENDIF (TRANSLATIONS)
-+	endif()
- 
--	IF (TRANSLATION_${PO_FILE})
--		LIST (APPEND PO_BUILD ${PO_FILE}.po)
--	ENDIF (TRANSLATION_${PO_FILE})
--ENDFOREACH (PO_FILE ${PO_FILES})
-+	if (TRANSLATION_${PO_FILE})
-+		list (APPEND PO_BUILD ${PO_FILE}.po)
-+		list (APPEND AMULE_TRANSLATIONS ${PO_FILE})
++# Ship a PNG copy of the application icon in the XDG hicolor theme so
++# desktop environments can resolve `Icon=amule` from org.amule.aMule.desktop.
++# The legacy XPM under $(datadir)/pixmaps is kept as a fallback.
++dist_icon128_DATA =
++icon128dir = $(datadir)/icons/hicolor/128x128/apps
 +
-+		# aMule's InitLocale() (src/OtherFunctions.cpp) adds
-+		# <DataDir>/locale as a wxLocale lookup prefix on macOS and
-+		# Windows.  GetDataDir() resolves to the bundle's Resources dir
-+		# on macOS and the directory containing the .exe on Windows, so
-+		# the .mo catalogs need to live there — not under share/locale.
-+		# Linux/*BSD use libintl's system search paths under
-+		# ${CMAKE_INSTALL_LOCALEDIR}.
-+		if (APPLE)
-+			# Bundling into the .app happens in src/CMakeLists.txt
-+			# via a POST_BUILD on the amule target, since `po` is
-+			# processed before `src` and the target doesn't exist yet.
-+		elseif (WIN32)
-+			install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${PO_FILE}.gmo
-+				DESTINATION ${CMAKE_INSTALL_BINDIR}/locale/${PO_FILE}/LC_MESSAGES/
-+				RENAME amule.mo
-+			)
-+		else()
-+			install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${PO_FILE}.gmo
-+				DESTINATION ${CMAKE_INSTALL_LOCALEDIR}/${PO_FILE}/LC_MESSAGES/
-+				RENAME amule.mo
-+			)
-+		endif()
-+	endif()
-+endforeach()
-+
-+# Make the list of enabled translations visible to src/ for the macOS
-+# bundle copy step.
-+set (AMULE_TRANSLATIONS "${AMULE_TRANSLATIONS}" CACHE INTERNAL "Enabled translation language codes" FORCE)
+ dist_util_DATA =
+ utildir = $(datadir)/applications
  
--GETTEXT_PROCESS_PO_FILES ("" ALL INSTALL_DESTINATION ${LOCALEDIR} PO_FILES ${PO_BUILD})
-+gettext_process_po_files ("" ALL PO_FILES ${PO_BUILD})
++dist_appstream_DATA =
++appstreamdir = $(datadir)/metainfo
++
+ if MONOLITHIC
+ dist_icon_DATA += amule.xpm
+-dist_util_DATA += amule.desktop
++dist_icon128_DATA += org.amule.aMule.png
++dist_util_DATA += org.amule.aMule.desktop
+ endif
+ 
+ if AMULE_GUI
+ dist_icon_DATA += amulegui.xpm
+-dist_util_DATA += amulegui.desktop
++dist_util_DATA += org.amule.aMule.gui.desktop
+ endif
+ 
++dist_appstream_DATA += org.amule.aMule.metainfo.xml
++
+ ACLOCAL_AMFLAGS = -I m4
+ 
+ DISTCHECK_CONFIGURE_FLAGS = \
+--- /dev/null
++++ b/org.amule.aMule.desktop
+@@ -0,0 +1,16 @@
++[Desktop Entry]
++Name=aMule
++Exec=amule %u
++Icon=org.amule.aMule
++Terminal=false
++Type=Application
++Categories=Network;P2P;
++StartupWMClass=org.amule.aMule
++Comment=A client for the eD2k network
++Comment[fr]=Un client pour le réseau eD2k
++Comment[tr]=eD2k ağı için istemci
++Comment[zh_CN]=eD2k网络客户端
++Comment[it]=Un client per la rete eD2k
++Comment[it_CH]=Un client per la rete eD2k
++Comment[es]=Un cliente para la red eD2k
++MimeType=x-scheme-handler/ed2k;
+--- /dev/null
++++ b/org.amule.aMule.gui.desktop
+@@ -0,0 +1,17 @@
++[Desktop Entry]
++Name=aMuleGUI
++Exec=amulegui
++Icon=org.amule.aMule
++Terminal=false
++Type=Application
++Categories=Network;P2P;
++StartupWMClass=org.amule.aMule.gui
++Comment=aMule remote control
++Comment[de]=aMule-Fernsteuerung
++Comment[fr]=Contrôle à distance d'aMule
++Comment[hu]=aMule távoli vezérlő
++Comment[tr]=aMule uzaktan kumandası
++Comment[zh_CN]=aMule远程协议
++Comment[it]=Terminale remoto per aMule
++Comment[it_CH]=Terminale remoto per aMule
++Comment[es]=Control remoto de aMule
+\ No newline at end of file
+--- /dev/null
++++ b/org.amule.aMule.metainfo.xml
+@@ -0,0 +1,51 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<component type="desktop-application">
++  <id>org.amule.aMule</id>
++
++  <name>aMule</name>
++  <summary>P2P client based on eMule</summary>
++  <summary xml:lang="es">Cliente P2P basado en eMule</summary>
++
++  <metadata_license>FSFAP</metadata_license>
++  <project_license>GPL-2.0-or-later</project_license>
++
++  <description>
++    <p>
++      aMule is a multi-platform client for the ED2K file sharing network and based on the windows client eMule. aMule is intended to be as user friendly and feature rich as eMule and to remain faithful to the look and feel of eMule so users familiar with either aMule or eMule will be able switch between the two easily. Since aMule is based upon the eMule codebase, new features in eMule tend to find their way into aMule soon after their inclusion into eMule so users of aMule can expect to ride the cutting-edge of ED2k clients.
++    </p>
++    <p xml:lang="es">
++      aMule es un cliente multiplataforma para la red de intercambio de archivos ED2K basado en el cliente de Windows eMule. aMule pretende ser tan fácil de usar y completo como eMule, y mantener la experiencia de uso de eMule para que los usuarios familiarizados con cualquiera de los dos puedan cambiar entre ambos con facilidad. Dado que aMule se basa en el código de eMule, las nuevas características de eMule suelen llegar a aMule poco después de su inclusión, por lo que los usuarios de aMule pueden esperar estar a la vanguardia de los clientes ED2K.
++    </p>
++  </description>
++
++  <url type="homepage">https://www.amule.org/</url>
++  <url type="bugtracker">https://github.com/amule-project/amule/issues</url>
++  <url type="help">https://wiki.amule.org/wiki/Main_Page</url>
++
++  # TODO: Auto generate me from changelog!
++  <releases></releases>
++
++  <launchable type="desktop-id">org.amule.aMule.desktop</launchable>
++  <screenshots>
++    <screenshot type="default">
++      <image>https://raw.githubusercontent.com/amule/amule/master/.github/amule-interface-search.png</image>
++      <caption>Screenshot of the aMule search interface</caption>
++      <caption xml:lang="es">Captura de pantalla de la interfaz de búsqueda de aMule</caption>
++    </screenshot>
++    <screenshot type="default">
++      <image>https://raw.githubusercontent.com/amule/amule/master/.github/amule-preferences.png</image>
++      <caption>Screenshot of the aMule preferences interface</caption>
++      <caption xml:lang="es">Captura de pantalla de la interfaz de preferencias de aMule</caption>
++    </screenshot>
++  </screenshots>
++
++  <developer id="org.amule">
++    <name>aMule Team</name>
++  </developer>
++
++  <provides>
++    <binary>amule</binary>
++  </provides>
++
++  <content_rating type="oars-1.1"/>
++</component>
 --- a/src/AddFriend.cpp
 +++ b/src/AddFriend.cpp
 @@ -35,10 +35,10 @@
@@ -2016,7 +1043,7 @@
  }
 --- a/src/amule.cpp
 +++ b/src/amule.cpp
-@@ -42,6 +42,10 @@
+@@ -42,6 +42,14 @@
  #include <wx/tokenzr.h>
  #include <wx/wfstream.h>
  #include <wx/stopwatch.h>		// Needed for wxStopWatch
@@ -2024,10 +1051,14 @@
 +#include <wx/stdpaths.h>		// Needed for wxStandardPaths (CA bundle lookup)
 +#include <wx/filename.h>		// Needed for wxFileName (CA bundle lookup)
 +#endif
++
++#ifdef __WXGTK__
++#include <glib.h>			// g_set_prgname() — wl_app_id / WM_CLASS binding
++#endif
  
  
  #include <common/Format.h>		// Needed for CFormat
-@@ -75,7 +79,10 @@
+@@ -75,7 +83,10 @@
  #include "TerminationProcessAmuleweb.h"	// Needed for CTerminationProcessAmuleweb
  #include "ThreadTasks.h"
  #include "UploadQueue.h"		// Needed for CUploadQueue
@@ -2038,7 +1069,7 @@
  #include "UserEvents.h"
  #include "ScopedPtr.h"
  
-@@ -95,11 +102,7 @@
+@@ -95,11 +106,7 @@
  #ifndef AMULE_DAEMON
  	#ifdef __WXMAC__
  		#include <CoreFoundation/CFBundle.h>  // Do_not_auto_remove
@@ -2051,7 +1082,7 @@
  	#endif
  	#include <wx/msgdlg.h>
  
-@@ -199,11 +202,13 @@ CamuleApp::CamuleApp()
+@@ -199,11 +206,13 @@ CamuleApp::CamuleApp()
  	glob_prefs	= NULL;
  	m_statistics	= NULL;
  	uploadBandwidthThrottler = NULL;
@@ -2065,7 +1096,7 @@
  
  	m_localip	= 0;
  	m_dwPublicIP	= 0;
-@@ -228,6 +233,16 @@ CamuleApp::~CamuleApp()
+@@ -228,6 +237,16 @@ CamuleApp::~CamuleApp()
  
  int CamuleApp::OnExit()
  {
@@ -2082,7 +1113,7 @@
  	if (m_app_state!=APP_STATE_STARTING) {
  		AddLogLineNS(_("Now, exiting main app..."));
  	}
-@@ -297,9 +312,33 @@ int CamuleApp::OnExit()
+@@ -297,9 +316,33 @@ int CamuleApp::OnExit()
  	delete clientlist;
  	clientlist = NULL;
  
@@ -2116,7 +1147,7 @@
  	delete downloadqueue;
  	downloadqueue = NULL;
  
-@@ -321,6 +360,13 @@ int CamuleApp::OnExit()
+@@ -321,6 +364,13 @@ int CamuleApp::OnExit()
  	glob_prefs = NULL;
  	CPreferences::EraseItemList();
  
@@ -2130,7 +1161,7 @@
  	delete uploadBandwidthThrottler;
  	uploadBandwidthThrottler = NULL;
  
-@@ -339,11 +385,11 @@ int CamuleApp::OnExit()
+@@ -339,11 +389,11 @@ int CamuleApp::OnExit()
  	AddLogLineNS(_("Memory debug results for aMule exit:"));
  	// Log mem debug messages to wxLogStderr
  	wxLog* oldLog = wxLog::SetActiveTarget(new wxLogStderr);
@@ -2145,7 +1176,7 @@
  	wxDebugContext::PrintStatistics(true);
  
  	// Set back to wxLogGui
-@@ -352,6 +398,25 @@ int CamuleApp::OnExit()
+@@ -352,6 +402,25 @@ int CamuleApp::OnExit()
  
  	StopTickTimer();
  
@@ -2171,7 +1202,7 @@
  	// Return 0 for successful program termination
  	return AMULE_APP_BASE::OnExit();
  }
-@@ -370,7 +435,7 @@ bool CamuleApp::OnInit()
+@@ -370,10 +439,24 @@ bool CamuleApp::OnInit()
  {
  #if wxUSE_MEMORY_TRACING
  	// any text before call of Localize_mule needs not to be translated.
@@ -2180,7 +1211,24 @@
  	wxDebugContext::SetCheckpoint();
  #endif
  
-@@ -392,7 +457,27 @@ bool CamuleApp::OnInit()
++#ifdef __WXGTK__
++	// Set the GTK program name to the canonical app id. On Wayland,
++	// GTK derives wl_app_id (xdg_toplevel.set_app_id) from
++	// g_get_prgname(); compositors match wl_app_id against the
++	// .desktop filename to bind windows to launcher icons. Without
++	// this the binding falls back to argv[0], which differs across
++	// packaging formats (AppImage's argv[0] is "aMule", distro
++	// installs use "amule", Flatpak renames the .desktop entirely).
++	// On X11 the same value also feeds into WM_CLASS, matching
++	// StartupWMClass=org.amule.aMule in the .desktop file. Must run
++	// before any GTK window is created.
++	g_set_prgname("org.amule.aMule");
++#endif
++
+ 	// Forward wxLog events to CLogger
+ 	wxLog::SetActiveTarget(new CLoggerTarget);
+ 
+@@ -392,7 +475,27 @@ bool CamuleApp::OnInit()
  
  #ifdef __WXMAC__
  	// For listctrl's to behave on Mac
@@ -2209,7 +1257,7 @@
  #endif
  
  	// Handle uncaught exceptions
-@@ -405,13 +490,13 @@ bool CamuleApp::OnInit()
+@@ -405,13 +508,13 @@ bool CamuleApp::OnInit()
  	glob_prefs = new CPreferences();
  
  	CPath outDir;
@@ -2225,7 +1273,7 @@
  		thePrefs::SetIncomingDir(outDir);
  	} else {
  		return false;
-@@ -457,10 +542,10 @@ bool CamuleApp::OnInit()
+@@ -457,10 +560,10 @@ bool CamuleApp::OnInit()
  #ifndef __WINDOWS__
  	if (getuid() == 0) {
  		wxString msg =
@@ -2240,7 +1288,7 @@
  
  		ShowAlert(msg, _("WARNING"), wxCENTRE | wxOK | wxICON_ERROR);
  
-@@ -471,8 +556,8 @@ bool CamuleApp::OnInit()
+@@ -471,8 +574,8 @@ bool CamuleApp::OnInit()
  #endif
  
  	// Display notification on new version or first run
@@ -2251,7 +1299,7 @@
  
  	if ( !wxFileExists( vfile.GetName() ) ) {
  		vfile.Create();
-@@ -520,6 +605,8 @@ bool CamuleApp::OnInit()
+@@ -520,6 +623,8 @@ bool CamuleApp::OnInit()
  	// bugfix - do this before creating the uploadqueue
  	downloadqueue	= new CDownloadQueue();
  	uploadqueue	= new CUploadQueue();
@@ -2260,7 +1308,7 @@
  	ipfilter	= new CIPFilter();
  
  	//DLP initialization - Bill Lee
-@@ -530,7 +617,7 @@ bool CamuleApp::OnInit()
+@@ -530,7 +635,7 @@ bool CamuleApp::OnInit()
  	// Creates all needed listening sockets
  	wxString msg;
  	if (!ReinitializeNetwork(&msg)) {
@@ -2269,7 +1317,7 @@
  		AddLogLineNS(msg);
  	}
  
-@@ -538,8 +625,8 @@ bool CamuleApp::OnInit()
+@@ -538,8 +643,8 @@ bool CamuleApp::OnInit()
  	if (thePrefs::GetCheckNewVersion()) {
  		// We use the thread base because I don't want a dialog to pop up.
  		CHTTPDownloadThread* version_check =
@@ -2280,7 +1328,7 @@
  		version_check->Create();
  		version_check->Run();
  	}
-@@ -560,6 +647,10 @@ bool CamuleApp::OnInit()
+@@ -560,6 +665,10 @@ bool CamuleApp::OnInit()
  	// and the UBT constructor creates a thread.
  	uploadBandwidthThrottler = new UploadBandwidthThrottler();
  
@@ -2291,7 +1339,7 @@
  #ifdef ASIO_SOCKETS
  	m_AsioService = new CAsioService;
  #endif
-@@ -638,25 +729,21 @@ bool CamuleApp::OnInit()
+@@ -638,25 +747,21 @@ bool CamuleApp::OnInit()
  			if (absoluteUrl) {
  				CFStringRef amulewebCfstr = CFURLCopyFileSystemPath(absoluteUrl, kCFURLPOSIXPathStyle);
  				CFRelease(absoluteUrl);
@@ -2321,7 +1369,7 @@
  			aMuleConfigFile +
  			QUOTE;
  		CTerminationProcessAmuleweb *p = new CTerminationProcessAmuleweb(cmd, &webserver_pid);
-@@ -695,15 +782,15 @@ bool CamuleApp::ReinitializeNetwork(wxSt
+@@ -695,15 +800,15 @@ bool CamuleApp::ReinitializeNetwork(wxSt
  		thePrefs::SetECPort( port );
  
  		wxString err =
@@ -2343,7 +1391,7 @@
  
  		ok = false;
  	}
-@@ -717,16 +804,16 @@ bool CamuleApp::ReinitializeNetwork(wxSt
+@@ -717,16 +822,16 @@ bool CamuleApp::ReinitializeNetwork(wxSt
  		thePrefs::SetUDPPort( port );
  
  		wxString err =
@@ -2367,7 +1415,7 @@
  
  		ok = false;
  	}
-@@ -757,7 +844,7 @@ bool CamuleApp::ReinitializeNetwork(wxSt
+@@ -757,7 +862,7 @@ bool CamuleApp::ReinitializeNetwork(wxSt
  	wxString ip = myaddr[1].IPAddress();
  	myaddr[1].Service(thePrefs::GetPort()+3);
  	serverconnect = new CServerConnect(serverlist, myaddr[1]);
@@ -2376,7 +1424,7 @@
  		% ip % ((unsigned int)thePrefs::GetPort() + 3u);
  
  	// Create the ListenSocket (aMule TCP socket).
-@@ -767,7 +854,7 @@ bool CamuleApp::ReinitializeNetwork(wxSt
+@@ -767,7 +872,7 @@ bool CamuleApp::ReinitializeNetwork(wxSt
  	myaddr[2] = myaddr[1];
  	myaddr[2].Service(thePrefs::GetPort());
  	listensocket = new CListenSocket(myaddr[2]);
@@ -2385,7 +1433,7 @@
  		% ip % (unsigned int)(thePrefs::GetPort());
  	// Notify(true) has already been called to the ListenSocket, so events may
  	// be already coming in.
-@@ -793,10 +880,10 @@ bool CamuleApp::ReinitializeNetwork(wxSt
+@@ -793,10 +898,10 @@ bool CamuleApp::ReinitializeNetwork(wxSt
  	myaddr[3].Service(thePrefs::GetUDPPort());
  	clientudp = new CClientUDPSocket(myaddr[3], thePrefs::GetProxyData());
  	if (!thePrefs::IsUDPDisabled()) {
@@ -2398,7 +1446,7 @@
  	}
  
  #ifdef ENABLE_UPNP
-@@ -882,30 +969,30 @@ void CamuleApp::OnlineSig(bool zero /* r
+@@ -882,30 +987,30 @@ void CamuleApp::OnlineSig(bool zero /* r
  	wxString temp;
  
  	if (zero) {
@@ -2436,7 +1484,7 @@
  			// Server Name
  			amulesig_out.AddLine(serverconnect->GetCurrentServer()->GetListName());
  			// Server IP
-@@ -914,57 +1001,57 @@ void CamuleApp::OnlineSig(bool zero /* r
+@@ -914,57 +1019,57 @@ void CamuleApp::OnlineSig(bool zero /* r
  			amulesig_out.AddLine(temp);
  
  			if (serverconnect->IsLowID()) {
@@ -2510,7 +1558,7 @@
  	}
  
  	// eMule signature finished here. Write the line to the wxTextFile.
-@@ -976,33 +1063,33 @@ void CamuleApp::OnlineSig(bool zero /* r
+@@ -976,33 +1081,33 @@ void CamuleApp::OnlineSig(bool zero /* r
  	amulesig_out.AddLine(thePrefs::GetUserNick());
  
  	// Total received in bytes
@@ -2554,7 +1602,7 @@
  	}
  
  	// Flush the files
-@@ -1017,20 +1104,20 @@ void CamuleApp::OnFatalException()
+@@ -1017,20 +1122,20 @@ void CamuleApp::OnFatalException()
  {
  	/* Print the backtrace */
  	wxString msg;
@@ -2588,7 +1636,7 @@
  
  	theLogger.EmergencyLog(msg, true);
  }
-@@ -1052,18 +1139,18 @@ void CamuleApp::Localize_mule()
+@@ -1052,18 +1157,18 @@ void CamuleApp::Localize_mule()
  // Is called when the user runs a new version of aMule
  void CamuleApp::Trigger_New_version(wxString new_version)
  {
@@ -2611,7 +1659,7 @@
  	info += _("Feel free to report any bugs to http://forum.amule.org");
  
  	ShowAlert(info, _("Info"), wxCENTRE | wxOK | wxICON_ERROR);
-@@ -1074,8 +1161,8 @@ void CamuleApp::SetOSFiles(const wxStrin
+@@ -1074,8 +1179,8 @@ void CamuleApp::SetOSFiles(const wxStrin
  {
  	if ( thePrefs::IsOnlineSignatureEnabled() ) {
  		if ( ::wxDirExists(new_path) ) {
@@ -2622,7 +1670,7 @@
  		} else {
  			ShowAlert(_("The folder for Online Signature files you specified is INVALID!\n OnlineSignature will be DISABLED until you fix it on preferences."), _("ERROR"), wxOK | wxICON_ERROR);
  			m_emulesig_path.Clear();
-@@ -1095,8 +1182,8 @@ void CamuleApp::SetOSFiles(const wxStrin
+@@ -1095,8 +1200,8 @@ void CamuleApp::SetOSFiles(const wxStrin
  void CamuleApp::OnAssertFailure(const wxChar* file, int line,
  				const wxChar* func, const wxChar* cond, const wxChar* msg)
  {
@@ -2633,7 +1681,7 @@
  		% get_backtrace(2);		// Skip the function-calls directly related to the assert call.
  	theLogger.EmergencyLog(errmsg, false);
  
-@@ -1104,9 +1191,9 @@ void CamuleApp::OnAssertFailure(const wx
+@@ -1104,9 +1209,9 @@ void CamuleApp::OnAssertFailure(const wx
  		AMULE_APP_BASE::OnAssertFailure(file, line, func, cond, msg);
  	} else {
  #ifdef _MSC_VER
@@ -2645,7 +1693,7 @@
  		}
  		_wassert(s.wc_str(), file, line);
  #else
-@@ -1270,7 +1357,7 @@ void CamuleApp::OnCoreTimer(CTimerEvent&
+@@ -1270,7 +1375,7 @@ void CamuleApp::OnCoreTimer(CTimerEvent&
  
  void CamuleApp::OnFinishedHashing(CHashingEvent& evt)
  {
@@ -2654,7 +1702,7 @@
  
  	CKnownFile* owner = const_cast<CKnownFile*>(evt.GetOwner());
  	CKnownFile* result = evt.GetResult();
-@@ -1288,13 +1375,13 @@ void CamuleApp::OnFinishedHashing(CHashi
+@@ -1288,13 +1393,13 @@ void CamuleApp::OnFinishedHashing(CHashi
  
  		if (knownfiles->SafeAddKFile(result, true)) {
  			AddDebugLogLineN(logKnownFiles,
@@ -2670,7 +1718,7 @@
  				if ( m_app_state != APP_STATE_SHUTTINGDOWN ) {
  					knownfiles->Save();
  					bytecount = 0;
-@@ -1302,16 +1389,38 @@ void CamuleApp::OnFinishedHashing(CHashi
+@@ -1302,16 +1407,38 @@ void CamuleApp::OnFinishedHashing(CHashi
  			}
  		} else {
  			AddDebugLogLineN(logKnownFiles,
@@ -2711,7 +1759,7 @@
  
  	CKnownFile* owner = const_cast<CKnownFile*>(evt.GetOwner());
  	CScopedPtr<CKnownFile> result(evt.GetResult());
-@@ -1332,8 +1441,8 @@ void CamuleApp::OnFinishedAICHHashing(CH
+@@ -1332,11 +1459,11 @@ void CamuleApp::OnFinishedAICHHashing(CH
  void CamuleApp::OnFinishedCompletion(CCompletionEvent& evt)
  {
  	CPartFile* completed = const_cast<CPartFile*>(evt.GetOwner());
@@ -2720,9 +1768,14 @@
 +	wxCHECK_RET(completed, "Completion event sent for unspecified file");
 +	wxASSERT_MSG(downloadqueue->IsPartFile(completed), "CCompletionEvent for unknown partfile.");
  
- 	completed->CompleteFileEnded(evt.ErrorOccured(), evt.GetFullPath());
- 	if (evt.ErrorOccured()) {
-@@ -1347,8 +1456,8 @@ void CamuleApp::OnFinishedCompletion(CCo
+-	completed->CompleteFileEnded(evt.ErrorOccured(), evt.GetFullPath());
+-	if (evt.ErrorOccured()) {
++	completed->CompleteFileEnded(evt.ErrorOccurred(), evt.GetFullPath());
++	if (evt.ErrorOccurred()) {
+ 		CUserEvents::ProcessEvent(CUserEvents::ErrorOnCompletion, completed);
+ 	}
+ 
+@@ -1347,8 +1474,8 @@ void CamuleApp::OnFinishedCompletion(CCo
  void CamuleApp::OnFinishedAllocation(CAllocFinishedEvent& evt)
  {
  	CPartFile *file = evt.GetFile();
@@ -2733,7 +1786,7 @@
  
  	file->SetStatus(PS_EMPTY);
  
-@@ -1384,14 +1493,14 @@ void CamuleApp::ShutDown()
+@@ -1384,14 +1511,14 @@ void CamuleApp::ShutDown()
  	PlatformSpecific::AllowSleepMode();
  
  	// Log
@@ -2750,7 +1803,7 @@
  	m_AsioService->Stop();
  #endif
  
-@@ -1410,7 +1519,7 @@ void CamuleApp::ShutDown()
+@@ -1410,7 +1537,7 @@ void CamuleApp::ShutDown()
  	// Exit thread scheduler and upload thread
  	CThreadScheduler::Terminate();
  
@@ -2759,7 +1812,7 @@
  	uploadBandwidthThrottler->EndThread();
  
  	// Close sockets to avoid new clients coming in
-@@ -1441,14 +1550,14 @@ void CamuleApp::ShutDown()
+@@ -1441,14 +1568,14 @@ void CamuleApp::ShutDown()
  	theStats::Save();
  
  	CPath configFileName = CPath(thePrefs::GetConfigDir() + m_configFile);
@@ -2776,7 +1829,7 @@
  }
  
  
-@@ -1492,7 +1601,7 @@ void CamuleApp::SetPublicIP(const uint32
+@@ -1492,7 +1619,7 @@ void CamuleApp::SetPublicIP(const uint32
  wxString CamuleApp::GetLog(bool reset)
  {
  	wxFile logfile;
@@ -2785,7 +1838,7 @@
  	if ( !logfile.IsOpened() ) {
  		return _("ERROR: can't open logfile");
  	}
-@@ -1507,15 +1616,14 @@ wxString CamuleApp::GetLog(bool reset)
+@@ -1507,15 +1634,14 @@ wxString CamuleApp::GetLog(bool reset)
  	// try to guess file format
  	wxString str;
  	if (tmp_buffer[0] && tmp_buffer[1]) {
@@ -2804,7 +1857,7 @@
  			AddLogLineN(_("Log has been reset"));
  		}
  		ECServerHandler->ResetAllLogs();
-@@ -1541,7 +1649,7 @@ wxString CamuleApp::GetDebugLog(bool res
+@@ -1541,7 +1667,7 @@ wxString CamuleApp::GetDebugLog(bool res
  
  void CamuleApp::AddServerMessageLine(wxString &msg)
  {
@@ -2813,7 +1866,7 @@
  	AddLogLineN(CFormat(_("ServerMessage: %s")) % msg);
  }
  
-@@ -1569,7 +1677,7 @@ void CamuleApp::OnFinishedHTTPDownload(C
+@@ -1569,7 +1695,7 @@ void CamuleApp::OnFinishedHTTPDownload(C
  		case HTTP_NodesDat:
  			if (event.GetExtraLong() == HTTP_Success) {
  
@@ -2822,7 +1875,7 @@
  				if (wxFileExists(file)) {
  					wxRemoveFile(file);
  				}
-@@ -1578,13 +1686,13 @@ void CamuleApp::OnFinishedHTTPDownload(C
+@@ -1578,13 +1704,13 @@ void CamuleApp::OnFinishedHTTPDownload(C
  					Kademlia::CKademlia::Stop();
  				}
  
@@ -2838,7 +1891,7 @@
  			} else {
  				AddLogLineC(_("Failed to download the nodes list."));
  			}
-@@ -1602,7 +1710,7 @@ void CamuleApp::OnFinishedHTTPDownload(C
+@@ -1602,7 +1728,7 @@ void CamuleApp::OnFinishedHTTPDownload(C
  void CamuleApp::CheckNewVersion(uint32 result)
  {
  	if (result == HTTP_Success) {
@@ -2847,7 +1900,7 @@
  		wxTextFile file;
  
  		if (!file.Open(filename)) {
-@@ -1612,9 +1720,9 @@ void CamuleApp::CheckNewVersion(uint32 r
+@@ -1612,9 +1738,9 @@ void CamuleApp::CheckNewVersion(uint32 r
  			AddLogLineC(_("Corrupted version check file"));
  		} else {
  			wxString versionLine = file.GetFirstLine();
@@ -2859,7 +1912,7 @@
  
  			long fields[] = {0, 0, 0};
  			for (int i = 0; i < 3; ++i) {
-@@ -1841,9 +1949,9 @@ void CamuleApp::ShowUserCount() {
+@@ -1841,9 +1967,9 @@ void CamuleApp::ShowUserCount() {
  #ifndef ASIO_SOCKETS
  void CamuleApp::ListenSocketHandler(wxSocketEvent& event)
  {
@@ -2871,7 +1924,7 @@
  
  	if (m_app_state == APP_STATE_RUNNING) {
  		listensocket->OnAccept();
-@@ -1853,7 +1961,7 @@ void CamuleApp::ListenSocketHandler(wxSo
+@@ -1853,7 +1979,7 @@ void CamuleApp::ListenSocketHandler(wxSo
  		// connection-events will be triggered, so we have to accept it.
  		CLibSocket* socket = listensocket->Accept(false);
  
@@ -2880,7 +1933,7 @@
  
  		socket->Destroy();
  	}
-@@ -1945,7 +2053,7 @@ void CamuleApp::ShowConnectionState(bool
+@@ -1945,7 +2071,7 @@ void CamuleApp::ShowConnectionState(bool
  void CamuleApp::UDPSocketHandler(wxSocketEvent& event)
  {
  	CMuleUDPSocket* socket = reinterpret_cast<CMuleUDPSocket*>(event.GetClientData());
@@ -2889,7 +1942,7 @@
  
  	if (IsOnShutDown() || thePrefs::IsUDPDisabled()) return;
  
-@@ -2025,9 +2133,9 @@ void CamuleApp::BootstrapKad(uint32 ip,
+@@ -2025,9 +2151,9 @@ void CamuleApp::BootstrapKad(uint32 ip,
  
  void CamuleApp::UpdateNotesDat(const wxString& url)
  {
@@ -2901,7 +1954,7 @@
  	downloader->Create();
  	downloader->Run();
  }
-@@ -2068,10 +2176,10 @@ uint32 CamuleApp::GetID() const {
+@@ -2068,10 +2194,10 @@ uint32 CamuleApp::GetID() const {
  	return ID;
  }
  
@@ -4274,7 +3327,7 @@
  #endif
 --- a/src/amule-gui.cpp
 +++ b/src/amule-gui.cpp
-@@ -28,11 +28,13 @@
+@@ -28,11 +28,14 @@
  #include <common/ClientVersion.h>
  
  #include <wx/clipbrd.h>			// Needed for wxClipBoard
@@ -4283,12 +3336,13 @@
  
  #include "SharedFilesWnd.h"		// Needed for CSharedFilesWnd
  #include "Timer.h"				// Needed for CTimer
++#include "AppImageIntegration.h"	// Needed for AppImage first-run prompt
  #include "PartFile.h"			// Needed for CPartFile
 +#include "PartFileHashThread.h"	// Needed for EVT_PARTFILE_HASH_RESULT
  
  #include "muuli_wdr.h"			// Needed for IDs
  #include "amuleDlg.h"			// Needed for CamuleDlg
-@@ -49,7 +51,7 @@
+@@ -49,7 +52,7 @@
  #ifndef CLIENT_GUI
  #include "InternalEvents.h"		// Needed for wxEVT_*
  
@@ -4297,7 +3351,7 @@
  
  #ifndef ASIO_SOCKETS
  	// Socket handlers
-@@ -81,6 +83,9 @@ BEGIN_EVENT_TABLE(CamuleGuiApp, wxApp)
+@@ -81,6 +84,9 @@ BEGIN_EVENT_TABLE(CamuleGuiApp, wxApp)
  	EVT_MULE_HASHING(CamuleGuiApp::OnFinishedHashing)
  	EVT_MULE_AICH_HASHING(CamuleGuiApp::OnFinishedAICHHashing)
  
@@ -4307,7 +3361,7 @@
  	// File completion ended notifier
  	EVT_MULE_FILE_COMPLETED(CamuleGuiApp::OnFinishedCompletion)
  
-@@ -89,7 +94,14 @@ BEGIN_EVENT_TABLE(CamuleGuiApp, wxApp)
+@@ -89,7 +95,14 @@ BEGIN_EVENT_TABLE(CamuleGuiApp, wxApp)
  
  	// Disk space preallocation finished
  	EVT_MULE_ALLOC_FINISHED(CamuleGuiApp::OnFinishedAllocation)
@@ -4323,7 +3377,7 @@
  
  
  IMPLEMENT_APP(CamuleGuiApp)
-@@ -98,6 +110,11 @@ IMPLEMENT_APP(CamuleGuiApp)
+@@ -98,6 +111,11 @@ IMPLEMENT_APP(CamuleGuiApp)
  
  CamuleGuiBase::CamuleGuiBase()
  {
@@ -4335,7 +3389,7 @@
  	amuledlg = NULL;
  }
  
-@@ -148,25 +165,25 @@ int CamuleGuiBase::InitGui(bool geometry
+@@ -148,25 +166,25 @@ int CamuleGuiBase::InitGui(bool geometry
  		long y = display.y;
  
  		// Tokenize the string
@@ -4367,7 +3421,7 @@
  										y = display.GetBottom() - ( height + y );
  								}
  							}
-@@ -202,9 +219,9 @@ void CamuleGuiBase::ResetTitle()
+@@ -202,9 +220,9 @@ void CamuleGuiBase::ResetTitle()
  {
  #ifdef SVNDATE
  	#ifdef CLIENT_GUI
@@ -4379,7 +3433,7 @@
  	#endif
  #else
  	#ifdef CLIENT_GUI
-@@ -214,8 +231,8 @@ void CamuleGuiBase::ResetTitle()
+@@ -214,8 +232,8 @@ void CamuleGuiBase::ResetTitle()
  	#endif
  
  	if (thePrefs::ShowVersionOnTitle()) {
@@ -4390,7 +3444,7 @@
  	}
  #endif
  }
-@@ -281,6 +298,28 @@ void CamuleGuiApp::ShutDown(wxCloseEvent
+@@ -281,6 +299,49 @@ void CamuleGuiApp::ShutDown(wxCloseEvent
  }
  
  
@@ -4415,10 +3469,47 @@
 +	evt.Skip();
 +}
 +
++#ifdef __WXMAC__
++void CamuleGuiApp::MacReopenApp()
++{
++	// Fired when the user clicks the Dock icon and aMule has no
++	// visible top-level windows. Without this override, wxApp's
++	// default Reopen handler is a no-op when the frame is hidden,
++	// so a window hidden via the close button (HideOnClose pref =
++	// macOS-style "close hides instead of quits") stays permanently
++	// hidden — the only way to bring aMule back was to Cmd+Tab.
++	//
++	// Show + Iconize(false) + Raise covers all three hidden states:
++	// hidden via Show(false), iconized to the dock, or just behind
++	// other apps.
++	if (amuledlg) {
++		amuledlg->Show(true);
++		amuledlg->Iconize(false);
++		amuledlg->Raise();
++	}
++}
++#endif
++
 +
  bool CamuleGuiApp::OnInit()
  {
  	amuledlg = NULL;
+@@ -321,6 +382,15 @@ bool CamuleGuiApp::OnInit()
+ 	}
+ #endif
+ 
++#ifdef __WXGTK__
++	// AppImage first-run desktop integration prompt. CallAfter defers the
++	// dialog until the event loop is fully running, so the modal doesn't
++	// block OnInit's return path.
++	CallAfter([this] {
++		AppImageIntegration::PromptAndInstall(amuledlg);
++	});
++#endif
++
+ 	return true;
+ }
+ 
 --- a/src/amule.h
 +++ b/src/amule.h
 @@ -47,6 +47,9 @@ class CamuleDlg;
@@ -4464,7 +3555,7 @@
  	void OnFinishedAICHHashing(CHashingEvent& evt);
  	void OnFinishedCompletion(CCompletionEvent& evt);
  	void OnFinishedAllocation(CAllocFinishedEvent& evt);
-@@ -402,6 +410,11 @@ class CamuleGuiApp : public CamuleApp, p
+@@ -402,6 +410,20 @@ class CamuleGuiApp : public CamuleApp, p
  	int OnExit();
  	bool OnInit();
  
@@ -4473,10 +3564,19 @@
 +	void OnEndSession(wxCloseEvent& evt);
 +	void OnQueryEndSession(wxCloseEvent& evt);
 +
++#ifdef __WXMAC__
++	// Restore the main window when the user clicks the Dock icon
++	// while no aMule windows are visible. Default wxApp::MacReopenApp
++	// behaviour is to do nothing when the frame is hidden, so a
++	// window hidden via the close button (HideOnClose pref) stays
++	// permanently hidden — the app appears stuck.
++	virtual void MacReopenApp();
++#endif
++
  public:
  
  	virtual int ShowAlert(wxString msg, wxString title, int flags);
-@@ -412,7 +425,7 @@ public:
+@@ -412,7 +434,7 @@ public:
  	wxString GetServerLog(bool reset = false);
  	void AddServerMessageLine(wxString &msg);
  	void AddDLPMessageLine(const wxString &msg);
@@ -4485,7 +3585,7 @@
  };
  
  
-@@ -434,116 +447,10 @@ extern CamuleGuiApp *theApp;
+@@ -434,116 +456,10 @@ extern CamuleGuiApp *theApp;
  
  #else /* ! AMULE_DAEMON */
  
@@ -4602,7 +3702,7 @@
  	bool OnInit();
  	int OnRun();
  	int OnExit();
-@@ -551,26 +458,13 @@ private:
+@@ -551,26 +467,13 @@ private:
  	virtual int InitGui(bool geometry_enable, wxString &geometry_string);
  	// The GTK wxApps sets its file name conversion properly
  	// in wxApp::Initialize(), while wxAppConsole::Initialize()
@@ -4630,7 +3730,7 @@
  
  	bool CopyTextToClipboard(wxString strText);
  
-@@ -578,7 +472,7 @@ public:
+@@ -578,7 +481,7 @@ public:
  
  	void AddDLPMessageLine(const wxString &msg);
  
@@ -5064,6 +4164,375 @@
  //This function is not used. by Orzogc Lee
  //But I think there is no need to removing, linker will remove it.
  /*
+--- /dev/null
++++ b/src/AppImageIntegration.cpp
+@@ -0,0 +1,311 @@
++//
++// This file is part of the aMule Project.
++//
++// Copyright (c) 2003-2026 aMule Team ( admin@amule.org / http://www.amule.org )
++//
++// Any parts of this program derived from the xMule, lMule or eMule project,
++// or contributed by third-party developers are copyrighted by their
++// respective authors.
++//
++// This program is free software; you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation; either version 2 of the License, or
++// (at your option) any later version.
++//
++// This program is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with this program; if not, write to the Free Software
++// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++//
++
++#include "AppImageIntegration.h"
++
++#include "amule.h"
++#include "Logger.h"
++#include "Preferences.h"
++
++#include <wx/dir.h>
++#include <wx/file.h>
++#include <wx/filefn.h>
++#include <wx/filename.h>
++#include <wx/intl.h>
++#include <wx/msgdlg.h>
++#include <wx/richmsgdlg.h>
++#include <wx/stdpaths.h>
++#include <wx/string.h>
++#include <wx/textfile.h>
++#include <wx/utils.h>
++
++#include <cstdlib>
++#include <unistd.h>
++
++
++namespace {
++
++// AppImage's AppRun exports both env vars: APPIMAGE = the original .AppImage
++// path the user invoked; APPDIR = the squashfs mount point. We need both —
++// APPIMAGE for the rewritten Exec= line so launcher-clicks invoke the image
++// at its real on-disk path, APPDIR to find the bundled .desktop and icons.
++wxString GetAppImagePath()
++{
++	const char* env = getenv("APPIMAGE");
++	return env ? wxString::FromUTF8(env) : wxString();
++}
++
++wxString GetAppDir()
++{
++	const char* env = getenv("APPDIR");
++	return env ? wxString::FromUTF8(env) : wxString();
++}
++
++// Resolve the XDG user data dir per the basedir spec. Don't derive from
++// wxStandardPaths::GetUserDataDir() — wx returns "$HOME/.<appname>" for
++// aMule (legacy dot-prefixed dir), not the canonical XDG location, so
++// any path arithmetic on top of it lands in the wrong tree.
++wxString GetUserDataHome()
++{
++	const char* xdg = getenv("XDG_DATA_HOME");
++	if (xdg && *xdg) {
++		return wxString::FromUTF8(xdg);
++	}
++	return wxFileName::GetHomeDir() + wxT("/.local/share");
++}
++
++wxString GetUserApplicationsDir()
++{
++	return GetUserDataHome() + wxT("/applications");
++}
++
++wxString GetUserIconsDir()
++{
++	return GetUserDataHome() + wxT("/icons");
++}
++
++// Read the bundled .desktop, swap Exec= and TryExec= to point at $APPIMAGE,
++// and write the result to ~/.local/share/applications/org.amule.aMule.desktop.
++// Returns true on success.
++bool InstallDesktopFile(const wxString& appimagePath, const wxString& sourceDesktop, const wxString& destDesktop)
++{
++	wxTextFile in(sourceDesktop);
++	if (!in.Open()) {
++		AddDebugLogLineC(logGeneral,
++			wxT("AppImageIntegration: failed to open ") + sourceDesktop);
++		return false;
++	}
++
++	wxTextFile out(destDesktop);
++	if (out.Exists()) {
++		out.Open();
++		out.Clear();
++	} else if (!out.Create()) {
++		AddDebugLogLineC(logGeneral,
++			wxT("AppImageIntegration: failed to create ") + destDesktop);
++		return false;
++	}
++
++	for (size_t i = 0; i < in.GetLineCount(); ++i) {
++		wxString line = in[i];
++		if (line.StartsWith(wxT("Exec="))) {
++			// Quote the AppImage path so spaces survive; %F passes file
++			// arguments from the shell when the launcher is invoked with
++			// drag-and-drop or "Open With".
++			line = wxT("Exec=\"") + appimagePath + wxT("\" %F");
++		} else if (line.StartsWith(wxT("TryExec="))) {
++			line = wxT("TryExec=") + appimagePath;
++		}
++		out.AddLine(line);
++	}
++
++	bool ok = out.Write();
++	in.Close();
++	out.Close();
++	return ok;
++}
++
++// Walk $APPDIR/usr/share/icons/hicolor and mirror the org.amule.aMule.* PNG
++// files into ~/.local/share/icons/hicolor preserving the size subdirs.
++// Best-effort: any single copy failure is logged but doesn't abort the rest.
++bool InstallIcons(const wxString& appdir, const wxString& userIconsDir)
++{
++	const wxString sourceHicolor = appdir + wxT("/usr/share/icons/hicolor");
++	if (!wxDirExists(sourceHicolor)) {
++		AddDebugLogLineC(logGeneral,
++			wxT("AppImageIntegration: hicolor tree missing at ") + sourceHicolor);
++		return false;
++	}
++
++	wxArrayString found;
++	wxDir::GetAllFiles(sourceHicolor, &found, wxT("org.amule.aMule.*"), wxDIR_FILES | wxDIR_DIRS);
++	if (found.IsEmpty()) {
++		AddDebugLogLineC(logGeneral,
++			wxT("AppImageIntegration: no org.amule.aMule.* icons under ") + sourceHicolor);
++		return false;
++	}
++
++	bool anyOk = false;
++	for (size_t i = 0; i < found.GetCount(); ++i) {
++		const wxString& src = found[i];
++		wxString relative = src.Mid(sourceHicolor.length());
++		wxString dest = userIconsDir + wxT("/hicolor") + relative;
++
++		wxFileName destPath(dest);
++		if (!destPath.DirExists()) {
++			destPath.Mkdir(0755, wxPATH_MKDIR_FULL);
++		}
++
++		if (wxCopyFile(src, dest, true)) {
++			anyOk = true;
++		} else {
++			AddDebugLogLineC(logGeneral,
++				wxT("AppImageIntegration: copy failed: ") + src + wxT(" -> ") + dest);
++		}
++	}
++	return anyOk;
++}
++
++// update-desktop-database and gtk-update-icon-cache exist on every desktop
++// distro that ships a .desktop file system, but we don't fail integration
++// if they're missing — modern compositors inotify-watch the dirs and pick
++// up new files within seconds anyway. wxExecute with wxEXEC_SYNC still
++// returns instantly if the binary isn't found.
++void RefreshSystemCaches(const wxString& userAppsDir, const wxString& userIconsDir)
++{
++	wxExecute(wxT("update-desktop-database \"") + userAppsDir + wxT("\""),
++		wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
++	wxExecute(wxT("gtk-update-icon-cache -f -t \"") + userIconsDir + wxT("/hicolor\""),
++		wxEXEC_SYNC | wxEXEC_NODISABLE | wxEXEC_NOEVENTS);
++}
++
++bool DesktopFileAlreadyInstalled()
++{
++	return wxFileExists(GetUserApplicationsDir() + wxT("/org.amule.aMule.desktop"));
++}
++
++} // anonymous namespace
++
++
++namespace AppImageIntegration {
++
++bool ShouldPrompt()
++{
++#ifdef __WXGTK__
++	if (GetAppImagePath().IsEmpty()) {
++		// Not running from an AppImage — distro install or dev build.
++		return false;
++	}
++	if (thePrefs::IsAppImageIntegrationDeclined()) {
++		// User picked "Don't ask again" on a previous launch.
++		return false;
++	}
++	if (DesktopFileAlreadyInstalled()) {
++		// Already installed — most likely from a previous "Yes" click.
++		return false;
++	}
++	return true;
++#else
++	return false;
++#endif
++}
++
++void PromptAndInstall(wxWindow* parent)
++{
++	if (!ShouldPrompt()) {
++		return;
++	}
++
++	wxRichMessageDialog dlg(parent,
++		_("aMule can install a desktop launcher and icon into your home directory "
++		  "so it appears in your application menu like a regularly installed app. "
++		  "This is reversible — the files live under ~/.local/share/applications "
++		  "and ~/.local/share/icons and can be removed at any time.\n\n"
++		  "Install desktop integration now?"),
++		_("Add aMule to your application menu?"),
++		wxYES_NO | wxICON_QUESTION);
++	dlg.SetYesNoLabels(_("Install"), _("Not now"));
++	dlg.ShowCheckBox(_("Don't ask again"));
++
++	const int answer = dlg.ShowModal();
++	const bool dontAskAgain = dlg.IsCheckBoxChecked();
++
++	if (dontAskAgain) {
++		thePrefs::SetAppImageIntegrationDeclined(true);
++		// Persist immediately so a crash before normal shutdown still
++		// remembers the user's choice.
++		theApp->glob_prefs->Save();
++	}
++
++	if (answer != wxID_YES) {
++		return;
++	}
++
++	const wxString appimagePath = GetAppImagePath();
++	const wxString appdir = GetAppDir();
++	if (appdir.IsEmpty()) {
++		const wxString msg = _("Cannot install desktop integration: the APPDIR environment variable is not set. This usually means the AppImage was launched in a non-standard way.");
++		AddLogLineC(msg);
++		wxMessageBox(msg, _("aMule integration failed"), wxOK | wxICON_ERROR, parent);
++		return;
++	}
++
++	const wxString userAppsDir = GetUserApplicationsDir();
++	const wxString userIconsDir = GetUserIconsDir();
++
++	if (!wxDirExists(userAppsDir) && !wxFileName::Mkdir(userAppsDir, 0755, wxPATH_MKDIR_FULL)) {
++		const wxString msg = wxString::Format(
++			_("Cannot install desktop integration: failed to create %s. Check that your home directory is writable."),
++			userAppsDir);
++		AddLogLineC(msg);
++		wxMessageBox(msg, _("aMule integration failed"), wxOK | wxICON_ERROR, parent);
++		return;
++	}
++
++	const wxString sourceDesktop = appdir + wxT("/usr/share/applications/org.amule.aMule.desktop");
++	const wxString destDesktop = userAppsDir + wxT("/org.amule.aMule.desktop");
++
++	if (!InstallDesktopFile(appimagePath, sourceDesktop, destDesktop)) {
++		const wxString msg = wxString::Format(
++			_("Cannot install desktop integration: failed to write %s. Check that your home directory is writable."),
++			destDesktop);
++		AddLogLineC(msg);
++		wxMessageBox(msg, _("aMule integration failed"), wxOK | wxICON_ERROR, parent);
++		return;
++	}
++
++	InstallIcons(appdir, userIconsDir);
++	RefreshSystemCaches(userAppsDir, userIconsDir);
++
++	AddLogLineN(_("AppImage integration: aMule added to your application menu."));
++
++	wxMessageDialog success(parent,
++		_("aMule has been added to your application menu. You can now launch it from your applications list, and the launcher will run this same AppImage.\n\n"
++		  "On some desktops, aMule may need to restart for the dock / taskbar icon to bind to the new launcher entry. Modern Wayland compositors (GNOME, KDE) pick this up live, but a restart is the safe fallback if the icon stays generic.\n\n"
++		  "Restart aMule now?"),
++		_("aMule installed"),
++		wxYES_NO | wxNO_DEFAULT | wxICON_INFORMATION);
++	success.SetYesNoLabels(_("Restart now"), _("Later"));
++
++	if (success.ShowModal() != wxID_YES) {
++		return;
++	}
++
++	// Spawn a detached shell that polls our PID and re-execs the AppImage
++	// once we fully exit. This gives aMule's normal shutdown path time to
++	// save partfiles, release the EC port, etc., before the new instance
++	// tries to grab the same locks.
++	const wxString relaunchCmd = wxString::Format(
++		wxT("sh -c 'while kill -0 %ld 2>/dev/null; do sleep 0.2; done; exec \"%s\"'"),
++		static_cast<long>(getpid()),
++		appimagePath);
++	wxExecute(relaunchCmd, wxEXEC_ASYNC | wxEXEC_MAKE_GROUP_LEADER);
++
++	// Trigger normal close on the main dialog — same path as red X / File>Quit.
++	if (parent) {
++		parent->Close(true);
++	}
++}
++
++} // namespace AppImageIntegration
+--- /dev/null
++++ b/src/AppImageIntegration.h
+@@ -0,0 +1,52 @@
++//
++// This file is part of the aMule Project.
++//
++// Copyright (c) 2003-2026 aMule Team ( admin@amule.org / http://www.amule.org )
++//
++// Any parts of this program derived from the xMule, lMule or eMule project,
++// or contributed by third-party developers are copyrighted by their
++// respective authors.
++//
++// This program is free software; you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation; either version 2 of the License, or
++// (at your option) any later version.
++//
++// This program is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with this program; if not, write to the Free Software
++// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++//
++
++#ifndef APPIMAGEINTEGRATION_H
++#define APPIMAGEINTEGRATION_H
++
++#include <wx/window.h>
++
++
++namespace AppImageIntegration {
++
++// Whether we're running from inside an AppImage AND the user hasn't yet
++// installed launcher integration AND hasn't opted out via prefs. When true,
++// the GUI app should call PromptAndInstall() once the main frame is realised.
++bool ShouldPrompt();
++
++// Show a wxRichMessageDialog asking whether to install
++// ~/.local/share/applications + ~/.local/share/icons entries pointing at the
++// running AppImage. The dialog includes a "Don't ask again" checkbox.
++//
++// On Yes: copies the bundled .desktop and hicolor icons into the user's home,
++// rewrites Exec= to point at $APPIMAGE, and runs update-desktop-database /
++// gtk-update-icon-cache best-effort.
++// On No: nothing this run; the prompt fires again on next launch.
++// "Don't ask again" checked: sets the prefs flag so we never prompt again,
++// regardless of which button was clicked.
++void PromptAndInstall(wxWindow* parent);
++
++} // namespace AppImageIntegration
++
++#endif // APPIMAGEINTEGRATION_H
 --- a/src/AsyncDNS.cpp
 +++ b/src/AsyncDNS.cpp
 @@ -61,14 +61,14 @@ wxThread::ExitCode CAsyncDNS::Entry()
@@ -5103,6 +4572,27 @@
  		if ( m_Modifiers ) {
  			delete[] m_Modifiers;
  			m_Modifiers = NULL;
+@@ -170,7 +170,9 @@ void CBarShader::Draw( wxDC* dc, int iLe
+ 	}
+ 
+ 	// Render the bar into a raw buffer
+-	unsigned char * buf = (unsigned char *) malloc(m_Width * m_Height * 3);
++	unsigned char * buf = (unsigned char *) malloc(
++		static_cast<size_t>(m_Width) *
++		static_cast<size_t>(m_Height) * 3u);
+ 
+ 	if (bFlat) {
+ 		// draw flat bar
+@@ -189,7 +191,8 @@ void CBarShader::Draw( wxDC* dc, int iLe
+ 			std::memcpy(buf + idx, buf, idx);
+ 		}
+ 		if (y < m_Height) {
+-			std::memcpy(buf + idx, buf, (m_Height - y) * linelength);
++			std::memcpy(buf + idx, buf,
++				static_cast<size_t>(m_Height - y) * linelength);
+ 		}
+ 	} else {
+ 		// draw rounded bar
 --- a/src/BarShader.h
 +++ b/src/BarShader.h
 @@ -102,7 +102,7 @@ public:
@@ -6228,6 +5718,26 @@
  		}
  		delete this;
  	}
+--- a/src/BitVector.h
++++ b/src/BitVector.h
+@@ -26,6 +26,8 @@
+ #ifndef BITVECTOR_H
+ #define BITVECTOR_H
+ 
++#include "Types.h"
++
+ //
+ // Packed bit vector
+ //
+@@ -119,7 +121,7 @@ public:
+ 					foundFalse = !get(i);
+ 				}
+ 			}
+-			// check bytewise
++			// check byte-wise
+ 			for (uint32 i = 0; !foundFalse && i < lastByte; i++) {
+ 				foundFalse = m_vector[i] != 0xff;
+ 			}
 --- a/src/CanceledFileList.cpp
 +++ b/src/CanceledFileList.cpp
 @@ -34,7 +34,7 @@
@@ -8983,7 +8493,7 @@
  		)
  	endif()
  
-@@ -118,23 +122,23 @@ if (BUILD_DAEMON)
+@@ -118,23 +122,31 @@ if (BUILD_DAEMON)
  	)
  
  	target_link_libraries (amuled
@@ -9001,6 +8511,14 @@
 +		PRIVATE wxWidgets::NET
  	)
  
++	if (GLIB_FOUND)
++		# amule.cpp's CamuleApp::OnInit calls g_set_prgname; daemon
++		# build pulls amule.cpp via CORE_SOURCES so it needs the
++		# glib include path too.
++		target_include_directories (amuled PRIVATE ${GLIB_INCLUDE_DIRS})
++		target_link_libraries (amuled PRIVATE ${GLIB_LIBRARIES})
++	endif()
++
  	if (HAVE_BFD)
  		target_link_libraries (amuled
 -			${LIBBFD}
@@ -9015,7 +8533,7 @@
  		)
  	endif()
  
-@@ -152,7 +156,7 @@ if (BUILD_ED2K)
+@@ -152,7 +164,7 @@ if (BUILD_ED2K)
  
  	if (WIN32)
  		target_sources (ed2k
@@ -9024,7 +8542,7 @@
  		)
  	endif()
  
-@@ -162,7 +166,13 @@ if (BUILD_ED2K)
+@@ -162,7 +174,13 @@ if (BUILD_ED2K)
  
  	if (WIN32)
  		target_link_libraries (ed2k
@@ -9039,7 +8557,7 @@
  		)
  	endif()
  
-@@ -184,37 +194,112 @@ if (BUILD_MONOLITHIC)
+@@ -184,37 +202,123 @@ if (BUILD_MONOLITHIC)
  
  	if (WIN32)
  		target_sources (amule
@@ -9072,6 +8590,20 @@
 +		target_link_libraries (amule
 +			PRIVATE ${BFD_LIBRARY}
 +		)
++	endif()
++
++	if (GLIB_FOUND)
++		# CamuleApp::OnInit calls g_set_prgname (Wayland app_id binding),
++		# so amule.cpp needs the glib include path even when the
++		# AppIndicator backend isn't compiled in.
++		target_include_directories (amule PRIVATE ${GLIB_INCLUDE_DIRS})
++		target_link_libraries (amule PRIVATE ${GLIB_LIBRARIES})
++	endif()
++
++	if (WITH_LIBAYATANA_APPINDICATOR)
++		target_include_directories (amule PRIVATE ${AYATANA_APPINDICATOR_INCLUDE_DIRS})
++		target_link_libraries (amule PRIVATE ${AYATANA_APPINDICATOR_LIBRARIES})
++		target_compile_options (amule PRIVATE ${AYATANA_APPINDICATOR_CFLAGS_OTHER})
  	endif()
  
  	if (WIN32)
@@ -9154,18 +8686,15 @@
 +		BUNDLE DESTINATION .
 +	)
 +
++	# XPM fallback for Icon= lookups on systems too old to ship the
++	# hicolor PNG path. Filename matches the .desktop's Icon= field.
 +	install (FILES aMule.xpm
 +		DESTINATION "${CMAKE_INSTALL_DATADIR}/pixmaps"
-+		RENAME amule.xpm
-+	)
-+
-+	install (FILES aMule.xpm
-+		DESTINATION "${CMAKE_INSTALL_DATADIR}/pixmaps"
-+		RENAME amulegui.xpm
++		RENAME org.amule.aMule.xpm
  	)
  endif (BUILD_MONOLITHIC)
  
-@@ -228,7 +313,7 @@ if (BUILD_REMOTEGUI)
+@@ -228,7 +332,7 @@ if (BUILD_REMOTEGUI)
  
  	if (WIN32)
  		target_sources (amulegui
@@ -9174,7 +8703,7 @@
  		)
  	endif()
  
-@@ -241,29 +326,71 @@ if (BUILD_REMOTEGUI)
+@@ -241,29 +345,85 @@ if (BUILD_REMOTEGUI)
  	)
  
  	target_link_libraries (amulegui
@@ -9201,6 +8730,20 @@
  		)
  	endif()
  
++	if (GLIB_FOUND)
++		# amulegui pulls MuleTrayIcon.cpp via GUI_SOURCES; the SNI
++		# backend includes app-indicator headers which transitively
++		# need glib's include path.
++		target_include_directories (amulegui PRIVATE ${GLIB_INCLUDE_DIRS})
++		target_link_libraries (amulegui PRIVATE ${GLIB_LIBRARIES})
++	endif()
++
++	if (WITH_LIBAYATANA_APPINDICATOR)
++		target_include_directories (amulegui PRIVATE ${AYATANA_APPINDICATOR_INCLUDE_DIRS})
++		target_link_libraries (amulegui PRIVATE ${AYATANA_APPINDICATOR_LIBRARIES})
++		target_compile_options (amulegui PRIVATE ${AYATANA_APPINDICATOR_CFLAGS_OTHER})
++	endif()
++
  	if (WIN32)
 -		set_target_properties (amulegui
 -			PROPERTIES WIN32_EXECUTABLE TRUE
@@ -9256,7 +8799,7 @@
  	)
  endif()
  
-@@ -289,6 +416,11 @@ if (NEED_LIB_MULEAPPCOMMON)
+@@ -289,6 +449,11 @@ if (NEED_LIB_MULEAPPCOMMON)
  		Timer.cpp
  	)
  
@@ -9268,7 +8811,7 @@
  	target_compile_definitions (muleappcommon
  		PRIVATE wxUSE_GUI=0
  		PRIVATE WXUSINGDLL
-@@ -299,13 +431,11 @@ if (NEED_LIB_MULEAPPCOMMON)
+@@ -299,13 +464,11 @@ if (NEED_LIB_MULEAPPCOMMON)
  		PUBLIC ${EC_INCLUDE_DIR}
  		PRIVATE ${INCLUDE_INCLUDE_DIR}
  		PRIVATE ${LIBS_INCLUDE_DIR}
@@ -9284,7 +8827,7 @@
  	)
  
  	if (ENABLE_UPNP)
-@@ -390,7 +520,6 @@ if (NEED_LIB_MULEAPPCORE)
+@@ -390,7 +553,6 @@ if (NEED_LIB_MULEAPPCORE)
  		PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
  		PRIVATE ${INCLUDE_INCLUDE_DIR}
  		PRIVATE ${LIBS_INCLUDE_DIR}
@@ -9292,7 +8835,7 @@
  	)
  
  	if (ENABLE_UPNP)
-@@ -400,8 +529,26 @@ if (NEED_LIB_MULEAPPCORE)
+@@ -400,8 +562,26 @@ if (NEED_LIB_MULEAPPCORE)
  	endif()
  
  	target_link_libraries (muleappcore
@@ -9320,7 +8863,7 @@
  endif()
  
  if (NEED_LIB_MULEAPPGUI)
-@@ -423,7 +570,7 @@ if (NEED_LIB_MULEAPPGUI)
+@@ -423,7 +603,7 @@ if (NEED_LIB_MULEAPPGUI)
  
  	if (ENABLE_IP2COUNTRY)
  		target_link_libraries (muleappgui
@@ -9329,7 +8872,7 @@
  		)
  	endif()
  
-@@ -432,9 +579,9 @@ if (NEED_LIB_MULEAPPGUI)
+@@ -432,9 +612,9 @@ if (NEED_LIB_MULEAPPGUI)
  	)
  
  	target_include_directories (muleappgui
@@ -9342,7 +8885,7 @@
  	)
  
  	target_link_libraries (muleappgui
-@@ -457,24 +604,79 @@ IF (NEED_LIB_MULESOCKET)
+@@ -457,24 +637,79 @@ IF (NEED_LIB_MULESOCKET)
  	)
  	
  	target_include_directories (mulesocket
@@ -11191,7 +10734,36 @@
  #include "Statistics.h"		// Needed for theStats
  #include "Logger.h"
  #include <common/Format.h>	// Needed for CFormat
-@@ -116,7 +117,7 @@ void CDownloadQueue::LoadMetFiles(const
+@@ -60,19 +61,14 @@
+ 
+ #include "kademlia/kademlia/Kademlia.h"
+ 
+-#include <string>			// Do_not_auto_remove (mingw-gcc-3.4.5)
+-
+-
+ // Max. file IDs per UDP packet
+ // ----------------------------
+ // 576 - 30 bytes of header (28 for UDP, 2 for "E3 9A" edonkey proto) = 546 bytes
+ // 546 / 16 = 34
+ 
+-
+ #define MAX_FILES_PER_UDP_PACKET	31	// 2+16*31 = 498 ... is still less than 512 bytes!!
+ #define MAX_REQUESTS_PER_SERVER		35
+ 
+-
+ CDownloadQueue::CDownloadQueue()
+ // Needs to be recursive that that is can own an observer assigned to itself
+ 	: m_mutex( wxMUTEX_RECURSIVE )
+@@ -99,7 +95,7 @@ CDownloadQueue::CDownloadQueue()
+ CDownloadQueue::~CDownloadQueue()
+ {
+ 	if ( !m_filelist.empty() ) {
+-		for ( unsigned int i = 0; i < m_filelist.size(); i++ ) {
++		for ( FileQueue::size_type i = 0; i < m_filelist.size(); i++ ) {
+ 			AddLogLineNS(CFormat(_("Saving PartFile %u of %u")) % (i + 1) % m_filelist.size());
+ 			delete m_filelist[i];
+ 		}
+@@ -116,7 +112,7 @@ void CDownloadQueue::LoadMetFiles(const
  
  	// Locate part-files to be loaded
  	CDirIterator TempDir(path);
@@ -11200,7 +10772,7 @@
  	while (fileName.IsOk()) {
  		files.push_back(path.JoinPaths(fileName));
  
-@@ -147,12 +148,12 @@ void CDownloadQueue::LoadMetFiles(const
+@@ -147,12 +143,12 @@ void CDownloadQueue::LoadMetFiles(const
  		} else {
  			wxString msg;
  			if (result) {
@@ -11215,7 +10787,7 @@
  			}
  			AddLogLineCS(msg);
  
-@@ -253,7 +254,7 @@ void CDownloadQueue::AddSearchToDownload
+@@ -253,7 +249,7 @@ void CDownloadQueue::AddSearchToDownload
  	try {
  		newfile = new CPartFile(toadd);
  	} catch (const CInvalidPacket& WXUNUSED(e)) {
@@ -11224,7 +10796,7 @@
  	}
  
  	if ( newfile && newfile->GetStatus() != PS_ERROR ) {
-@@ -352,7 +353,7 @@ void CDownloadQueue::StartNextFile(CPart
+@@ -352,7 +348,7 @@ void CDownloadQueue::StartNextFile(CPart
  
  void CDownloadQueue::AddDownload(CPartFile* file, bool paused, uint8 category)
  {
@@ -11233,7 +10805,7 @@
  
  	if (file->GetStatus(true) == PS_ALLOCATING) {
  		file->PauseFile();
-@@ -370,7 +371,7 @@ void CDownloadQueue::AddDownload(CPartFi
+@@ -370,7 +366,7 @@ void CDownloadQueue::AddDownload(CPartFi
  	if (category < theApp->glob_prefs->GetCatCount()) {
  		file->SetCategory(category);
  	} else {
@@ -11242,7 +10814,7 @@
  	}
  	Notify_DownloadCtrlAddFile( file );
  	theApp->searchlist->UpdateSearchFileByHash(file->GetFileHash());	// Update file in the search dialog if it's still open
-@@ -418,15 +419,17 @@ void CDownloadQueue::Process()
+@@ -418,15 +414,17 @@ void CDownloadQueue::Process()
  	{
  		wxMutexLocker lock(m_mutex);
  
@@ -11269,7 +10841,16 @@
  
  		m_datarate = 0;
  		m_udcounter++;
-@@ -446,10 +449,25 @@ void CDownloadQueue::Process()
+@@ -437,7 +435,7 @@ void CDownloadQueue::Process()
+ 
+ 		bool mustPreventSleep = false;
+ 
+-		for ( uint16 i = 0; i < m_filelist.size(); i++ ) {
++		for ( FileQueue::size_type i = 0; i < m_filelist.size(); i++ ) {
+ 			CPartFile* file = m_filelist[i];
+ 
+ 			CMutexUnlocker unlocker(m_mutex);
+@@ -446,10 +444,25 @@ void CDownloadQueue::Process()
  			mustPreventSleep |= !(status == PS_ERROR || status == PS_INSUFFICIENT || status == PS_PAUSED || status == PS_COMPLETE);
  
  			if (status == PS_READY || status == PS_EMPTY ){
@@ -11296,7 +10877,68 @@
  			}
  
  			if (!file->IsPaused() && !file->IsStopped()) {
-@@ -612,7 +630,7 @@ void CDownloadQueue::CheckAndAddSource(C
+@@ -469,11 +482,11 @@ void CDownloadQueue::Process()
+ 				PlatformSpecific::AllowSleepMode();
+ 			}
+ 		} else {
+-			// Just in case the value changes while we're preventing. Calls to this function are totally inexpensive anwyay
++			// Just in case the value changes while we're preventing.
++			// Calls to this function are totally inexpensive anyway
+ 			PlatformSpecific::AllowSleepMode();
+ 		}
+ 
+-
+ 		// Set the source rarity thresholds
+ 		int nSourceGroups = m_sourcecountlist.size();
+ 		if (nSourceGroups) {
+@@ -490,15 +503,15 @@ void CDownloadQueue::Process()
+ 				// More than two, time to do some math.
+ 
+ 				// Lower 25% with the current #define values.
+-				int rarecutpoint = (nSourceGroups / RARITY_FACTOR);
+-				for (int i = 0; i < rarecutpoint; ++ i) {
++				int rare_cut_point = (nSourceGroups / RARITY_FACTOR);
++				for (int i = 0; i < rare_cut_point; ++ i) {
+ 					m_sourcecountlist.pop_front();
+ 				}
+ 				m_rareFileThreshold = (m_sourcecountlist.front() > 0) ? (m_sourcecountlist.front() - 1) : 1;
+ 
+ 				// 50% of the non-rare ones, with the current #define values.
+-				int commoncutpoint = (nSourceGroups - rarecutpoint) / NORMALITY_FACTOR;
+-				for (int i = 0; i < commoncutpoint; ++ i) {
++				int common_cut_point = (nSourceGroups - rare_cut_point) / NORMALITY_FACTOR;
++				for (int i = 0; i < common_cut_point; ++ i) {
+ 					m_sourcecountlist.pop_front();
+ 				}
+ 				m_commonFileThreshold = (m_sourcecountlist.front() > 0) ? (m_sourcecountlist.front() - 1) : 1;
+@@ -551,7 +564,7 @@ CPartFile* CDownloadQueue::GetFileByID(c
+ {
+ 	wxMutexLocker lock( m_mutex );
+ 
+-	for ( uint16 i = 0; i < m_filelist.size(); ++i ) {
++	for ( FileQueue::size_type i = 0; i < m_filelist.size(); ++i ) {
+ 		if ( filehash == m_filelist[i]->GetFileHash()) {
+ 			return m_filelist[ i ];
+ 		}
+@@ -584,7 +597,7 @@ bool CDownloadQueue::IsPartFile(const CK
+ {
+ 	wxMutexLocker lock(m_mutex);
+ 
+-	for (uint16 i = 0; i < m_filelist.size(); ++i) {
++	for (FileQueue::size_type i = 0; i < m_filelist.size(); ++i) {
+ 		if (file == m_filelist[i]) {
+ 			return true;
+ 		}
+@@ -598,7 +611,7 @@ void CDownloadQueue::OnConnectionState(b
+ {
+ 	wxMutexLocker lock(m_mutex);
+ 
+-	for (uint16 i = 0; i < m_filelist.size(); ++i) {
++	for (FileQueue::size_type i = 0; i < m_filelist.size(); ++i) {
+ 		if (	m_filelist[i]->GetStatus() == PS_READY ||
+ 			m_filelist[i]->GetStatus() == PS_EMPTY) {
+ 			m_filelist[i]->SetActive(bConnected);
+@@ -612,7 +625,7 @@ void CDownloadQueue::CheckAndAddSource(C
  	// if we block loopbacks at this point it should prevent us from connecting to ourself
  	if ( source->HasValidHash() ) {
  		if ( source->GetUserHash() == thePrefs::GetUserHash() ) {
@@ -11305,7 +10947,7 @@
  			source->Safe_Delete();
  			return;
  		}
-@@ -695,7 +713,7 @@ void CDownloadQueue::CheckAndAddSource(C
+@@ -695,7 +708,7 @@ void CDownloadQueue::CheckAndAddSource(C
  				sender->UpdateFileRatingCommentAvail();
  			}
  
@@ -11314,7 +10956,7 @@
  		}
  	} else {
  		// Unknown client, add it to the clients list
-@@ -708,7 +726,7 @@ void CDownloadQueue::CheckAndAddSource(C
+@@ -708,7 +721,7 @@ void CDownloadQueue::CheckAndAddSource(C
  			sender->UpdateFileRatingCommentAvail();
  		}
  
@@ -11323,7 +10965,7 @@
  	}
  }
  
-@@ -735,7 +753,7 @@ void CDownloadQueue::CheckAndAddKnownSou
+@@ -735,7 +748,7 @@ void CDownloadQueue::CheckAndAddKnownSou
  	if (!source->HasLowID()) {
  		uint32 nClientIP = wxUINT32_SWAP_ALWAYS(source->GetUserIDHybrid());
  		if (!IsGoodIP(nClientIP, thePrefs::FilterLanIPs())) { // check for 0-IP, localhost and LAN addresses
@@ -11332,7 +10974,7 @@
  			return;
  		}
  	}
-@@ -752,7 +770,7 @@ void CDownloadQueue::CheckAndAddKnownSou
+@@ -752,7 +765,7 @@ void CDownloadQueue::CheckAndAddKnownSou
  	if ( file ) {
  		if ( file != sender ) {
  			if ( source->AddRequestForAnotherFile( sender ) ) {
@@ -11341,7 +10983,7 @@
  			}
  		}
  	} else {
-@@ -764,7 +782,7 @@ void CDownloadQueue::CheckAndAddKnownSou
+@@ -764,7 +777,7 @@ void CDownloadQueue::CheckAndAddKnownSou
  
  		source->SetSourceFrom(SF_PASSIVE);
  		sender->AddSource( source );
@@ -11350,7 +10992,16 @@
  	}
  }
  
-@@ -922,7 +940,7 @@ bool CDownloadQueue::SendNextUDPPacket()
+@@ -845,7 +858,7 @@ CUpDownClient* CDownloadQueue::GetDownlo
+ {
+ 	wxMutexLocker lock( m_mutex );
+ 
+-	for ( unsigned int i = 0; i < m_filelist.size(); i++ ) {
++	for ( FileQueue::size_type i = 0; i < m_filelist.size(); i++ ) {
+ 		const CKnownFile::SourceSet& set = m_filelist[i]->GetSourceList();
+ 
+ 		for ( CKnownFile::SourceSet::const_iterator it = set.begin(); it != set.end(); ++it ) {
+@@ -922,7 +935,7 @@ bool CDownloadQueue::SendNextUDPPacket()
  
  			if ( ( status == PS_READY || status == PS_EMPTY ) && file->GetSourceCount() < thePrefs::GetMaxSourcePerFileUDP() ) {
  				if (file->IsLargeFile() && !m_udpserver->SupportsLargeFilesUDP()) {
@@ -11359,7 +11010,16 @@
  				} else {
  					++m_cRequestsSentToServer;
  					hashlist.WriteHash( file->GetFileHash() );
-@@ -1077,7 +1095,7 @@ void CDownloadQueue::ProcessLocalRequest
+@@ -1024,7 +1037,7 @@ void CDownloadQueue::ResetLocalServerReq
+ 	m_dwNextTCPSrcReq = 0;
+ 	m_localServerReqQueue.clear();
+ 
+-	for ( uint16 i = 0; i < m_filelist.size(); i++ ) {
++	for ( FileQueue::size_type i = 0; i < m_filelist.size(); i++ ) {
+ 		m_filelist[i]->SetLocalSrcRequestQueued(false);
+ 	}
+ }
+@@ -1077,7 +1090,7 @@ void CDownloadQueue::ProcessLocalRequest
  					it = m_localServerReqQueue.erase(it);
  					cur_file->SetLocalSrcRequestQueued(false);
  					AddDebugLogLineN(logDownloadQueue,
@@ -11368,7 +11028,7 @@
  							% cur_file->GetFileName() % cur_file->getPartfileStatus());
  				}
  			}
-@@ -1090,10 +1108,10 @@ void CDownloadQueue::ProcessLocalRequest
+@@ -1090,10 +1103,10 @@ void CDownloadQueue::ProcessLocalRequest
  				iFiles++;
  
  				if (!bServerSupportsLargeFiles && cur_file->IsLargeFile()) {
@@ -11381,7 +11041,7 @@
  					// create request packet
  					CMemFile data(16 + (cur_file->IsLargeFile() ? 8 : 4));
  					data.WriteHash(cur_file->GetFileHash());
-@@ -1128,7 +1146,7 @@ void CDownloadQueue::ProcessLocalRequest
+@@ -1128,7 +1141,7 @@ void CDownloadQueue::ProcessLocalRequest
  			dataTcpFrame.Read(packet->GetPacket(), iSize);
  			uint32 size = packet->GetPacketSize();
  			theApp->serverconnect->SendPacket(packet.release(), true);	// Deletes `packet'.
@@ -11390,7 +11050,34 @@
  			theStats::AddUpOverheadServer(size);
  		}
  
-@@ -1260,7 +1278,7 @@ void CDownloadQueue::CheckDiskspace( con
+@@ -1184,7 +1197,7 @@ void CDownloadQueue::SetCatStatus(uint8
+ 	{
+ 		wxMutexLocker lock(m_mutex);
+ 
+-		for ( uint16 i = 0; i < m_filelist.size(); i++ ) {
++		for ( FileQueue::size_type i = 0; i < m_filelist.size(); ++i ) {
+ 			if ( m_filelist[i]->CheckShowItemInGivenCat(cat) ) {
+ 				files.push_back( m_filelist[i] );
+ 			}
+@@ -1209,7 +1222,7 @@ uint16 CDownloadQueue::GetDownloadingFil
+ 	wxMutexLocker lock( m_mutex );
+ 
+ 	uint16 count = 0;
+-	for ( uint16 i = 0; i < m_filelist.size(); i++ ) {
++	for ( FileQueue::size_type i = 0; i < m_filelist.size(); i++ ) {
+ 		uint8 status = m_filelist[i]->GetStatus();
+ 		if ( status == PS_READY || status == PS_EMPTY ) {
+ 			count++;
+@@ -1225,7 +1238,7 @@ uint16 CDownloadQueue::GetPausedFileCoun
+ 	wxMutexLocker lock( m_mutex );
+ 
+ 	uint16 count = 0;
+-	for ( uint16 i = 0; i < m_filelist.size(); i++ ) {
++	for ( FileQueue::size_type i = 0; i < m_filelist.size(); i++ ) {
+ 		if ( m_filelist[i]->GetStatus() == PS_PAUSED ) {
+ 			count++;
+ 		}
+@@ -1260,10 +1273,10 @@ void CDownloadQueue::CheckDiskspace( con
  	} else if (free < min) {
  		CUserEvents::ProcessEvent(
  			CUserEvents::OutOfDiskSpace,
@@ -11398,8 +11085,12 @@
 +			"Temporary partition");
  	}
  
- 	for (unsigned int i = 0; i < m_filelist.size(); ++i) {
-@@ -1407,7 +1425,7 @@ bool CDownloadQueue::AddLink( const wxSt
+-	for (unsigned int i = 0; i < m_filelist.size(); ++i) {
++	for (FileQueue::size_type i = 0; i < m_filelist.size(); ++i) {
+ 		CPartFile* file = m_filelist[i];
+ 
+ 		switch ( file->GetStatus() ) {
+@@ -1407,7 +1420,7 @@ bool CDownloadQueue::AddLink( const wxSt
  {
  	wxString uri(link);
  
@@ -11408,7 +11099,7 @@
  		uri = CMagnetED2KConverter(link);
  		if (uri.empty()) {
  			AddLogLineC(CFormat(_("Cannot convert magnet link to eD2k: %s")) % link);
-@@ -1415,7 +1433,7 @@ bool CDownloadQueue::AddLink( const wxSt
+@@ -1415,7 +1428,7 @@ bool CDownloadQueue::AddLink( const wxSt
  		}
  	}
  
@@ -11417,7 +11108,7 @@
  		return AddED2KLink(uri, category);
  	} else {
  		AddLogLineC(CFormat(_("Unknown protocol of link: %s")) % link);
-@@ -1430,8 +1448,8 @@ bool CDownloadQueue::AddED2KLink( const
+@@ -1430,8 +1443,8 @@ bool CDownloadQueue::AddED2KLink( const
  	wxString URI = link;
  
  	// Need the links to end with /, otherwise CreateLinkFromUrl crashes us.
@@ -11428,7 +11119,7 @@
  	}
  
  	try {
-@@ -1552,31 +1570,31 @@ void CDownloadQueue::ObserverAdded( Obse
+@@ -1552,31 +1565,31 @@ void CDownloadQueue::ObserverAdded( Obse
  
  void CDownloadQueue::KademliaSearchFile(uint32_t searchID, const Kademlia::CUInt128* pcontactID, const Kademlia::CUInt128* pbuddyID, uint8_t type, uint32_t ip, uint16_t tcp, uint16_t udp, uint32_t buddyip, uint16_t buddyport, uint8_t byCryptOptions)
  {
@@ -11466,7 +11157,7 @@
  		return;
  	}
  
-@@ -1586,12 +1604,12 @@ void CDownloadQueue::KademliaSearchFile(
+@@ -1586,12 +1599,12 @@ void CDownloadQueue::KademliaSearchFile(
  		case 1: {
  			// NonFirewalled users
  			if(!tcp) {
@@ -11482,7 +11173,7 @@
  				return;
  			}
  			ctemp = new CUpDownClient(tcp, ip, 0, 0, temp, false, true);
-@@ -1635,7 +1653,7 @@ void CDownloadQueue::KademliaSearchFile(
+@@ -1635,7 +1648,7 @@ void CDownloadQueue::KademliaSearchFile(
  			}
  
  			if ((byCryptOptions & 0x08) == 0){
@@ -11491,7 +11182,7 @@
  				break;
  			}
  
-@@ -1653,7 +1671,7 @@ void CDownloadQueue::KademliaSearchFile(
+@@ -1653,7 +1666,7 @@ void CDownloadQueue::KademliaSearchFile(
  		// add encryption settings
  		ctemp->SetConnectOptions(byCryptOptions);
  
@@ -11500,6 +11191,15 @@
  		CheckAndAddSource(temp, ctemp);
  	}
  }
+@@ -1662,7 +1675,7 @@ CPartFile* CDownloadQueue::GetFileByKadF
+ {
+ 	wxMutexLocker lock( m_mutex );
+ 
+-	for ( uint16 i = 0; i < m_filelist.size(); ++i ) {
++	for ( FileQueue::size_type i = 0; i < m_filelist.size(); ++i ) {
+ 		if ( id == m_filelist[i]->GetKadFileSearchID()) {
+ 			return m_filelist[ i ];
+ 		}
 --- a/src/DownloadQueue.h
 +++ b/src/DownloadQueue.h
 @@ -28,7 +28,7 @@
@@ -14109,7 +13809,20 @@
  				// lower part of this gap is in the part - shrink gap:
 --- a/src/GenericClientListCtrl.cpp
 +++ b/src/GenericClientListCtrl.cpp
-@@ -95,7 +95,7 @@ private:
+@@ -41,12 +41,10 @@
+ #ifdef ENABLE_IP2COUNTRY
+ 	#include "IP2Country.h"	// Needed for IP2Country
+ #endif
+-#include "Logger.h"
+ #include "muuli_wdr.h"		// Needed for ID_DLOADLIST
+ #include "PartFile.h"		// Needed for CPartFile
+ #include "Preferences.h"
+ #include "SharedFileList.h"	// Needed for CSharedFileList
+-#include "TerminationProcess.h"	// Needed for CTerminationProcess
+ #include "ClientRef.h"		// Needed for CClientRef
+ #include "FriendList.h"
+ 
+@@ -95,7 +93,7 @@ private:
  
  #define m_ImageList theApp->amuledlg->m_imagelist
  
@@ -14118,7 +13831,7 @@
  	EVT_LIST_ITEM_ACTIVATED(wxID_ANY,	CGenericClientListCtrl::OnItemActivated)
  	EVT_LIST_ITEM_RIGHT_CLICK(wxID_ANY, CGenericClientListCtrl::OnMouseRightClick)
  	EVT_LIST_ITEM_MIDDLE_CLICK(wxID_ANY, CGenericClientListCtrl::OnMouseMiddleClick)
-@@ -108,7 +108,7 @@ BEGIN_EVENT_TABLE(CGenericClientListCtrl
+@@ -108,7 +106,7 @@ BEGIN_EVENT_TABLE(CGenericClientListCtrl
  	EVT_MENU( MP_FRIENDSLOT,		CGenericClientListCtrl::OnSetFriendslot )
  	EVT_MENU( MP_SENDMESSAGE,		CGenericClientListCtrl::OnSendMessage )
  	EVT_MENU( MP_DETAIL,			CGenericClientListCtrl::OnViewClientInfo )
@@ -14127,19 +13840,19 @@
  
  //! This listtype is used when gathering the selected items.
  typedef std::list<ClientCtrlItem_Struct*>	ItemList;
-@@ -130,9 +130,9 @@ m_columndata(0, NULL)
+@@ -130,9 +128,9 @@ m_columndata(0, NULL)
  	m_menu = NULL;
  	m_showing = false;
  
 -	m_hilightBrush  = CMuleColour(wxSYS_COLOUR_HIGHLIGHT).Blend(125).GetBrush();
-+	m_hilightBrush  = CMuleColour(wxSYS_COLOUR_HIGHLIGHT)/*.Blend(125)*/.GetBrush();
++	m_highlightBrush  = CMuleColour(wxSYS_COLOUR_HIGHLIGHT)/*.Blend(125)*/.GetBrush();
  
 -	m_hilightUnfocusBrush = CMuleColour(wxSYS_COLOUR_BTNSHADOW).Blend(125).GetBrush();
-+	m_hilightUnfocusBrush = CMuleColour(wxSYS_COLOUR_BTNSHADOW)/*.Blend(125)*/.GetBrush();
++	m_highlightUnfocusBrush = CMuleColour(wxSYS_COLOUR_BTNSHADOW)/*.Blend(125)*/.GetBrush();
  
  	m_clientcount = 0;
  }
-@@ -143,49 +143,49 @@ wxString CGenericClientListCtrl::Transla
+@@ -143,49 +141,49 @@ wxString CGenericClientListCtrl::Transla
  
  	switch (cid) {
  		case ColumnUserName:
@@ -14204,7 +13917,7 @@
  			break;
  		case ColumnInvalid:
  		default:
-@@ -199,7 +199,7 @@ wxString CGenericClientListCtrl::Transla
+@@ -199,7 +197,7 @@ wxString CGenericClientListCtrl::Transla
  void CGenericClientListCtrl::InitColumnData()
  {
  	if (!m_columndata.n_columns) {
@@ -14213,7 +13926,7 @@
  	}
  
  	for (int i = 0; i < m_columndata.n_columns; ++i) {
-@@ -223,15 +223,15 @@ void CGenericClientListCtrl::RawAddSourc
+@@ -223,15 +221,15 @@ void CGenericClientListCtrl::RawAddSourc
  
  	m_ListItems.insert( ListItemsPair(source.ECID(), newitem) );
  
@@ -14232,7 +13945,7 @@
  
  	// Update the other instances of this source
  	bool bFound = false;
-@@ -288,7 +288,7 @@ void CGenericClientListCtrl::RawRemoveSo
+@@ -288,7 +286,7 @@ void CGenericClientListCtrl::RawRemoveSo
  void CGenericClientListCtrl::RemoveSource(uint32 source, const CKnownFile* owner)
  {
  	// A NULL owner means remove it no matter what.
@@ -14241,7 +13954,7 @@
  
  	// Retrieve all entries matching the source
  	ListIteratorPair rangeIt = m_ListItems.equal_range(source);
-@@ -390,7 +390,7 @@ void CGenericClientListCtrl::ShowSources
+@@ -390,7 +388,7 @@ void CGenericClientListCtrl::ShowSources
  
  			CKnownFile* file = files[i];
  
@@ -14250,7 +13963,7 @@
  
  			if (file) {
  
-@@ -457,7 +457,7 @@ void CGenericClientListCtrl::ShowSources
+@@ -457,7 +455,7 @@ void CGenericClientListCtrl::ShowSources
   * Helper-function: This function is used to gather selected items.
   *
   * @param list A pointer to the list to gather items from.
@@ -14259,7 +13972,7 @@
   */
  static ItemList GetSelectedItems( CGenericClientListCtrl* list )
  {
-@@ -483,7 +483,7 @@ void CGenericClientListCtrl::OnSwapSourc
+@@ -483,7 +481,7 @@ void CGenericClientListCtrl::OnSwapSourc
  	for ( ItemList::iterator it = sources.begin(); it != sources.end(); ++it ) {
  		CKnownFile * kf = (*it)->GetOwner();
  		if (!kf->IsPartFile()) {
@@ -14268,7 +13981,16 @@
  			continue;
  		}
  		(*it)->GetSource().SwapToAnotherFile( true, false, false,  dynamic_cast<CPartFile*>(kf));
-@@ -582,7 +582,7 @@ void CGenericClientListCtrl::OnMouseRigh
+@@ -527,7 +525,7 @@ void CGenericClientListCtrl::OnSetFriend
+ 		++it;
+ 	}
+ 	if (it != sources.end()) {
+-		wxMessageBox(_("You are not allowed to set more than one friendslot.\n Only one slot was assigned."), _("Multiple selection"), wxOK | wxICON_ERROR, this);
++		wxMessageBox(_("You are not allowed to set more than one friend slot.\n Only one slot was assigned."), _("Multiple selection"), wxOK | wxICON_ERROR, this);
+ 	}
+ }
+ 
+@@ -582,7 +580,7 @@ void CGenericClientListCtrl::OnMouseRigh
  	ClientCtrlItem_Struct* item = reinterpret_cast<ClientCtrlItem_Struct*>(GetItemData( index ));
  	CClientRef& client = item->GetSource();
  
@@ -14277,7 +13999,20 @@
  	m_menu->Append(MP_DETAIL, _("Show &Details"));
  	m_menu->Append(MP_ADDFRIEND, client.IsFriend() ? _("Remove from friends") : _("Add to Friends"));
  
-@@ -660,7 +660,7 @@ void CGenericClientListCtrl::OnDrawItem(
+@@ -651,16 +649,16 @@ void CGenericClientListCtrl::OnDrawItem(
+ 	if (highlighted) {
+ 		CMuleColour colour;
+ 		if (GetFocus()) {
+-			dc->SetBackground(m_hilightBrush);
+-			colour = m_hilightBrush.GetColour();
++			dc->SetBackground(m_highlightBrush);
++			colour = m_highlightBrush.GetColour();
+ 		} else {
+-			dc->SetBackground(m_hilightUnfocusBrush);
+-			colour = m_hilightUnfocusBrush.GetColour();
++			dc->SetBackground(m_highlightUnfocusBrush);
++			colour = m_highlightUnfocusBrush.GetColour();
+ 		}
  		dc->SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT));
  		dc->SetPen( colour.Blend(65).GetPen() );
  	} else {
@@ -14286,7 +14021,41 @@
  		dc->SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
  		dc->SetPen(*wxTRANSPARENT_PEN);
  	}
-@@ -847,13 +847,13 @@ void CGenericClientListCtrl::DrawClientI
+@@ -687,12 +685,12 @@ void CGenericClientListCtrl::OnDrawItem(
+ 
+ 	for (int i = 0; i < GetColumnCount(); ++i) {
+ 
+-		int columnwidth = GetColumnWidth(i);
++		int columnWidth = GetColumnWidth(i);
+ 
+-		if (columnwidth > 2*iOffset) {
++		if (columnWidth > 2*iOffset) {
+ 			// Make a copy of the current rectangle so we can apply specific tweaks
+ 			wxRect target_rec = cur_rec;
+-			target_rec.width = columnwidth - 2*iOffset;
++			target_rec.width = columnWidth - 2*iOffset;
+ 
+ 			GenericColumnEnum cid = m_columndata.columns[i].cid;
+ 
+@@ -701,7 +699,7 @@ void CGenericClientListCtrl::OnDrawItem(
+ 		}
+ 
+ 		// Increment to the next column
+-		cur_rec.x += columnwidth;
++		cur_rec.x += columnWidth;
+ 	}
+ }
+ 
+@@ -795,7 +793,7 @@ void CGenericClientListCtrl::DrawClientI
+ 							// cDonkey, Compatible, Unknown
+ 							// No icon for those yet.
+ 							// Using the eMule one + '?'
+-							// Which is a faillback to the default (Client_Unknown)
++							// Which is a failback to the default (Client_Unknown)
+ 							break;
+ 					}
+ 				}
+@@ -847,13 +845,13 @@ void CGenericClientListCtrl::DrawClientI
  
  					userName << countrydata.Name;
  
@@ -14302,7 +14071,7 @@
  				} else {
  					userName << client.GetUserName();
  				}
-@@ -946,9 +946,9 @@ void CGenericClientListCtrl::DrawClientI
+@@ -946,19 +944,19 @@ void CGenericClientListCtrl::DrawClientI
  					if (p) {
  						a4af = p->GetFileName().GetPrintable();
  					} else {
@@ -14312,9 +14081,22 @@
 -					buffer = CFormat(wxT("%s: %s")) % _("A4AF") % a4af;
 +					buffer = CFormat("%s: %s") % _("A4AF") % a4af;
  
- 					int midx = (2*rect.GetX() + rect.GetWidth()) >> 1;
- 					int midy = (2*rect.GetY() + rect.GetHeight()) >> 1;
-@@ -1013,7 +1013,7 @@ void CGenericClientListCtrl::DrawClientI
+-					int midx = (2*rect.GetX() + rect.GetWidth()) >> 1;
+-					int midy = (2*rect.GetY() + rect.GetHeight()) >> 1;
++					int mid_x = (2*rect.GetX() + rect.GetWidth()) >> 1;
++					int mid_y = (2*rect.GetY() + rect.GetHeight()) >> 1;
+ 
+ 					wxCoord txtwidth, txtheight;
+ 
+ 					dc->GetTextExtent(buffer, &txtwidth, &txtheight);
+ 
+ 					dc->SetTextForeground(*wxBLACK);
+-					dc->DrawText(buffer, wxMax(rect.GetX() + 2, midx - (txtwidth >> 1)), midy - (txtheight >> 1));
++					dc->DrawText(buffer, wxMax(rect.GetX() + 2, mid_x - (txtwidth >> 1)), mid_y - (txtheight >> 1));
+ 
+ 					// Draw black border
+ 					dc->SetPen( *wxBLACK_PEN );
+@@ -1013,7 +1011,7 @@ void CGenericClientListCtrl::DrawClientI
  					buffer = _("Asked for another file");
  					if (	client.GetRequestFile() &&
  						client.GetRequestFile()->GetFileName().IsOk()) {
@@ -14323,7 +14105,7 @@
  							% client.GetRequestFile()->GetFileName();
  					}
  				}
-@@ -1056,7 +1056,7 @@ void CGenericClientListCtrl::DrawClientI
+@@ -1056,7 +1054,7 @@ void CGenericClientListCtrl::DrawClientI
  				buffer = pf->GetFileName().GetPrintable();
  			} else {
  				buffer = _("Unknown");
@@ -14332,7 +14114,7 @@
  			}
  			dc->DrawText(buffer, rect.GetX(), rect.GetY() + iTextOffset);
  			break;
-@@ -1067,7 +1067,7 @@ void CGenericClientListCtrl::DrawClientI
+@@ -1067,27 +1065,27 @@ void CGenericClientListCtrl::DrawClientI
  				buffer = kf->GetFileName().GetPrintable();
  			} else {
  				buffer = _("Unknown");
@@ -14341,7 +14123,10 @@
  			}
  			dc->DrawText(buffer, rect.GetX(), rect.GetY() + iTextOffset);
  			break;
-@@ -1077,7 +1077,7 @@ void CGenericClientListCtrl::DrawClientI
+ 		}
+ 		case ColumnUserFileNameDownloadRemote: {
+-			bool nameMissmatch = false;
++			bool nameMismatch = false;
  			wxColour savedColour = dc->GetTextForeground();
  			if (client.GetClientFilename().IsEmpty() || item->GetType() == A4AF_SOURCE) {
  				buffer = _("Unknown");
@@ -14350,7 +14135,19 @@
  			} else {
  				buffer = client.GetClientFilename();
  				const CPartFile * pf = client.GetRequestFile();
-@@ -1104,7 +1104,7 @@ void CGenericClientListCtrl::DrawClientI
+ 				if (pf && (pf->GetFileName().GetPrintable().CmpNoCase(buffer) != 0)) {
+-					nameMissmatch = true;
++					nameMismatch = true;
+ 					dc->SetTextForeground(*wxRED);
+ 				}
+ 			}
+ 			dc->DrawText(buffer, rect.GetX(), rect.GetY() + iTextOffset);
+-			if (nameMissmatch) {
++			if (nameMismatch) {
+ 				dc->SetTextForeground(savedColour);
+ 			}
+ 			break;
+@@ -1104,7 +1102,7 @@ void CGenericClientListCtrl::DrawClientI
  	}
  }
  
@@ -14359,7 +14156,7 @@
  {
  	ClientCtrlItem_Struct* item1 = reinterpret_cast<ClientCtrlItem_Struct*>(param1);
  	ClientCtrlItem_Struct* item2 = reinterpret_cast<ClientCtrlItem_Struct*>(param2);
-@@ -1113,8 +1113,8 @@ int CGenericClientListCtrl::SortProc(wxU
+@@ -1113,8 +1111,8 @@ int CGenericClientListCtrl::SortProc(wxU
  	sortData &= CMuleListCtrl::COLUMN_MASK;
  	int comp = 0;
  
@@ -14370,7 +14167,7 @@
  	// available and an unavailable
  	comp = ( item2->GetType() - item1->GetType() );
  
-@@ -1125,7 +1125,7 @@ int CGenericClientListCtrl::SortProc(wxU
+@@ -1125,7 +1123,7 @@ int CGenericClientListCtrl::SortProc(wxU
  		comp = Compare(item1->GetSource(), item2->GetSource(), sortData);
  	}
  
@@ -14379,7 +14176,7 @@
  	return sortMod * comp;
  }
  
-@@ -1300,7 +1300,7 @@ void CGenericClientListCtrl::ShowSources
+@@ -1300,7 +1298,7 @@ void CGenericClientListCtrl::ShowSources
  	wxStaticText* label = CastByID( ID_CLIENTCOUNT, GetParent(), wxStaticText );
  
  	if (label) {
@@ -14388,6 +14185,36 @@
  		label->GetParent()->Layout();
  	}
  }
+@@ -1335,24 +1333,24 @@ void CGenericClientListCtrl::DrawSourceS
+ 									? source.GetLastDownloadingPart() : 0xffff;
+ 		uint16 nextRequestedPart = source.GetNextRequestedPart();
+ 
+-		for ( uint16 i = 0; i < partStatus.size(); i++ ) {
++		for ( uint32 i = 0; i < partStatus.size(); i++ ) {
+ 			uint64 uStart = PARTSIZE * i;
+-			uint64 uEnd = uStart + reqfile->GetPartSize(i) - 1;
++			uint64 uEnd = uStart + reqfile->GetPartSize(static_cast<uint16>(i)) - 1;
+ 
+ 			CMuleColour colour;
+ 			if (!partStatus.get(i)) {
+ 				// client does not have this part
+ 				// light grey
+ 				colour = bFlat ? crFlatNeither : crNeither;
+-			} else if ( reqfile->IsComplete(i)) {
++			} else if ( reqfile->IsComplete(static_cast<uint16>(i))) {
+ 				// completed part
+ 				// green
+ 				colour = bFlat ? crFlatBoth : crBoth;
+-			} else if (lastDownloadingPart == i) {
++			} else if (lastDownloadingPart == static_cast<uint16>(i)) {
+ 				// downloading part
+ 				// yellow
+ 				colour = crPending;
+-			} else if (nextRequestedPart == i) {
++			} else if (nextRequestedPart == static_cast<uint16>(i)) {
+ 				// requested part
+ 				// light yellow
+ 				colour = crNextPending;
 --- a/src/GenericClientListCtrl.h
 +++ b/src/GenericClientListCtrl.h
 @@ -153,12 +153,12 @@ public:
@@ -14414,6 +14241,18 @@
  
  	/**
  	 * Set "show sources" or "show peers" flag in Known File
+@@ -236,9 +236,9 @@ private:
+ 	//! Pointer to the current menu object, used to avoid multiple menus.
+ 	wxMenu*		m_menu;
+ 	//! Cached brush object.
+-	wxBrush	m_hilightBrush;
++	wxBrush	m_highlightBrush;
+ 	//! Cached brush object.
+-	wxBrush	m_hilightUnfocusBrush;
++	wxBrush	m_highlightUnfocusBrush;
+ 
+ 	//! The number of displayed sources
+ 	int m_clientcount;
 @@ -246,7 +246,7 @@ private:
  	//! The files being shown, if any.
  	CKnownFileVector m_knownfiles;
@@ -25700,7 +25539,23 @@
  	kademlia/kademlia/Kademlia.cpp \
  	kademlia/kademlia/Prefs.cpp \
  	kademlia/kademlia/Search.cpp \
-@@ -360,6 +365,7 @@ noinst_HEADERS = \
+@@ -187,6 +192,7 @@ endif
+ 
+ gui_sources = \
+ 	amule-gui.cpp \
++	AppImageIntegration.cpp \
+ 	amuleDlg.cpp \
+ 	AddFriend.cpp \
+ 	CatDialog.cpp \
+@@ -330,6 +336,7 @@ noinst_HEADERS = \
+ 		AddFriend.h \
+ 		AsyncDNS.h \
+ 		amule-remote-gui.h \
++		AppImageIntegration.h \
+ 		amuleDlg.h \
+ 		amule.h \
+ 		amuleIPV4Address.h \
+@@ -360,6 +367,7 @@ noinst_HEADERS = \
  		DataToText.h \
  		DeadSourceList.h \
  		DirectoryTreeCtrl.h \
@@ -25708,7 +25563,7 @@
  		DownloadListCtrl.h \
  		DownloadQueue.h \
  		ED2KLink.h \
-@@ -380,6 +386,7 @@ noinst_HEADERS = \
+@@ -380,6 +388,7 @@ noinst_HEADERS = \
  		GapList.h \
  		GetTickCount.h \
  		GenericClientListCtrl.h \
@@ -25716,7 +25571,7 @@
  		GuiEvents.h \
  		HTTPDownload.h \
  		inetdownload.h \
-@@ -418,6 +425,8 @@ noinst_HEADERS = \
+@@ -418,6 +427,8 @@ noinst_HEADERS = \
  		PartFileConvert.h \
  		PartFileConvertDlg.h \
  		PartFile.h \
@@ -25725,7 +25580,7 @@
  		PlatformSpecific.h \
  		Preferences.h \
  		PrefsUnifiedDlg.h \
-@@ -465,6 +474,7 @@ noinst_HEADERS = \
+@@ -465,6 +476,7 @@ noinst_HEADERS = \
  		updownclient.h \
  		UpDownClientEC.h \
  		UploadBandwidthThrottler.h \
@@ -26655,7 +26510,424 @@
  	}
 --- a/src/MuleTrayIcon.cpp
 +++ b/src/MuleTrayIcon.cpp
-@@ -52,7 +52,7 @@
+@@ -31,28 +31,416 @@
+ #include <common/ClientVersion.h>
+ #include <common/Constants.h>
+ 
+-#include "pixmaps/mule_TrayIcon_big.ico.xpm"
+-#include "pixmaps/mule_Tr_yellow_big.ico.xpm"
+-#include "pixmaps/mule_Tr_grey_big.ico.xpm"
+-
+-#include <wx/menu.h>
+-
+ #include "amule.h"			// Needed for theApp
+ #include "amuleDlg.h"		// Needed for IsShown
+ #include "Preferences.h"	// Needed for thePrefs
+ #include "ServerConnect.h"	// Needed for CServerConnect
+ #include "Server.h"			// Needed for CServer
+-#include "StatisticsDlg.h"	// Needed for CStatisticsDlg::getColors()
+ #include "Statistics.h"		// Needed for theStats
++#include "NetworkFunctions.h"	// Needed for Uint32toStringIP
++#include "OtherFunctions.h"	// Needed for CastItoXBytes / CastSecondsToHM
+ #include <common/Format.h>	// Needed for CFormat
+-#include "Logger.h"
+ #include <common/MenuIDs.h>	// Needed to access menu item constants
+ 
++
++// =====================================================================
++// Common action handlers — invoked from either backend.
++// =====================================================================
++
++void CMuleTrayIcon::DoConnectDisconnect()
++{
++	wxCommandEvent evt;
++	theApp->amuledlg->OnBnConnect(evt);
++}
++
++void CMuleTrayIcon::DoShowHide()
++{
++	// Toggle main-window visibility. The pre-existing implementation
++	// of this toggle in CMuleTrayIcon::ShowHide / SwitchShow called
++	// Iconize() + Show() in sequence and re-read IsShown() between
++	// them — on macOS that left the window half-minimized (a weird
++	// mini-Dock tile) AND half-hidden, with the next Dock click only
++	// un-hiding the frame and producing the "only the toolbar shows"
++	// state. Iconize is for the green-button minimize-to-Dock UX, a
++	// separate gesture from this hide-to-tray flow. Drop it: Show
++	// (true/false) toggles visibility cleanly on every platform, and
++	// hidden windows aren't in the OS taskbar regardless of Iconize
++	// state, so non-Mac platforms see no behavioural change.
++	if (theApp->amuledlg->IsShown()) {
++		theApp->amuledlg->Show(false);
++	} else {
++		theApp->amuledlg->Show(true);
++		theApp->amuledlg->Raise();
++	}
++#ifdef WITH_LIBAYATANA_APPINDICATOR
++	// Refresh so the menu label flips to "Hide aMule" / "Show aMule"
++	// to match the new window state. SNI menu is static between
++	// state changes — without this poke the label would lag a click.
++	RebuildMenu();
++#endif
++}
++
++void CMuleTrayIcon::DoExit()
++{
++	if (theApp->amuledlg->IsEnabled()) {
++		theApp->amuledlg->Close();
++	}
++}
++
++void CMuleTrayIcon::DoSetUploadLimit(long kBytesPerSec)
++{
++	thePrefs::SetMaxUpload(kBytesPerSec < 0 ? UNLIMITED : (uint16)kBytesPerSec);
++#ifdef CLIENT_GUI
++	theApp->glob_prefs->SendToRemote();
++#endif
++}
++
++void CMuleTrayIcon::DoSetDownloadLimit(long kBytesPerSec)
++{
++	thePrefs::SetMaxDownload(kBytesPerSec < 0 ? UNLIMITED : (uint16)kBytesPerSec);
++#ifdef CLIENT_GUI
++	theApp->glob_prefs->SendToRemote();
++#endif
++}
++
++
++// =====================================================================
++// Backend selection — see MuleTrayIcon.h for rationale.
++// =====================================================================
++
++#ifdef WITH_LIBAYATANA_APPINDICATOR
++
++// ---------------------------------------------------------------------
++//  StatusNotifierItem (SNI) backend via libayatana-appindicator3.
++//
++//  This is what GNOME Shell with the AppIndicators extension (Ubuntu's
++//  default), KDE Plasma, Sway/Hyprland with waybar, and most other
++//  modern Linux desktops actually render. The legacy GtkStatusIcon API
++//  that wxTaskBarIcon talks was dropped in GNOME 3.26 (2017) and never
++//  implemented in wlroots-based compositors, so without this backend
++//  the tray icon is silently invisible on most current distros.
++// ---------------------------------------------------------------------
++
++#include <libayatana-appindicator/app-indicator.h>
++#include <gtk/gtk.h>
++
++namespace {
++
++// All menu items reach the C++ side through this single callback. The
++// item carries two int "action" + "arg" fields via g_object_set_data,
++// so we don't need a separate static function per menu entry.
++enum TrayAction {
++	TRAY_ACTION_CONNECT_DISCONNECT = 1,
++	TRAY_ACTION_SHOW_HIDE,
++	TRAY_ACTION_EXIT,
++	TRAY_ACTION_SET_UPLOAD_LIMIT,
++	TRAY_ACTION_SET_DOWNLOAD_LIMIT,
++};
++
++void on_menu_item_activated(GtkMenuItem* item, gpointer user_data)
++{
++	CMuleTrayIcon* tray = static_cast<CMuleTrayIcon*>(user_data);
++	intptr_t action = reinterpret_cast<intptr_t>(
++		g_object_get_data(G_OBJECT(item), "action"));
++	intptr_t arg = reinterpret_cast<intptr_t>(
++		g_object_get_data(G_OBJECT(item), "arg"));
++
++	switch (action) {
++		case TRAY_ACTION_CONNECT_DISCONNECT: tray->DoConnectDisconnect(); break;
++		case TRAY_ACTION_SHOW_HIDE:          tray->DoShowHide(); break;
++		case TRAY_ACTION_EXIT:               tray->DoExit(); break;
++		case TRAY_ACTION_SET_UPLOAD_LIMIT:   tray->DoSetUploadLimit((long)arg); break;
++		case TRAY_ACTION_SET_DOWNLOAD_LIMIT: tray->DoSetDownloadLimit((long)arg); break;
++	}
++}
++
++GtkWidget* make_action_item(const char* label, TrayAction action,
++                            long arg, gpointer user_data)
++{
++	GtkWidget* item = gtk_menu_item_new_with_label(label);
++	g_object_set_data(G_OBJECT(item), "action",
++		reinterpret_cast<gpointer>(static_cast<intptr_t>(action)));
++	g_object_set_data(G_OBJECT(item), "arg",
++		reinterpret_cast<gpointer>(static_cast<intptr_t>(arg)));
++	g_signal_connect(item, "activate",
++		G_CALLBACK(on_menu_item_activated), user_data);
++	return item;
++}
++
++GtkWidget* make_speed_submenu(uint32 max_speed, TrayAction action,
++                              gpointer user_data)
++{
++	GtkWidget* submenu = gtk_menu_new();
++	gtk_menu_shell_append(GTK_MENU_SHELL(submenu),
++		make_action_item("Unlimited", action, -1, user_data));
++	for (int i = 0; i < 5; i++) {
++		unsigned int spd = (unsigned int)((double)max_speed / 5) * (5 - i);
++		char label[64];
++		g_snprintf(label, sizeof(label), "%u kB/s", spd);
++		gtk_menu_shell_append(GTK_MENU_SHELL(submenu),
++			make_action_item(label, action, (long)spd, user_data));
++	}
++	gtk_widget_show_all(submenu);
++	return submenu;
++}
++
++// Append a non-clickable "info" label to the menu. SNI menus support
++// disabled items, but rendering varies between desktops — KDE shows
++// them grey, GNOME-with-AppIndicators shows them in the menu's normal
++// style. Either way they're not interactive.
++void append_info(GtkWidget* menu, const wxString& text)
++{
++	GtkWidget* item = gtk_menu_item_new_with_label(
++		(const char*)text.utf8_str());
++	gtk_widget_set_sensitive(item, FALSE);
++	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
++}
++
++} // anonymous namespace
++
++
++CMuleTrayIcon::CMuleTrayIcon()
++	: m_indicator(nullptr)
++	, m_menu(nullptr)
++	, m_lastIconState(-1)
++{
++	// `org.amule.aMule` is both the AppStream/.desktop id and the icon
++	// name installed under share/icons/hicolor/*/apps/. AppIndicator3
++	// looks the icon up via the standard XDG icon-theme path.
++	m_indicator = app_indicator_new(
++		"org.amule.aMule",
++		"org.amule.aMule",
++		APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
++
++	// ACTIVE = visible. The user already opted in by enabling the tray
++	// icon in Preferences, so showing it immediately is the expected
++	// behaviour; SetTrayIcon below only updates the menu's
++	// Connect/Disconnect label and never re-hides the indicator.
++	// (We deliberately don't use APP_INDICATOR_STATUS_ATTENTION for
++	// the disconnected state — that requires a separately-set
++	// attention icon via app_indicator_set_attention_icon_full(), and
++	// without it some SNI hosts render the indicator as invisible.)
++	app_indicator_set_status(m_indicator, APP_INDICATOR_STATUS_ACTIVE);
++	app_indicator_set_title(m_indicator, "aMule");
++
++	RebuildMenu();
++}
++
++CMuleTrayIcon::~CMuleTrayIcon()
++{
++	if (m_indicator) {
++		g_object_unref(m_indicator);
++		m_indicator = nullptr;
++	}
++	// m_menu is owned by the indicator (set_menu took the floating ref)
++	// so we don't unref it explicitly.
++}
++
++void CMuleTrayIcon::SetTrayIcon(int Icon, uint32 /*percent*/)
++{
++	// SNI doesn't support per-frame icon overlays — the percent bar
++	// from the legacy backend is dropped on this path. We reflect the
++	// connection state purely through the menu (the Connect /
++	// Disconnect item label flips), not via the indicator's status,
++	// because flipping ACTIVE↔ATTENTION can hide the indicator on
++	// some hosts when no attention icon is configured.
++	if (Icon != m_lastIconState) {
++		m_lastIconState = Icon;
++		// Rebuild so Connect/Disconnect label reflects current state.
++		RebuildMenu();
++	}
++}
++
++void CMuleTrayIcon::SetTrayToolTip(const wxString& Tip)
++{
++	// SNI doesn't surface tooltips on hover (compositors disagree on
++	// whether to render them). Use it as the accessible title — screen
++	// readers and KDE's hover popup pick it up.
++	app_indicator_set_title(m_indicator, (const char*)Tip.utf8_str());
++}
++
++void CMuleTrayIcon::RebuildMenu()
++{
++	// Static layout, rebuilt only on connection-state changes
++	// (driven by SetTrayIcon below). app_indicator_set_menu posts a
++	// dbusmenu LayoutUpdated D-Bus signal which some SNI hosts react
++	// to with a brief icon redraw — so refreshing on a 2 s timer
++	// would visibly flicker. Keeping the menu lean (action items
++	// only, no live stats) means we rebuild only when state actually
++	// changes, eliminating the flicker. Live values like download /
++	// upload speed are visible in the main aMule window.
++	GtkWidget* menu = gtk_menu_new();
++
++	// ---- Version banner ------------------------------------------
++	append_info(menu, MOD_VERSION_LONG);
++
++	gtk_menu_shell_append(GTK_MENU_SHELL(menu),
++		gtk_separator_menu_item_new());
++
++	// ---- Client information submenu ------------------------------
++	// Snapshot at the moment of the last connection-state change.
++	// Skips truly-live fields (uptime, totals, queued clients) so the
++	// menu can stay static between state changes — putting those in
++	// would force a periodic rebuild and bring back the flicker.
++	{
++		GtkWidget* sub = gtk_menu_new();
++
++		// ED2k status
++		{
++			wxString s = _("eD2k: ");
++			if (theApp->IsConnectedED2K()) {
++				s += theApp->IsFirewalled()
++					? wxString(_("Connected (LowID)"))
++					: wxString(_("Connected (HighID)"));
++			} else {
++				s += _("Disconnected");
++			}
++			append_info(sub, s);
++		}
++
++		// Kad status
++		{
++			wxString s = _("Kad: ");
++			if (theApp->IsConnectedKad()) {
++				s += theApp->IsFirewalledKad()
++					? wxString(_("Connected (firewalled)"))
++					: wxString(_("Connected"));
++			} else {
++				s += _("Disconnected");
++			}
++			append_info(sub, s);
++		}
++
++		// Server identity (only meaningful while connected)
++		{
++			wxString name = _("Server: ");
++			wxString ip   = _("Server IP: ");
++			if (theApp->serverconnect->GetCurrentServer()) {
++				name += theApp->serverconnect->GetCurrentServer()->GetListName();
++				ip   += theApp->serverconnect->GetCurrentServer()->GetFullIP();
++			} else {
++				name += _("Not connected");
++				ip   += _("Not connected");
++			}
++			append_info(sub, name);
++			append_info(sub, ip);
++		}
++
++		// Public IP — populated post-connect
++		append_info(sub, CFormat(_("IP: %s"))
++			% (theApp->GetPublicIP()
++				? Uint32toStringIP(theApp->GetPublicIP())
++				: wxString(_("Unknown"))));
++
++		// Listen ports — change only on prefs save
++		append_info(sub, thePrefs::GetPort()
++			? wxString(CFormat(_("TCP port: %d")) % thePrefs::GetPort())
++			: wxString(_("TCP port: Not ready")));
++
++		append_info(sub, thePrefs::GetEffectiveUDPPort()
++			? wxString(CFormat(_("UDP port: %d")) % thePrefs::GetEffectiveUDPPort())
++			: wxString(_("UDP port: Not ready")));
++
++		gtk_widget_show_all(sub);
++		GtkWidget* item = gtk_menu_item_new_with_label(
++			(const char*)wxString(_("Client Information")).utf8_str());
++		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), sub);
++		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
++	}
++
++	gtk_menu_shell_append(GTK_MENU_SHELL(menu),
++		gtk_separator_menu_item_new());
++
++	// ---- Action items --------------------------------------------
++
++	// Upload limit submenu
++	{
++		uint32 max_ul = thePrefs::GetMaxGraphUploadRate();
++		if (max_ul == UNLIMITED) max_ul = 100;
++		else if (max_ul < 10)    max_ul = 10;
++
++		GtkWidget* sub = make_speed_submenu(max_ul,
++			TRAY_ACTION_SET_UPLOAD_LIMIT, this);
++		GtkWidget* item = gtk_menu_item_new_with_label(_("Upload limit").utf8_str());
++		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), sub);
++		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
++	}
++
++	// Download limit submenu
++	{
++		uint32 max_dl = thePrefs::GetMaxGraphDownloadRate();
++		if (max_dl == UNLIMITED) max_dl = 100;
++		else if (max_dl < 10)    max_dl = 10;
++
++		GtkWidget* sub = make_speed_submenu(max_dl,
++			TRAY_ACTION_SET_DOWNLOAD_LIMIT, this);
++		GtkWidget* item = gtk_menu_item_new_with_label(_("Download limit").utf8_str());
++		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), sub);
++		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
++	}
++
++	gtk_menu_shell_append(GTK_MENU_SHELL(menu),
++		gtk_separator_menu_item_new());
++
++	// Connect / Disconnect — label depends on current connection state.
++	{
++		const wxString label = theApp->IsConnected()
++			? wxString(_("Disconnect")) : wxString(_("Connect"));
++		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
++			make_action_item((const char*)label.utf8_str(),
++				TRAY_ACTION_CONNECT_DISCONNECT, 0, this));
++	}
++
++	// Show / Hide — label depends on whether the main window is visible.
++	{
++		const bool shown = theApp->amuledlg && theApp->amuledlg->IsShown();
++		const wxString label = shown ? wxString(_("Hide aMule"))
++		                             : wxString(_("Show aMule"));
++		gtk_menu_shell_append(GTK_MENU_SHELL(menu),
++			make_action_item((const char*)label.utf8_str(),
++				TRAY_ACTION_SHOW_HIDE, 0, this));
++	}
++
++	gtk_menu_shell_append(GTK_MENU_SHELL(menu),
++		gtk_separator_menu_item_new());
++
++	gtk_menu_shell_append(GTK_MENU_SHELL(menu),
++		make_action_item((const char*)wxString(_("Exit")).utf8_str(),
++			TRAY_ACTION_EXIT, 0, this));
++
++	gtk_widget_show_all(menu);
++
++	// app_indicator_set_menu sinks the floating ref and unrefs any
++	// previously-set menu, so we can replace it on every rebuild
++	// without leaking.
++	app_indicator_set_menu(m_indicator, GTK_MENU(menu));
++	m_menu = menu;
++}
++
++
++#else  // !WITH_LIBAYATANA_APPINDICATOR
++
++// ---------------------------------------------------------------------
++//  Legacy wxTaskBarIcon backend. Works correctly on Windows
++//  (NOTIFYICONDATA), macOS (NSStatusItem), and on X11 desktops that
++//  still consume GtkStatusIcon. On modern Wayland desktops the icon
++//  goes nowhere — build with libayatana-appindicator3 to fix that.
++// ---------------------------------------------------------------------
++
++#include "pixmaps/mule_TrayIcon_big.ico.xpm"
++#include "pixmaps/mule_Tr_yellow_big.ico.xpm"
++#include "pixmaps/mule_Tr_grey_big.ico.xpm"
++
++#include <wx/menu.h>
++
++#include "StatisticsDlg.h"	// Needed for CStatisticsDlg::getColors()
++
++
+ /****************************************************/
  /******************* Event Table ********************/
  /****************************************************/
  
@@ -26664,16 +26936,17 @@
  	EVT_TASKBAR_LEFT_DCLICK(CMuleTrayIcon::SwitchShow)
  	EVT_MENU( TRAY_MENU_EXIT, CMuleTrayIcon::Close)
  	EVT_MENU( TRAY_MENU_CONNECT, CMuleTrayIcon::ServerConnection)
-@@ -71,7 +71,7 @@ BEGIN_EVENT_TABLE(CMuleTrayIcon, wxTaskB
+@@ -71,7 +459,8 @@ BEGIN_EVENT_TABLE(CMuleTrayIcon, wxTaskB
  	EVT_MENU( DOWNLOAD_ITEM4, CMuleTrayIcon::SetDownloadSpeed)
  	EVT_MENU( DOWNLOAD_ITEM5, CMuleTrayIcon::SetDownloadSpeed)
  	EVT_MENU( DOWNLOAD_ITEM6, CMuleTrayIcon::SetDownloadSpeed)
 -END_EVENT_TABLE()
 +wxEND_EVENT_TABLE()
++
  
  /****************************************************/
  /************ Constructor / Destructor **************/
-@@ -79,7 +79,7 @@ END_EVENT_TABLE()
+@@ -79,7 +468,7 @@ END_EVENT_TABLE()
  
  static long GetSpeedFromString(wxString label){
  	long temp;
@@ -26682,7 +26955,86 @@
  	label.Trim(FALSE);
  	label.Trim(TRUE);
  	label.ToLong(&temp);
-@@ -235,7 +235,7 @@ void CMuleTrayIcon::SetTrayIcon(int Icon
+@@ -94,19 +483,12 @@ void CMuleTrayIcon::SetUploadSpeed(wxCom
+ 		if (menu) {
+ 			wxMenuItem* item=menu->FindItem(event.GetId());
+ 			if (item!=NULL) {
+-				long temp;
+ 				if (item->GetItemLabelText()==(_("Unlimited"))) {
+-					temp=UNLIMITED;
++					DoSetUploadLimit(-1);
+ 				}
+ 				else {
+-					temp=GetSpeedFromString(item->GetItemLabelText());
++					DoSetUploadLimit(GetSpeedFromString(item->GetItemLabelText()));
+ 				}
+-				thePrefs::SetMaxUpload(temp);
+-
+-				#ifdef CLIENT_GUI
+-				// Send preferences to core.
+-				theApp->glob_prefs->SendToRemote();
+-				#endif
+ 			}
+ 		}
+ 	}
+@@ -120,19 +502,12 @@ void CMuleTrayIcon::SetDownloadSpeed(wxC
+ 		if (menu) {
+ 			wxMenuItem* item=menu->FindItem(event.GetId());
+ 			if (item!=NULL) {
+-				long temp;
+ 				if (item->GetItemLabelText()==(_("Unlimited"))) {
+-					temp=UNLIMITED;
++					DoSetDownloadLimit(-1);
+ 				}
+ 				else {
+-					temp=GetSpeedFromString(item->GetItemLabelText());
++					DoSetDownloadLimit(GetSpeedFromString(item->GetItemLabelText()));
+ 				}
+-				thePrefs::SetMaxDownload(temp);
+-
+-				#ifdef CLIENT_GUI
+-				// Send preferences to core.
+-				theApp->glob_prefs->SendToRemote();
+-				#endif
+ 			}
+ 		}
+ 	}
+@@ -141,23 +516,19 @@ void CMuleTrayIcon::SetDownloadSpeed(wxC
+ 
+ void CMuleTrayIcon::ServerConnection(wxCommandEvent& WXUNUSED(event))
+ {
+-	wxCommandEvent evt;
+-	theApp->amuledlg->OnBnConnect(evt);
++	DoConnectDisconnect();
+ }
+ 
+ 
+ void CMuleTrayIcon::ShowHide(wxCommandEvent& WXUNUSED(event))
+ {
+-	theApp->amuledlg->Iconize(theApp->amuledlg->IsShown());
+-	theApp->amuledlg->Show(!theApp->amuledlg->IsShown());
++	DoShowHide();
+ }
+ 
+ 
+ void CMuleTrayIcon::Close(wxCommandEvent& WXUNUSED(event))
+ {
+-	if (theApp->amuledlg->IsEnabled()) {
+-		theApp->amuledlg->Close();
+-	}
++	DoExit();
+ }
+ 
+ 
+@@ -176,6 +547,7 @@ CMuleTrayIcon::~CMuleTrayIcon()
+ {
+ }
+ 
++
+ /****************************************************/
+ /***************** Public Functions *****************/
+ /****************************************************/
+@@ -235,7 +607,7 @@ void CMuleTrayIcon::SetTrayIcon(int Icon
  		IconWithSpeed.SelectObject(TempBMP);
  
  
@@ -26691,7 +27043,15 @@
  		// right-justified taking a 10% of the icon width.
  
  		// X
-@@ -293,7 +293,7 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
+@@ -268,6 +640,7 @@ void CMuleTrayIcon::SetTrayToolTip(const
+ 	UpdateTray();
+ }
+ 
++
+ /****************************************************/
+ /**************** Private Functions *****************/
+ /****************************************************/
+@@ -293,7 +666,7 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
  	bool showMBpsUp = (MBpsUp >= 1);
  	bool showMBpsDown = (MBpsDown >= 1);
  
@@ -26700,7 +27060,7 @@
  	wxMenu *traymenu = new wxMenu();
  	traymenu->SetTitle(_("aMule Tray Menu"));
  
-@@ -301,7 +301,7 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
+@@ -301,7 +674,7 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
  	wxString label = MOD_VERSION_LONG;
  	traymenu->Append(TRAY_MENU_INFO, label);
  	traymenu->AppendSeparator();
@@ -26709,7 +27069,7 @@
  
  	// Check for upload limits
  	unsigned int max_upload = thePrefs::GetMaxUpload();
-@@ -311,7 +311,7 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
+@@ -311,7 +684,7 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
  	else {
  		label += CFormat(_("UL: %u")) % max_upload;
  	}
@@ -26718,7 +27078,7 @@
  
  	// Check for download limits
  	unsigned int max_download = thePrefs::GetMaxDownload();
-@@ -324,10 +324,10 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
+@@ -324,10 +697,10 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
  
  	traymenu->Append(TRAY_MENU_INFO, label);
  	label = CFormat(_("Download speed: %.1f%s"))
@@ -26731,7 +27091,7 @@
  	traymenu->Append(TRAY_MENU_INFO, label);
  	traymenu->AppendSeparator();
  
-@@ -347,7 +347,7 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
+@@ -347,7 +720,7 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
  		wxString temp = _("ClientID: ");
  
  		if (theApp->IsConnectedED2K()) {
@@ -26740,7 +27100,7 @@
  		} else {
  			temp += _("Not connected");
  		}
-@@ -471,7 +471,7 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
+@@ -471,7 +844,7 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
  
  		for ( int i = 0; i < 5; i++ ) {
  			unsigned int tempspeed = (unsigned int)((double)max_ul_speed / 5) * (5 - i);
@@ -26749,7 +27109,7 @@
  			UploadSpeedMenu->Append((int)UPLOAD_ITEM1+i+1,temp);
  		}
  	}
-@@ -492,7 +492,7 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
+@@ -492,7 +865,7 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
  
  		for ( int i = 0; i < 5; i++ ) {
  			unsigned int tempspeed = (unsigned int)((double)max_dl_speed / 5) * (5 - i);
@@ -26758,23 +27118,139 @@
  			DownloadSpeedMenu->Append((int)DOWNLOAD_ITEM1+i+1,temp);
  		}
  	}
+@@ -531,7 +904,9 @@ wxMenu* CMuleTrayIcon::CreatePopupMenu()
+ 
+ void CMuleTrayIcon::SwitchShow(wxTaskBarIconEvent&)
+ {
+-	theApp->amuledlg->Iconize(theApp->amuledlg->IsShown());
+-	theApp->amuledlg->Show(!theApp->amuledlg->IsShown());
++	DoShowHide();
+ }
++
++#endif  // !WITH_LIBAYATANA_APPINDICATOR
++
+ // File_checked_for_headers
 --- a/src/MuleTrayIcon.h
 +++ b/src/MuleTrayIcon.h
-@@ -63,7 +63,7 @@ class CMuleTrayIcon : public wxTaskBarIc
+@@ -28,6 +28,7 @@
+ 
+ #ifndef AMULE_DAEMON
+ 
++#include "config.h"
+ 
+ enum TaskbarNotifier
+ {
+@@ -39,14 +40,9 @@ enum TaskbarNotifier
+ 	TBN_NEWVERSION
+ };
+ 
+-#include <wx/taskbar.h>
+-#include <wx/icon.h>
+-#include <wx/dcmemory.h>
+-
+ #include "Types.h"	// Needed for uint32
+ 
+ class wxString;
+-class wxMenu;
+ 
+ enum {
+ 	TRAY_ICON_DISCONNECTED,
+@@ -54,40 +50,76 @@ enum {
+ 	TRAY_ICON_HIGHID
+ };
+ 
++// Backend selection:
++//
++// Linux with libayatana-appindicator3 → SNI (StatusNotifierItem)
++//   backend that talks D-Bus directly. This is what GNOME Shell (with
++//   the AppIndicators extension Ubuntu ships by default), KDE Plasma,
++//   Sway/wlroots, and every other modern desktop actually consume.
++//
++// Everywhere else (Windows, macOS, Linux build without the dep) →
++//   wxTaskBarIcon, which on those platforms hits a working native API
++//   (Win32 NOTIFYICONDATA, NSStatusItem). On Linux without the dep
++//   wxTaskBarIcon falls through to the legacy GtkStatusIcon API which
++//   GNOME 3.26+ silently dropped — distros really should ship the dep.
++#ifdef WITH_LIBAYATANA_APPINDICATOR
++struct _AppIndicator;
++struct _GtkWidget;
++typedef struct _AppIndicator AppIndicator;
++typedef struct _GtkWidget GtkWidget;
++#else
++#include <wx/taskbar.h>
++#include <wx/icon.h>
++#include <wx/dcmemory.h>
++class wxMenu;
++#endif
++
+ 
+ /**
+  * The mule tray icon class is responsible for drawing the mule systray icon
+  * and reacting to the user input on it.
+  */
+-class CMuleTrayIcon : public wxTaskBarIcon
++class CMuleTrayIcon
++#ifndef WITH_LIBAYATANA_APPINDICATOR
++	: public wxTaskBarIcon
++#endif
  {
  public:
- 	/**
+-	/**
 -	 * Contructor.
-+	 * Constructor.
- 	 */
+-	 */
  	CMuleTrayIcon();
+-
+-	/**
+-	 * Destructor.
+-	 */
+ 	~CMuleTrayIcon();
  
-@@ -108,7 +108,7 @@ private:
+ 	/**
+ 	 * Set the Tray icon.
+-	 * @param Icon The wxIcon object with the new tray icon
++	 * @param Icon  TRAY_ICON_HIGHID / LOWID / DISCONNECTED
++	 * @param percent  download-speed bar percentage (legacy backend only;
++	 *                 ignored by the SNI backend, which switches between
++	 *                 three static state icons instead)
+ 	 */
+ 	void SetTrayIcon(int Icon, uint32 percent);
+ 
+ 	/**
+-	 * Set the Tray tooltip
+-	 * @param Tip The wxString object with the new tray tooltip
++	 * Set the Tray tooltip.
+ 	 */
+ 	void SetTrayToolTip(const wxString& Tip);
+ 
++	// Action handlers — invoked by the GTK menu (Ayatana backend) or by
++	// the wxMenu event table (wxTaskBarIcon backend).
++	void DoConnectDisconnect();
++	void DoShowHide();
++	void DoExit();
++	void DoSetUploadLimit(long kBytesPerSec);   // UNLIMITED for no cap
++	void DoSetDownloadLimit(long kBytesPerSec);
++
+ private:
+ 
+-	virtual wxMenu* CreatePopupMenu();
++#ifdef WITH_LIBAYATANA_APPINDICATOR
++	AppIndicator* m_indicator;
++	GtkWidget*    m_menu;
++	int           m_lastIconState;
+ 
++	void          RebuildMenu();
++#else
++	virtual wxMenu* CreatePopupMenu();
+ 	void UpdateTray();
+ 
+ 	void SwitchShow(wxTaskBarIconEvent&);
+@@ -108,7 +140,8 @@ private:
  	wxMemoryDC IconWithSpeed;
  	wxString CurrentTip;
  
 -	DECLARE_EVENT_TABLE()
 +	wxDECLARE_EVENT_TABLE();
++#endif
  };
  
  #endif // DAEMON
@@ -34862,7 +35338,15 @@
  wxString	CPreferences::s_Addr;
  uint16		CPreferences::s_port;
  uint16		CPreferences::s_udpport;
-@@ -642,44 +642,44 @@ typedef struct {
+@@ -113,6 +113,7 @@ bool		CPreferences::s_ICH;
+ uint8		CPreferences::s_depth3D;
+ bool		CPreferences::s_scorsystem;
+ bool		CPreferences::s_hideonclose;
++bool		CPreferences::s_appimageIntegrationDeclined;
+ bool		CPreferences::s_mintotray;
+ bool		CPreferences::s_notify;
+ bool		CPreferences::s_trayiconenabled;
+@@ -642,44 +643,44 @@ typedef struct {
   * Then activate the test code in Cfg_Lang::UpdateChoice below!
   */
  static LangInfo aMuleLanguages[] = {
@@ -34945,7 +35429,7 @@
  };
  
  
-@@ -690,7 +690,7 @@ class Cfg_Lang : public Cfg_PureInt, pub
+@@ -690,7 +691,7 @@ class Cfg_Lang : public Cfg_PureInt, pub
  public:
  	// cppcheck-suppress uninitMemberVar m_selection, m_langSelector
  	Cfg_Lang()
@@ -34954,7 +35438,7 @@
  	{
  		m_languagesReady = false;
  		m_changePos = 0;
-@@ -738,7 +738,7 @@ public:
+@@ -738,7 +739,7 @@ public:
  			m_selection = 0;
  			for (uint32 i = 0; i < itemsof(aMuleLanguages); i++) {
  				if ( aMuleLanguages[i].id == wxId ) {
@@ -34963,7 +35447,7 @@
  					break;
  				}
  			}
-@@ -765,15 +765,15 @@ public:
+@@ -765,15 +766,15 @@ public:
  					wxLogNull	logTarget;
  					wxLocale	locale_to_check;
  					InitLocale(locale_to_check, aMuleLanguages[i].id);
@@ -34982,7 +35466,7 @@
  								% aMuleLanguages[i].name % aMuleLanguages[i].id % wxid);
  						}
  #endif
-@@ -858,14 +858,14 @@ public:
+@@ -858,14 +859,14 @@ public:
  		wxString filespec;
  		wxString defaultSelection = _("- default -");
  //#warning there has to be a better way...
@@ -35001,7 +35485,7 @@
  		}
  		wxString dirName(JoinPaths(thePrefs::GetConfigDir(), folder));
  		wxString Filename;
-@@ -879,7 +879,7 @@ public:
+@@ -879,7 +880,7 @@ public:
  			do
  			{
  				if (m_is_skin) {
@@ -35010,7 +35494,7 @@
  				}
  				skinSelector->Append(Filename);
  			}
-@@ -893,7 +893,7 @@ public:
+@@ -893,7 +894,7 @@ public:
  			dataDir = wxStandardPaths::Get().GetResourcesDir();
  		}
  #if !defined(__WINDOWS__) && !defined(__WXMAC__)
@@ -35019,7 +35503,7 @@
  #endif
  		wxString systemDir(JoinPaths(dataDir,folder));
  
-@@ -905,7 +905,7 @@ public:
+@@ -905,7 +906,7 @@ public:
  			do
  			{
  				if (m_is_skin) {
@@ -35028,7 +35512,7 @@
  				}
  				// avoid duplicates for webserver templates
  				if (skinSelector->FindString(Filename) == wxNOT_FOUND) {
-@@ -943,7 +943,7 @@ CPreferences::CPreferences()
+@@ -943,7 +944,7 @@ CPreferences::CPreferences()
  	srand( wxGetLocalTimeMillis().GetLo() ); // we need random numbers sometimes
  
  	// load preferences.dat or set standard values
@@ -35037,7 +35521,7 @@
  	CFile preffile;
  	if (wxFileExists(fullpath)) {
  		if (preffile.Open(fullpath, CFile::read)) {
-@@ -952,7 +952,7 @@ CPreferences::CPreferences()
+@@ -952,7 +953,7 @@ CPreferences::CPreferences()
  				s_userhash = preffile.ReadHash();
  			} catch (const CSafeIOException& e) {
  				AddDebugLogLineC(logGeneral,
@@ -35046,7 +35530,7 @@
  			}
  		}
  	}
-@@ -981,7 +981,7 @@ CPreferences::CPreferences()
+@@ -981,7 +982,7 @@ CPreferences::CPreferences()
  
  	// serverlist addresses
  	CTextFile slistfile;
@@ -35055,7 +35539,7 @@
  		adresses_list = slistfile.ReadLines();
  	}
  #endif
-@@ -1002,7 +1002,7 @@ void CPreferences::BuildItemList( const
+@@ -1002,7 +1003,7 @@ void CPreferences::BuildItemList( const
  	/**
  	 * User settings
  	 **/
@@ -35064,7 +35548,7 @@
  #ifndef AMULE_DAEMON
  	Cfg_Lang * cfgLang = new Cfg_Lang();
  	s_cfgLang = cfgLang;
-@@ -1013,294 +1013,298 @@ void CPreferences::BuildItemList( const
+@@ -1013,294 +1014,299 @@ void CPreferences::BuildItemList( const
  	 * Browser options
  	 **/
  	#ifdef __WXMAC__
@@ -35419,6 +35903,7 @@
 +	//Todo NewCfgItem(IDC_MSGCAPTCHA,	(new Cfg_Bool( "/eMule/MessageUseCaptchas", s_IsChatCaptchaEnabled, true )));
 +	s_MiscList.push_back( new Cfg_Bool( "/eMule/AdvancedSpamFilter", s_IsAdvancedSpamfilterEnabled, true ) );
 +	s_MiscList.push_back( new Cfg_Bool( "/eMule/MessageUseCaptchas", s_IsChatCaptchaEnabled, true ) );
++	s_MiscList.push_back( new Cfg_Bool( "/GUI/AppImageIntegrationDeclined", s_appimageIntegrationDeclined, false ) );
  
 -	NewCfgItem(IDC_FILTERCOMMENTS,	(new Cfg_Bool( wxT("/eMule/FilterComments"), s_FilterComments, false )));
 -	NewCfgItem(IDC_COMMENTWORD,		(new Cfg_Str(  wxT("/eMule/CommentFilter"), s_CommentFilterString, wxEmptyString )));
@@ -35526,7 +36011,7 @@
  		s_MiscList.push_back( new Cfg_Colour( str, CStatisticsDlg::acrStat[i] ) );
  	}
  #endif
-@@ -1311,10 +1315,10 @@ void CPreferences::BuildItemList( const
+@@ -1311,10 +1317,10 @@ void CPreferences::BuildItemList( const
  		// later, which would be impossible in amuled with NewCfgItem.
  		// The IDs we assign here are high enough to not cause any collision
  		// even on the daemon.
@@ -35541,7 +36026,7 @@
  	}
  }
  
-@@ -1339,18 +1343,18 @@ void CPreferences::LoadAllItems(wxConfig
+@@ -1339,18 +1345,18 @@ void CPreferences::LoadAllItems(wxConfig
  #ifndef CLIENT_GUI
  	// Preserve values from old config. The global config object may not be set yet
  	// when BuildItemList() is called, so we need to provide defaults later - here.
@@ -35566,7 +36051,7 @@
  	}
  #endif
  	CFGMap::iterator it_a = s_CfgList.begin();
-@@ -1364,21 +1368,21 @@ void CPreferences::LoadAllItems(wxConfig
+@@ -1364,21 +1370,21 @@ void CPreferences::LoadAllItems(wxConfig
  	}
  
  	// Preserve old value of UDPDisable
@@ -35594,7 +36079,7 @@
  	}
  
  #ifdef __DEBUG__
-@@ -1389,7 +1393,7 @@ void CPreferences::LoadAllItems(wxConfig
+@@ -1389,7 +1395,7 @@ void CPreferences::LoadAllItems(wxConfig
  		const CDebugCategory& cat = theLogger.GetDebugCategory( i );
  
  		bool enabled = false;
@@ -35603,7 +36088,7 @@
  
  		theLogger.SetEnabled( cat.GetType(), enabled );
  	}
-@@ -1426,12 +1430,12 @@ void CPreferences::SaveAllItems(wxConfig
+@@ -1426,12 +1432,12 @@ void CPreferences::SaveAllItems(wxConfig
  	for ( int i = 0; i < count; i++ ) {
  		const CDebugCategory& cat = theLogger.GetDebugCategory( i );
  
@@ -35618,7 +36103,7 @@
  {
  	if ( s_maxupload != in ) {
  		s_maxupload = in;
-@@ -1442,7 +1446,7 @@ void CPreferences::SetMaxUpload(uint16 i
+@@ -1442,7 +1448,7 @@ void CPreferences::SetMaxUpload(uint16 i
  }
  
  
@@ -35627,7 +36112,7 @@
  {
  	if ( s_maxdownload != in ) {
  		s_maxdownload = in;
-@@ -1491,7 +1495,7 @@ void CPreferences::CheckUlDlRatio()
+@@ -1491,7 +1497,7 @@ void CPreferences::CheckUlDlRatio()
  
  void CPreferences::Save()
  {
@@ -35636,7 +36121,7 @@
  
  	CFile preffile;
  	if (!wxFileExists(fullpath)) {
-@@ -1503,7 +1507,7 @@ void CPreferences::Save()
+@@ -1503,7 +1509,7 @@ void CPreferences::Save()
  			preffile.WriteUInt8(PREFFILE_VERSION);
  			preffile.WriteHash(s_userhash);
  		} catch (const CIOFailureException& e) {
@@ -35645,7 +36130,7 @@
  		}
  	}
  
-@@ -1516,7 +1520,7 @@ void CPreferences::Save()
+@@ -1516,7 +1522,7 @@ void CPreferences::Save()
  
  	#ifndef CLIENT_GUI
  	CTextFile sdirfile;
@@ -35654,7 +36139,7 @@
  		for (size_t i = 0; i < shareddir_list.size(); ++i) {
  			sdirfile.WriteLine(shareddir_list[i].GetRaw(), wxConvUTF8);
  		}
-@@ -1571,7 +1575,7 @@ void CPreferences::SavePreferences()
+@@ -1571,7 +1577,7 @@ void CPreferences::SavePreferences()
  {
  	wxConfigBase* cfg = wxConfigBase::Get();
  
@@ -35663,7 +36148,7 @@
  
  	// Save the options
  	SaveAllItems( cfg );
-@@ -1587,24 +1591,24 @@ void CPreferences::SaveCats()
+@@ -1587,24 +1593,24 @@ void CPreferences::SaveCats()
  		wxConfigBase* cfg = wxConfigBase::Get();
  
  		// Save the main cat.
@@ -35697,7 +36182,7 @@
  
  		cfg->Flush();
  	}
-@@ -1628,15 +1632,15 @@ void CPreferences::LoadCats()
+@@ -1628,15 +1634,15 @@ void CPreferences::LoadCats()
  
  	wxConfigBase* cfg = wxConfigBase::Get();
  
@@ -35717,7 +36202,7 @@
  
  		// Some sanity checking
  		if ( newcat->title.IsEmpty() || !newcat->path.IsOk() ) {
-@@ -1646,9 +1650,9 @@ void CPreferences::LoadCats()
+@@ -1646,9 +1652,9 @@ void CPreferences::LoadCats()
  			continue;
  		}
  
@@ -35730,7 +36215,7 @@
  
  		AddCat(newcat);
  
-@@ -1767,18 +1771,18 @@ wxString CPreferences::GetBrowser()
+@@ -1767,18 +1773,18 @@ wxString CPreferences::GetBrowser()
  #ifndef __WINDOWS__
  	if( s_BrowserTab ) {
  		// This is certainly not the best way to do it, but I'm lazy
@@ -35758,7 +36243,7 @@
  		}
  	}
  #endif /* !__WINDOWS__ */
-@@ -1837,7 +1841,7 @@ void CPreferences::ReloadSharedFolders()
+@@ -1837,7 +1843,7 @@ void CPreferences::ReloadSharedFolders()
  	shareddir_list.clear();
  
  	CTextFile file;
@@ -35767,7 +36252,7 @@
  		wxArrayString lines = file.ReadLines(txtReadDefault, wxConvUTF8);
  
  		for (size_t i = 0; i < lines.size(); ++i) {
-@@ -1860,11 +1864,11 @@ bool CPreferences::IsMessageFiltered(con
+@@ -1860,11 +1866,11 @@ bool CPreferences::IsMessageFiltered(con
  		return true;
  	} else {
  		if (s_FilterSomeMessages) {
@@ -35781,7 +36266,7 @@
  				while (tokenizer.HasMoreTokens()) {
  					if ( message.Lower().Trim(false).Trim(true).Contains(
  							tokenizer.GetNextToken().Lower().Trim(false).Trim(true))) {
-@@ -1883,7 +1887,7 @@ bool CPreferences::IsMessageFiltered(con
+@@ -1883,7 +1889,7 @@ bool CPreferences::IsMessageFiltered(con
  bool CPreferences::IsCommentFiltered(const wxString& comment)
  {
  	if (s_FilterComments) {
@@ -35790,7 +36275,7 @@
  		while (tokenizer.HasMoreTokens()) {
  			if ( comment.Lower().Trim(false).Trim(true).Contains(
  					tokenizer.GetNextToken().Lower().Trim(false).Trim(true))) {
-@@ -1897,14 +1901,14 @@ bool CPreferences::IsCommentFiltered(con
+@@ -1897,14 +1903,14 @@ bool CPreferences::IsCommentFiltered(con
  wxString CPreferences::GetLastHTTPDownloadURL(uint8 t)
  {
  	wxConfigBase* cfg = wxConfigBase::Get();
@@ -35821,7 +36306,16 @@
  	static bool		IsICHEnabled()			{ return s_ICH; }
  	static void		SetICHEnabled(bool val)		{ s_ICH = val; }
  	static bool		IsTrustingEveryHash()		{ return s_AICHTrustEveryHash; }
-@@ -264,7 +264,7 @@ public:
+@@ -239,6 +239,8 @@ public:
+ 	static void		SetUseTrayIcon(bool val)	{ s_trayiconenabled = val; }
+ 	static bool		HideOnClose()			{ return s_hideonclose; }
+ 	static void		SetHideOnClose(bool val)	{ s_hideonclose = val; }
++	static bool		IsAppImageIntegrationDeclined()		{ return s_appimageIntegrationDeclined; }
++	static void		SetAppImageIntegrationDeclined(bool val) { s_appimageIntegrationDeclined = val; }
+ 	static bool		DoAutoConnect()			{ return s_autoconnect; }
+ 	static void		SetAutoConnect(bool inautoconnect)
+ 						{s_autoconnect = inautoconnect; }
+@@ -264,7 +266,7 @@ public:
  	static void		SetMaxGraphDownloadRate(uint32 in)
  						{ s_maxGraphDownloadRate = in; }
  
@@ -35830,7 +36324,7 @@
  	static uint16		GetMaxConnections()		{ return s_maxconnections; }
  	static uint16		GetMaxSourcePerFile()		{ return s_maxsourceperfile; }
  	static uint16		GetMaxSourcePerFileSoft() {
-@@ -345,9 +345,9 @@ public:
+@@ -345,9 +347,9 @@ public:
  	static const wxString&	GetYourHostname()		{ return s_yourHostname; }
  	static void		SetYourHostname(const wxString& s)	{ s_yourHostname = s; }
  
@@ -35843,7 +36337,7 @@
  
  	typedef std::vector<CPath> PathList;
  	PathList shareddir_list;
-@@ -622,9 +622,9 @@ protected:
+@@ -622,9 +624,9 @@ protected:
  	static Cfg_Lang_Base * s_cfgLang;
  
  ////////////// CONNECTION
@@ -35856,6 +36350,14 @@
  	static wxString s_Addr;
  	static uint16	s_port;
  	static uint16	s_udpport;
+@@ -656,6 +658,7 @@ protected:
+ 
+ 	static bool	s_scorsystem;
+ 	static bool	s_hideonclose;
++	static bool	s_appimageIntegrationDeclined;
+ 	static bool	s_mintotray;
+ 	static bool	s_notify;
+ 	static bool	s_trayiconenabled;
 --- a/src/PrefsUnifiedDlg.cpp
 +++ b/src/PrefsUnifiedDlg.cpp
 @@ -58,7 +58,7 @@
@@ -35906,8 +36408,30 @@
  
  		if (pages[i].m_function == PreferencesGeneralTab) {
  			// This must be done now or pages won't Fit();
-@@ -269,11 +269,11 @@ wxDialog(parent, -1, _("Preferences"),
+@@ -260,20 +260,29 @@ wxDialog(parent, -1, _("Preferences"),
+ 				CastChild(IDC_BROWSERTABS, wxCheckBox)->Enable(false);
+ 			#endif /* __WINDOWS__ */
+ 			CastChild(IDC_PREVIEW_NOTE, wxStaticText)->SetLabel(_("The following variables will be substituted:\n    %PARTFILE - full path to the file\n    %PARTNAME - file name only"));
+-			#ifdef __WXMAC__
+-				FindWindow(IDC_ENABLETRAYICON)->Show(false);
+-				FindWindow(IDC_MINTRAY)->Show(false);
+-			#else
++			#ifndef __WXMAC__
++				// "Hide on close" is a macOS convention (close
++				// button hides the window, app stays alive in the
++				// dock). On other platforms the close button
++				// closes the app — exposing this option there
++				// only confuses users.
+ 				FindWindow(IDC_MACHIDEONCLOSE)->Show(false);
+ 				thePrefs::SetHideOnClose(false);
  			#endif
++			// Tray-icon checkboxes (IDC_ENABLETRAYICON,
++			// IDC_MINTRAY) are visible on every platform now,
++			// including macOS. wxTaskBarIcon → NSStatusItem on
++			// Mac, NOTIFYICONDATA on Windows, GtkStatusIcon /
++			// libayatana SNI on Linux. macOS users who prefer
++			// the menu-bar status-item pattern (Spotify / Slack
++			// / Discord style) can opt in.
  		} else if (pages[i].m_function == PreferencesEventsTab) {
  
 -#define USEREVENTS_REPLACE_VAR(VAR, DESC, CODE)	+ wxString(wxT("\n  %") VAR wxT(" - ")) + wxGetTranslation(DESC)
@@ -35921,7 +36445,7 @@
  			for (unsigned int idx = 0; idx < CUserEvents::GetCount(); ++idx) {
  				long lidx = list->InsertItem(idx,
  					wxGetTranslation(CUserEvents::GetDisplayName(
-@@ -285,7 +285,7 @@ wxDialog(parent, -1, _("Preferences"),
+@@ -285,7 +294,7 @@ wxDialog(parent, -1, _("Preferences"),
  						USEREVENTS_EVENTLIST()
  						/* This macro expands to handle all user event types. Here is an example:
  						   case CUserEvents::NewChatSession: {
@@ -35930,7 +36454,7 @@
  						       break;
  						   } */
  					}
-@@ -338,7 +338,7 @@ wxDialog(parent, -1, _("Preferences"),
+@@ -338,7 +347,7 @@ wxDialog(parent, -1, _("Preferences"),
  
  	// Default to the General tab
  	m_CurrentPanel = DefaultWidget;
@@ -35939,7 +36463,7 @@
  	m_CurrentPanel->Show( true );
  
  	// Select the first item
-@@ -524,11 +524,6 @@ bool PrefsUnifiedDlg::TransferToWindow()
+@@ -524,11 +533,6 @@ bool PrefsUnifiedDlg::TransferToWindow()
  	FindWindow(IDC_WEBUPNPTCPPORTTEXT)->Enable(thePrefs::GetUPnPWebServerEnabled());
  #endif
  
@@ -35951,7 +36475,7 @@
  #ifdef __DEBUG__
  	// Set debugging toggles
  	int count = theLogger.GetDebugCategoryCount();
-@@ -643,7 +638,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEven
+@@ -643,7 +647,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEven
  	// Force port checking
  	thePrefs::SetPort(thePrefs::GetPort());
  
@@ -35960,7 +36484,7 @@
  		CastChild(IDC_AUTOSERVER, wxCheckBox)->IsChecked() ) {
  		thePrefs::UnsetAutoServerStart();
  		wxMessageBox(_("Your Auto-update server list is empty.\n'Auto-update server list at startup' will be disabled."),
-@@ -869,7 +864,7 @@ void PrefsUnifiedDlg::OnCheckBoxChange(w
+@@ -869,7 +873,7 @@ void PrefsUnifiedDlg::OnCheckBoxChange(w
  			break;
  
  		case IDC_AUTOSERVER:
@@ -35969,7 +36493,7 @@
  				CastChild(event.GetId(), wxCheckBox)->IsChecked() ) {
  				wxMessageBox(_("Your Auto-update servers list is in blank.\nPlease fill in at least one URL to point to a valid server.met file.\nClick on the button \"List\" by this checkbox to enter an URL."),
  					_("Message"), wxOK | wxICON_INFORMATION);
-@@ -1070,13 +1065,13 @@ void PrefsUnifiedDlg::OnButtonBrowseAppl
+@@ -1070,13 +1074,13 @@ void PrefsUnifiedDlg::OnButtonBrowseAppl
  	}
  	wxString wildcard = CFormat(_("Executable%s"))
  #ifdef __WINDOWS__
@@ -35987,7 +36511,7 @@
  
  	if ( !str.IsEmpty() ) {
  		wxTextCtrl* widget = CastChild( id, wxTextCtrl );
-@@ -1087,7 +1082,7 @@ void PrefsUnifiedDlg::OnButtonBrowseAppl
+@@ -1087,7 +1091,7 @@ void PrefsUnifiedDlg::OnButtonBrowseAppl
  
  void PrefsUnifiedDlg::OnButtonEditAddr(wxCommandEvent& WXUNUSED(evt))
  {
@@ -35996,7 +36520,7 @@
  
  	EditServerListDlg* test = new EditServerListDlg(this, _("Edit server list"),
  		_("Add here URL's to download server.met files.\nOnly one url on each line."),
-@@ -1135,7 +1130,7 @@ void PrefsUnifiedDlg::OnPrefsPageChange(
+@@ -1135,7 +1139,7 @@ void PrefsUnifiedDlg::OnPrefsPageChange(
  		CastChild(IDC_SHARESELECTOR, CDirectoryTreeCtrl)->Init();
  	}
  
@@ -36005,7 +36529,7 @@
  	m_CurrentPanel->Show( true );
  
  	Layout();
-@@ -1276,43 +1271,43 @@ void PrefsUnifiedDlg::CreateEventPanels(
+@@ -1276,43 +1280,43 @@ void PrefsUnifiedDlg::CreateEventPanels(
  	wxStaticBoxSizer *item7 = new wxStaticBoxSizer( item8, wxVERTICAL );
  
  	wxCheckBox *item9 = new wxCheckBox( parent, USEREVENTS_FIRST_ID + idx * USEREVENTS_IDS_PER_EVENT + 1, _("Enable command execution on core"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -40883,6 +41407,15 @@
  		reloading = true;
  		Notify_SharedFilesRemoveAllItems();
  
+@@ -724,7 +724,7 @@ void CSharedFileList::SendListToServer()
+ 	// Files sent.
+ 	files.WriteUInt32(limit);
+ 
+-	uint16 count = 0;
++	uint32 count = 0;
+ 	// Add to packet
+ 	std::vector<CKnownFile*>::iterator sorted_it = SortedList.begin();
+ 	for ( ; (sorted_it != SortedList.end()) && (count < limit); ++sorted_it ) {
 @@ -740,11 +740,11 @@ void CSharedFileList::SendListToServer()
  
  	CPacket* packet = new CPacket(files, OP_EDONKEYPROT, OP_OFFERFILES);
@@ -40897,6 +41430,43 @@
  	if (server->GetTCPFlags() & SRV_TCPFLG_COMPRESSION){
  		packet->PackPacket();
  	}
+@@ -922,26 +922,26 @@ bool CSharedFileList::RenameFile(CKnownF
+ 			RepublishFile(file);
+ 
+ 			const Kademlia::WordList& newwords = file->GetKadKeywords();
+-			Kademlia::WordList::iterator itold;
+-			Kademlia::WordList::const_iterator itnew;
++			Kademlia::WordList::iterator it_old;
++			Kademlia::WordList::const_iterator it_new;
+ 			// compare keywords in old and new names
+-			for (itnew = newwords.begin(); itnew != newwords.end(); ++itnew) {
+-				for (itold = oldwords.begin(); itold != oldwords.end(); ++itold) {
+-					if (*itold == *itnew) {
++			for (it_new = newwords.begin(); it_new != newwords.end(); ++it_new) {
++				for (it_old = oldwords.begin(); it_old != oldwords.end(); ++it_old) {
++					if (*it_old == *it_new) {
+ 						break;
+ 					}
+ 				}
+-				if (itold != oldwords.end()) {
++				if (it_old != oldwords.end()) {
+ 					// Remove keyword from old name which also exist in new name
+-					oldwords.erase(itold);
++					oldwords.erase(it_old);
+ 				} else {
+ 					// This is a new keyword not present in the old name
+-					m_keywords->AddKeyword(*itnew, file);
++					m_keywords->AddKeyword(*it_new, file);
+ 				}
+ 			}
+ 			// Remove all remaining old keywords not present in the new name
+-			for (itold = oldwords.begin(); itold != oldwords.end(); ++itold) {
+-				m_keywords->RemoveKeyword(*itold, file);
++			for (it_old = oldwords.begin(); it_old != oldwords.end(); ++it_old) {
++				m_keywords->RemoveKeyword(*it_old, file);
+ 			}
+ 
+ 			Notify_DownloadCtrlUpdateItem(file);
 @@ -972,7 +972,7 @@ wxString CSharedFileList::GetPublicShare
  	// safety check: is the directory supposed to be shared after all?
  	if (!IsShared(dir))	{
@@ -40906,8 +41476,36 @@
  	}
  	// check if the public name for the directory is cached in our Map
  	StringPathMap::const_iterator it;
-@@ -1008,7 +1008,7 @@ wxString CSharedFileList::GetPublicShare
- 		wxASSERT( strPublicName.GetChar(0) == cPathSepa );
+@@ -984,12 +984,12 @@ wxString CSharedFileList::GetPublicShare
+ 	}
+ 
+ 	// we store the path separator (forward or back slash) for quick access
+-	wxChar cPathSepa = wxFileName::GetPathSeparator();
++	wxChar cPathSeparator = wxFileName::GetPathSeparator();
+ 
+ 	// determine and cache the public name for "dir" ...
+ 	// We need to use the 'raw' filename, so the receiving client can recognize it.
+ 	wxString strDirectoryTmp = dir.GetRaw();
+-	if (strDirectoryTmp.EndsWith(&cPathSepa)) {
++	if (strDirectoryTmp.EndsWith(&cPathSeparator)) {
+ 		strDirectoryTmp.RemoveLast();
+ 	}
+ 
+@@ -997,7 +997,7 @@ wxString CSharedFileList::GetPublicShare
+ 	int iPos;
+ 	// check all the subdirectories in the path for being shared
+ 	// the public name will consist of these concatenated
+-	while ((iPos = strDirectoryTmp.Find( cPathSepa, true )) != wxNOT_FOUND)	{
++	while ((iPos = strDirectoryTmp.Find( cPathSeparator, true )) != wxNOT_FOUND)	{
+ 		strPublicName = strDirectoryTmp.Right(strDirectoryTmp.Length() - iPos) + strPublicName;
+ 		strDirectoryTmp.Truncate(iPos);
+ 		if (!IsShared(CPath(strDirectoryTmp)))
+@@ -1005,10 +1005,10 @@ wxString CSharedFileList::GetPublicShare
+ 	}
+ 	if (!strPublicName.IsEmpty()) {
+ 		// remove first path separator ???
+-		wxASSERT( strPublicName.GetChar(0) == cPathSepa );
++		wxASSERT( strPublicName.GetChar(0) == cPathSeparator );
  		strPublicName = strPublicName.Right(strPublicName.Length() - 1);
  	} else {
 -		// must be a rootdirectory on Windos
@@ -42559,6 +43157,15 @@
  	  m_path(path),
  	  m_filename(filename),
  	  m_toHash((EHashes)(EH_MD4 | EH_AICH)),
+@@ -58,7 +58,7 @@ CHashingTask::CHashingTask(const CPath&
+ 	// We can only create the AICH hashset if the file is a knownfile or
+ 	// if the partfile is complete, since the MD4 hashset is checked first,
+ 	// so that the AICH hashset only gets assigned if the MD4 hashset
+-	// matches what we expected. Due to the rareity of post-completion
++	// matches what we expected. Due to the rarity of post-completion
+ 	// corruptions, this gives us a nice speedup in most cases.
+ 	if (part && !part->GetGapList().empty()) {
+ 		m_toHash = EH_MD4;
 @@ -68,7 +68,7 @@ CHashingTask::CHashingTask(const CPath&
  
  CHashingTask::CHashingTask(const CKnownFile* toAICHHash)
@@ -42734,16 +43341,24 @@
  			}
  
  			uint64 nExistingSize = file.GetLength();
-@@ -314,24 +314,24 @@ void CAICHSyncTask::Entry()
+@@ -313,25 +313,30 @@ void CAICHSyncTask::Entry()
+ 				hashlist.push_back(CAICHHash(&file));
  
  				uint32 nHashCount = file.ReadUInt32();
- 				if (file.GetPosition() + nHashCount * CAICHHash::GetHashSize() > nExistingSize){
+-				if (file.GetPosition() + nHashCount * CAICHHash::GetHashSize() > nExistingSize){
 -					throw CEOFException(wxT("Hashlist ends past end of file."));
++				const uint64 hashsetBytes =
++					static_cast<uint64>(nHashCount) *
++					CAICHHash::GetHashSize();
++				if (file.GetPosition() + hashsetBytes > nExistingSize) {
 +					throw CEOFException("Hashlist ends past end of file.");
  				}
  
  				// skip the rest of this hashset
- 				nLastVerifiedPos = file.Seek(nHashCount * HASHSIZE, wxFromCurrent);
+-				nLastVerifiedPos = file.Seek(nHashCount * HASHSIZE, wxFromCurrent);
++				nLastVerifiedPos = file.Seek(
++					static_cast<wxFileOffset>(hashsetBytes),
++					wxFromCurrent);
  			}
  		} catch (const CEOFException&) {
 -			AddDebugLogLineC(logAICHThread, wxT("Hashlist corrupted, truncating file."));
@@ -42763,7 +43378,7 @@
  	}
  
  	// Now we check that all files which are in the sharedfilelist have a
-@@ -357,7 +357,7 @@ bool CAICHSyncTask::ConvertToKnown2ToKno
+@@ -357,7 +362,7 @@ bool CAICHSyncTask::ConvertToKnown2ToKno
  	CFile newfile;
  
  	if (!oldfile.Open(oldfullpath, CFile::read)) {
@@ -42772,7 +43387,7 @@
  
  		// else -> known2.met also doesn't exists, so nothing to convert
  		return false;
-@@ -365,7 +365,7 @@ bool CAICHSyncTask::ConvertToKnown2ToKno
+@@ -365,7 +370,7 @@ bool CAICHSyncTask::ConvertToKnown2ToKno
  
  
  	if (!newfile.Open(newfullpath, CFile::write_excl)) {
@@ -42781,7 +43396,21 @@
  
  		return false;
  	}
-@@ -389,10 +389,10 @@ bool CAICHSyncTask::ConvertToKnown2ToKno
+@@ -380,19 +385,21 @@ bool CAICHSyncTask::ConvertToKnown2ToKno
+ 			CAICHHash aichHash(&oldfile);
+ 			uint32 nHashCount = oldfile.ReadUInt16();
+ 
+-			CScopedArray<uint8_t> buffer(nHashCount * CAICHHash::GetHashSize());
++			const size_t hashBytes = static_cast<size_t>(nHashCount)
++				* CAICHHash::GetHashSize();
++			CScopedArray<uint8_t> buffer(hashBytes);
+ 
+-			oldfile.Read(buffer.get(), nHashCount * CAICHHash::GetHashSize());
++			oldfile.Read(buffer.get(), hashBytes);
+ 			newfile.Write(aichHash.GetRawHash(), CAICHHash::GetHashSize());
+ 			newfile.WriteUInt32(nHashCount);
+-			newfile.Write(buffer.get(), nHashCount * CAICHHash::GetHashSize());
++			newfile.Write(buffer.get(), hashBytes);
  		}
  		newfile.Flush();
  	} catch (const CEOFException& e) {
@@ -42794,7 +43423,7 @@
  		return false;
  	}
  
-@@ -410,7 +410,7 @@ bool CAICHSyncTask::ConvertToKnown2ToKno
+@@ -410,7 +417,7 @@ bool CAICHSyncTask::ConvertToKnown2ToKno
  
  CCompletionTask::CCompletionTask(const CPartFile* file)
  	// GetPrintable is used to improve the readability of the log.
@@ -42803,7 +43432,7 @@
  	  m_filename(file->GetFileName()),
  	  m_metPath(file->GetFullName()),
  	  m_category(file->GetCategory()),
-@@ -429,7 +429,7 @@ void CCompletionTask::Entry()
+@@ -429,7 +436,7 @@ void CCompletionTask::Entry()
  
  	{
  #ifndef AMULE_DAEMON
@@ -42812,7 +43441,7 @@
  		wxMutexGuiLocker guiLock;
  #else
  		//#warning Thread-safety needed
-@@ -445,7 +445,7 @@ void CCompletionTask::Entry()
+@@ -445,7 +452,7 @@ void CCompletionTask::Entry()
  
  	// Avoid empty filenames ...
  	if (!dstName.IsOk()) {
@@ -42821,7 +43450,7 @@
  	}
  
  	if (m_filename != dstName) {
-@@ -455,7 +455,7 @@ void CCompletionTask::Entry()
+@@ -455,7 +462,7 @@ void CCompletionTask::Entry()
  	// Avoid saving to an already existing filename
  	CPath newName = targetPath.JoinPaths(dstName);
  	for (unsigned count = 0; newName.FileExists(); ++count) {
@@ -42830,7 +43459,7 @@
  
  		newName = targetPath.JoinPaths(dstName.AddPostfix(postfix));
  	}
-@@ -473,18 +473,18 @@ void CCompletionTask::Entry()
+@@ -473,18 +480,18 @@ void CCompletionTask::Entry()
  		}
  
  		if (!CPath::RemoveFile(partfilename)) {
@@ -42852,7 +43481,7 @@
  			}
  		}
  	}
-@@ -498,7 +498,7 @@ void CCompletionTask::OnExit()
+@@ -498,7 +505,7 @@ void CCompletionTask::OnExit()
  	// Notify the app that the completion has finished for this file.
  	CCompletionEvent evt(m_error, m_owner, m_newName);
  
@@ -42861,7 +43490,7 @@
  }
  
  
-@@ -530,7 +530,7 @@ void CCompletionTask::OnExit()
+@@ -530,7 +537,7 @@ void CCompletionTask::OnExit()
  
  CAllocateFileTask::CAllocateFileTask(CPartFile *file, bool pause)
  	// GetPrintable is used to improve the readability of the log.
@@ -42870,7 +43499,7 @@
  	  m_file(file), m_pause(pause), m_result(ENOSYS)
  {
  	wxASSERT(file != NULL);
-@@ -618,7 +618,7 @@ void CAllocateFileTask::OnExit()
+@@ -618,7 +625,7 @@ void CAllocateFileTask::OnExit()
  	// Notify the app that the preallocation has finished for this file.
  	CAllocFinishedEvent evt(m_file, m_pause, m_result);
  
@@ -42879,7 +43508,7 @@
  }
  
  
-@@ -626,9 +626,8 @@ void CAllocateFileTask::OnExit()
+@@ -626,9 +633,8 @@ void CAllocateFileTask::OnExit()
  ////////////////////////////////////////////////////////////
  // CHashingEvent
  
@@ -42891,7 +43520,7 @@
  CHashingEvent::CHashingEvent(wxEventType type, CKnownFile* result, const CKnownFile* owner)
  	: wxEvent(-1, type),
  	  m_owner(owner),
-@@ -660,8 +659,7 @@ CKnownFile* CHashingEvent::GetResult() c
+@@ -660,14 +666,13 @@ CKnownFile* CHashingEvent::GetResult() c
  ////////////////////////////////////////////////////////////
  // CCompletionEvent
  
@@ -42899,9 +43528,26 @@
 -
 +wxDEFINE_EVENT(MULE_EVT_FILE_COMPLETED, wxEvent);
  
- CCompletionEvent::CCompletionEvent(bool errorOccured, const CPartFile* owner, const CPath& fullPath)
+-CCompletionEvent::CCompletionEvent(bool errorOccured, const CPartFile* owner, const CPath& fullPath)
++CCompletionEvent::CCompletionEvent(bool errorOccurred, const CPartFile* owner, const CPath& fullPath)
  	: wxEvent(-1, MULE_EVT_FILE_COMPLETED),
-@@ -699,8 +697,7 @@ const CPath& CCompletionEvent::GetFullPa
+ 	  m_fullPath(fullPath),
+ 	  m_owner(owner),
+-	  m_error(errorOccured)
++	  m_error(errorOccurred)
+ {
+ }
+ 
+@@ -678,7 +683,7 @@ wxEvent* CCompletionEvent::Clone() const
+ }
+ 
+ 
+-bool CCompletionEvent::ErrorOccured() const
++bool CCompletionEvent::ErrorOccurred() const
+ {
+ 	return m_error;
+ }
+@@ -699,8 +704,7 @@ const CPath& CCompletionEvent::GetFullPa
  ////////////////////////////////////////////////////////////
  // CAllocFinishedEvent
  
@@ -42922,6 +43568,15 @@
  	bool		m_error;
  	//! The resulting full path. File may be be renamed.
  	CPath		m_newName;
+@@ -243,7 +243,7 @@ public:
+ 	virtual wxEvent* Clone() const;
+ 
+ 	/** Returns true if completion failed. */
+-	bool ErrorOccured() const;
++	bool ErrorOccurred() const;
+ 
+ 	/** Returns the owner of the file that was being completed. */
+ 	const CPartFile* GetOwner() const;
 @@ -265,7 +265,7 @@ private:
  /**
   * This event is sent when preallocation of a new partfile is finished.
@@ -44020,7 +44675,7 @@
  // File_checked_for_headers
 --- /dev/null
 +++ b/src/UploadDiskIOThread.cpp
-@@ -0,0 +1,562 @@
+@@ -0,0 +1,564 @@
 +//
 +// This file is part of the aMule Project.
 +//
@@ -44402,7 +45057,7 @@
 +			if (!bError)
 +			{
 +				// eMule ref: lines 428-447 — decide compression
-+				// Disable compression if socket is starved and datarate is high.
++				// Disable compression if socket is starved and data rate is high.
 +				// Once disabled for a client, stays disabled for the session.
 +				bool bUseCompression = false;
 +				if (!client->m_bDisableCompression && req->pFileStruct->bCompress && client->m_byDataCompVer == 1)
@@ -44426,15 +45081,15 @@
 +				// Build packets into a local list, then send them out.
 +				// File ID was set in StartCreateNextBlockPackage when srcfile was resolved.
 +				CPacketList packetList;
-+				uint32 datarate = client->GetUploadDatarate();
++				uint32 data_rate = client->GetUploadDatarate();
 +				if (bUseCompression) {
 +					CreatePackedPackets(req->area.GetBuffer(),
 +						req->uStartOffset, req->uEndOffset, packetList,
-+						req->pFileStruct->ucMD4FileHash, datarate);
++						req->pFileStruct->ucMD4FileHash, data_rate);
 +				} else {
 +					CreateStandardPackets(req->area.GetBuffer(),
 +						req->uStartOffset, req->uEndOffset, packetList,
-+						req->pFileStruct->ucMD4FileHash, datarate);
++						req->pFileStruct->ucMD4FileHash, data_rate);
 +				}
 +
 +				// eMule ref: lines 478-482 — send all packets
@@ -44570,7 +45225,9 @@
 +		CPacket* packet = new CPacket(data, OP_EMULEPROT, (isLargeBlock ? OP_COMPRESSEDPART_I64 : OP_COMPRESSEDPART));
 +
 +		// approximate payload size
-+		uint32 payloadSize = nPacketSize*oldSize/newsize;
++		uint32 payloadSize = static_cast<uint32>(
++			(static_cast<uint64>(nPacketSize) * oldSize) /
++			newsize);
 +
 +		if (togo == 0 && totalPayloadSize+payloadSize < oldSize) {
 +			payloadSize = oldSize-totalPayloadSize;
@@ -48876,7 +49533,7 @@
      switch(event.GetSocketEvent()) {
      case wxSOCKET_LOST:
          socket->OnLost();
-@@ -363,12 +363,12 @@ void CWebServerBase::OnWebSocketEvent(wx
+@@ -363,26 +363,26 @@ void CWebServerBase::OnWebSocketEvent(wx
  
  void CScriptWebServer::ProcessImgFileReq(ThreadData Data)
  {
@@ -48891,11 +49548,16 @@
  	CAnyImage *img = m_ImageLib.GetImage(imgName);
  
  	// Only static images are available to visitors, in order to prevent
-@@ -379,10 +379,10 @@ void CScriptWebServer::ProcessImgFileReq
+ 	// information leakage, but still allowing images on the login page.
+-	if (img && (session->m_loggedin || dynamic_cast<CFileImage*>(img))) {
++	if (img && (session->m_logged_in || dynamic_cast<CFileImage*>(img))) {
+ 		int img_size = 0;
+ 		unsigned char* img_data = img->RequestData(img_size);
  		// This unicode2char is ok.
  		Data.pSocket->SendContent(unicode2char(img->GetHTTP()), img_data, img_size);
- 	} else if (!session->m_loggedin) {
+-	} else if (!session->m_loggedin) {
 -		webInterface->DebugShow(wxT("**** imgrequest: failed, not logged in\n"));
++	} else if (!session->m_logged_in) {
 +		webInterface->DebugShow("**** imgrequest: failed, not logged in\n");
  		ProcessURL(Data);
  	} else {
@@ -49014,7 +49676,17 @@
  	EraseAll();
  	for (CECPacket::const_iterator it = up_reply->begin(); it != up_reply->end(); ++it) {
  
-@@ -964,14 +964,14 @@ unsigned char *CAnyImage::RequestData(in
+@@ -926,7 +926,8 @@ CAnyImage::CAnyImage(int width, int heig
+ {
+ 	m_size = 0;
+ 	// allocate considering image header
+-	m_alloc_size = width * height * sizeof(uint32) + 0x100;
++	m_alloc_size = static_cast<unsigned long>(width) *
++		static_cast<unsigned long>(height) * sizeof(uint32) + 0x100;
+ 	if ( m_alloc_size ) {
+ 		m_data = new unsigned char[m_alloc_size];
+ 	} else {
+@@ -964,14 +965,14 @@ unsigned char *CAnyImage::RequestData(in
  
  void CAnyImage::SetHttpType(wxString ext)
  {
@@ -49032,7 +49704,7 @@
  }
  
  CFileImage::CFileImage(const wxString& name) : CAnyImage(0)
-@@ -979,7 +979,7 @@ CFileImage::CFileImage(const wxString& n
+@@ -979,7 +980,7 @@ CFileImage::CFileImage(const wxString& n
  	m_size = 0;
  	m_name = name;
  #ifdef __WINDOWS__
@@ -49041,7 +49713,7 @@
  #else
  	wxFFile fis(m_name);
  #endif
-@@ -993,10 +993,10 @@ CFileImage::CFileImage(const wxString& n
+@@ -993,10 +994,10 @@ CFileImage::CFileImage(const wxString& n
  			printf("CFileImage: file %s have zero length\n", (const char *)unicode2char(m_name));
  		}
  		wxString ext = m_name.Right(3).MakeLower();
@@ -49055,7 +49727,28 @@
  		}
  	} else {
  		printf("CFileImage: failed to open %s\n", (const char *)unicode2char(m_name));
-@@ -1186,7 +1186,7 @@ CDynProgressImage::CDynProgressImage(int
+@@ -1138,11 +1139,17 @@ CDynPngImage::CDynPngImage(int w, int h)
+ 	// Allocate array of "row pointers" - libpng need it in this form
+ 	// Fill it also with the image data
+ 	//
+-	m_img_data = new png_byte[3*m_width*m_height];
+-	memset(m_img_data, 0, 3*m_width*m_height);
++	const size_t img_size = static_cast<size_t>(3) *
++		static_cast<size_t>(m_width) *
++		static_cast<size_t>(m_height);
++	m_img_data = new png_byte[img_size];
++	memset(m_img_data, 0, img_size);
+ 	m_row_ptrs = new png_bytep [m_height];
+ 	for (int i = 0; i < m_height;i++) {
+-		m_row_ptrs[i] = &m_img_data[3*m_width*i];
++		m_row_ptrs[i] = &m_img_data[
++			static_cast<size_t>(3) *
++			static_cast<size_t>(m_width) *
++			static_cast<size_t>(i)];
+ 	}
+ 
+ }
+@@ -1186,7 +1193,7 @@ CDynProgressImage::CDynProgressImage(int
  	CDynPngImage(width, height),
  	m_modifiers(height)
  {
@@ -49064,7 +49757,7 @@
  }
  
  CDynProgressImage::~CDynProgressImage()
-@@ -1196,7 +1196,7 @@ CDynProgressImage::~CDynProgressImage()
+@@ -1196,7 +1203,7 @@ CDynProgressImage::~CDynProgressImage()
  wxString CDynProgressImage::GetHTML()
  {
  	// template contain %s (name) %d (width) %s (alt)
@@ -49073,7 +49766,7 @@
  }
  
  void CDynProgressImage::DrawImage()
-@@ -1230,7 +1230,7 @@ CDynProgressImage::CDynProgressImage(int
+@@ -1230,7 +1237,7 @@ CDynProgressImage::CDynProgressImage(int
  	CAnyImage(width, height),
  	CProgressImage(width, height, tmpl, file)
  {
@@ -49082,7 +49775,7 @@
  
  }
  
-@@ -1238,9 +1238,9 @@ CDynProgressImage::CDynProgressImage(int
+@@ -1238,9 +1245,9 @@ CDynProgressImage::CDynProgressImage(int
  wxString CDynProgressImage::GetHTML()
  {
  	static wxChar *progresscolor[12] = {
@@ -49095,7 +49788,7 @@
  
  	CreateSpan();
  
-@@ -1269,7 +1269,7 @@ wxString CDynProgressImage::GetHTML()
+@@ -1269,7 +1276,7 @@ wxString CDynProgressImage::GetHTML()
  				}
  			}
  			str += (CFormat(m_template) % progresscolor[color_idx]
@@ -49104,7 +49797,7 @@
  			lastindex = i;
  			lastcolor = m_ColorLine[i];
  		}
-@@ -1381,7 +1381,7 @@ CDynStatisticImage::CDynStatisticImage(i
+@@ -1381,7 +1388,7 @@ CDynStatisticImage::CDynStatisticImage(i
  	m_scale1024 = scale1024;
  
  	// actual name doesn't matter, just make it unique
@@ -49113,7 +49806,35 @@
  
  	m_num_font_w_size = 8;
  	m_num_font_h_size = 16;
-@@ -1572,7 +1572,7 @@ unsigned char *CDynStatisticImage::Reque
+@@ -1428,7 +1435,7 @@ CDynStatisticImage::CDynStatisticImage(i
+ 		set_rgb_color_val(m_row_bg_ptrs[m_y_axis_size - 1]+3*j, axis_color, 0);
+ 	}
+ 
+-	// horisontal grid
++	// horizontal grid
+ 	int v_grid_size = m_y_axis_size / 4;
+ 	for(int i = m_y_axis_size - v_grid_size; i >= v_grid_size; i -= v_grid_size) {
+ 		png_bytep u_row = m_row_bg_ptrs[i];
+@@ -1459,7 +1466,8 @@ CDynStatisticImage::~CDynStatisticImage(
+ void CDynStatisticImage::DrawImage()
+ {
+ 	// copy background first
+-	memcpy(m_img_data, m_background, m_width*m_height*3);
++	memcpy(m_img_data, m_background,
++		static_cast<size_t>(m_width) * m_height * 3u);
+ 
+ 	//
+ 	// Now graph itself
+@@ -1494,7 +1502,7 @@ void CDynStatisticImage::DrawImage()
+ 	m_digits[0]->Apply(m_row_ptrs, 3*img_delta+2*m_num_font_w_size, m_y_axis_size-m_num_font_h_size-5);
+ 
+ 	//
+-	// When data is scaled down, axis are scaled UP and viceversa
++	// When data is scaled down, axis are scaled UP and vice-versa
+ 	int y_axis_max = m_y_axis_size;
+ 	if ( m_scale_down != 1 ) {
+ 		y_axis_max *= m_scale_down;
+@@ -1572,7 +1580,7 @@ unsigned char *CDynStatisticImage::Reque
  
  wxString CDynStatisticImage::GetHTML()
  {
@@ -49122,9 +49843,46 @@
  }
  
  //
-@@ -1733,16 +1733,16 @@ CAnyImage *CImageLib::GetImage(const wxS
+@@ -1610,14 +1618,14 @@ CNumImageMask::~CNumImageMask()
+ 	delete [] m_row_mask_ptrs;
+ }
+ 
+-void CNumImageMask::Apply(png_bytep *image, int offx, int offy)
++void CNumImageMask::Apply(png_bytep *image, int off_x, int off_y)
+ {
+-	offx *= 3;
++	off_x *= 3;
+ 	for(int i = 0; i < m_height; i++) {
+-		png_bytep img_row = image[offy + i];
++		png_bytep img_row = image[off_y + i];
+ 		png_bytep num_row = m_row_mask_ptrs[i];
+ 		for(int j = 0; j < m_width*3; j++) {
+-			img_row[offx + j] |= num_row[j];
++			img_row[off_x + j] |= num_row[j];
+ 		}
+ 	}
+ }
+@@ -1630,11 +1638,11 @@ void CNumImageMask::DrawHorzLine(int off
+ 	}
+ }
+ 
+-void CNumImageMask::DrawVertLine(int offx, int offy)
++void CNumImageMask::DrawVertLine(int off_x, int off_y)
+ {
+ 	for(int i = 0; i < m_v_segsize; i++) {
+-		png_bytep m_row = m_row_mask_ptrs[offy*(m_v_segsize-1)+i];
+-		int x_idx = offx*(m_h_segsize-1)*3;
++		png_bytep m_row = m_row_mask_ptrs[off_y*(m_v_segsize-1)+i];
++		int x_idx = off_x*(m_h_segsize-1)*3;
+ 		m_row[x_idx] = m_row[x_idx+1] = m_row[x_idx+2] = 0xff;
+ 	}
+ }
+@@ -1731,18 +1739,18 @@ CAnyImage *CImageLib::GetImage(const wxS
+  * Script-based webserver
+  */
  CScriptWebServer::CScriptWebServer(CamulewebApp *webApp, const wxString& templateDir)
- 	: CWebServerBase(webApp, templateDir), m_wwwroot(templateDir)
+-	: CWebServerBase(webApp, templateDir), m_wwwroot(templateDir)
++	: CWebServerBase(webApp, templateDir), m_www_root(templateDir)
  {
 -	wxString img_tmpl(wxT("<img src=\"%s\" height=\"20\" width=\"%d\" alt=\"%s\">"));
 +	wxString img_tmpl("<img src=\"%s\" height=\"20\" width=\"%d\" alt=\"%s\">");
@@ -49134,18 +49892,36 @@
 -		m_index = wxT("index.html");
 -	} else if ( ::wxFileExists(wxFileName(m_wwwroot, wxT("index.php")).GetFullPath()) ) {
 -		m_index = wxT("index.php");
-+	if ( ::wxFileExists(wxFileName(m_wwwroot, "index.html").GetFullPath()) ) {
++	if ( ::wxFileExists(wxFileName(m_www_root, "index.html").GetFullPath()) ) {
 +		m_index = "index.html";
-+	} else if ( ::wxFileExists(wxFileName(m_wwwroot, "index.php").GetFullPath()) ) {
++	} else if ( ::wxFileExists(wxFileName(m_www_root, "index.php").GetFullPath()) ) {
 +		m_index = "index.php";
  	} else {
  		webInterface->Show(_("Index file not found: ") +
 -			wxFileName(m_wwwroot, wxT("index.{html,php}")).GetFullPath() + wxT("\n"));
-+			wxFileName(m_wwwroot, "index.{html,php}").GetFullPath() + "\n");
++			wxFileName(m_www_root, "index.{html,php}").GetFullPath() + "\n");
  	}
  }
  
-@@ -1856,7 +1856,7 @@ void CScriptWebServer::ProcessURL(Thread
+@@ -1824,7 +1832,7 @@ CSession *CScriptWebServer::CheckLoggedi
+ 			m_sessions.erase(Data.SessionID);
+ 			session = 0;
+ 		} else {
+-			if ( session->m_loggedin ) {
++			if ( session->m_logged_in ) {
+ 				Print(_("Session ok, logged in\n"));
+ 			} else {
+ 				Print(_("Session ok, not logged in\n"));
+@@ -1840,7 +1848,7 @@ CSession *CScriptWebServer::CheckLoggedi
+ 		}
+ 		session = &m_sessions[Data.SessionID];
+ 		session->m_last_access = curr_time;
+-		session->m_loggedin = false;
++		session->m_logged_in = false;
+ 		Print(_("Session created - requesting login\n"));
+ 	}
+ 	Data.parsedURL.ConvertParams(session->m_get_vars);
+@@ -1856,7 +1864,7 @@ void CScriptWebServer::ProcessURL(Thread
  	// Strip out any path-component to prevent information leakage.
  	wxString filename = wxFileName(Data.parsedURL.File()).GetFullName();
  
@@ -49154,11 +49930,13 @@
  
  	if ( filename.Length() == 0 ) {
  		filename = m_index;
-@@ -1866,9 +1866,9 @@ void CScriptWebServer::ProcessURL(Thread
+@@ -1865,33 +1873,33 @@ void CScriptWebServer::ProcessURL(Thread
+ 	CSession *session = CheckLoggedin(Data);
  
  	session->m_vars["login_error"] = "";
- 	if ( !session->m_loggedin ) {
+-	if ( !session->m_loggedin ) {
 -		filename = wxT("login.php");
++	if ( !session->m_logged_in ) {
 +		filename = "login.php";
  
 -		wxString PwStr(Data.parsedURL.Param(wxT("pass")));
@@ -49166,14 +49944,42 @@
  		if (webInterface->m_AdminPass.IsEmpty() && webInterface->m_GuestPass.IsEmpty()) {
  			session->m_vars["login_error"] = "No password specified, login will not be allowed.";
  			Print(_("No password specified, login will not be allowed."));
-@@ -1905,39 +1905,39 @@ void CScriptWebServer::ProcessURL(Thread
+ 		} else if ( PwStr.Length() ) {
+ 			Print(_("Checking password\n"));
+-			session->m_loggedin = false;
++			session->m_logged_in = false;
+ 
+ 			CMD4Hash PwHash;
+ 			if (!PwHash.Decode(MD5Sum(PwStr).GetHash())) {
+ 				Print(_("Password hash invalid\n"));
+ 				session->m_vars["login_error"] = "Invalid password hash, please report on http://forum.amule.org";
+ 			} else if ( PwHash == webInterface->m_AdminPass ) {
+-				session->m_loggedin = true;
++				session->m_logged_in = true;
+ 				// m_vars is map<string, string> - so _() will not work here !
+ 				session->m_vars["guest_login"] = "0";
+ 			} else if ( PwHash == webInterface->m_GuestPass ) {
+-				session->m_loggedin = true;
++				session->m_logged_in = true;
+ 				session->m_vars["guest_login"] = "1";
+ 			} else {
+ 				session->m_vars["login_error"] = "Password incorrect, please try again.";
+ 			}
+ 
+-			if ( session->m_loggedin ) {
++			if ( session->m_logged_in ) {
+ 				filename = m_index;
+ 				Print(_("Password ok\n"));
+ 			} else {
+@@ -1905,39 +1913,39 @@ void CScriptWebServer::ProcessURL(Thread
  		// if logged in, but requesting login page again,
  		// means logout command
  		//
 -		if ( filename == wxT("login.php") ) {
 +		if ( filename == "login.php" ) {
  			Print(_("Logout requested\n"));
- 			session->m_loggedin = false;
+-			session->m_loggedin = false;
++			session->m_logged_in = false;
  		}
  	}
  
@@ -49185,8 +49991,9 @@
 +		wxString(CFormat("%d") % webInterface->m_PageRefresh));
  	session->m_vars["content_type"] = "text/html";
  
- 	wxString req_file(wxFileName(m_wwwroot, filename).GetFullPath());
+-	wxString req_file(wxFileName(m_wwwroot, filename).GetFullPath());
 -	if (req_file.EndsWith(wxT(".html"))) {
++	wxString req_file(wxFileName(m_www_root, filename).GetFullPath());
 +	if (req_file.EndsWith(".html")) {
  		httpOut = ProcessHtmlRequest(unicode2char(req_file), httpOutLen);
 -	} else if (req_file.EndsWith(wxT(".php"))) {
@@ -49219,7 +50026,7 @@
  		session->m_vars["content_type"] = "application/json";
  		httpOut = ProcessHtmlRequest(unicode2char(req_file), httpOutLen);
  	} else {
-@@ -1971,7 +1971,7 @@ void CScriptWebServer::ProcessURL(Thread
+@@ -1971,7 +1979,7 @@ void CScriptWebServer::ProcessURL(Thread
  	}
  }
  
@@ -49230,6 +50037,24 @@
  
 --- a/src/webserver/src/WebServer.h
 +++ b/src/webserver/src/WebServer.h
+@@ -597,7 +597,7 @@ class CNumImageMask {
+ 
+ 		// mask generation
+ 		void DrawHorzLine(int off);
+-		void DrawVertLine(int offx, int offy);
++		void DrawVertLine(int off_x, int off_y);
+ 		void DrawSegment(int id);
+ 
+ 		static const int m_num_to_7_decode[10];
+@@ -605,7 +605,7 @@ class CNumImageMask {
+ 		CNumImageMask(int number, int width, int height);
+ 		~CNumImageMask();
+ 
+-		void Apply(png_bytep *image, int offx, int offy);
++		void Apply(png_bytep *image, int off_x, int off_y);
+ };
+ 
+ class CDynStatisticImage : public virtual CDynPngImage {
 @@ -735,7 +735,7 @@ class CWebServerBase : public wxEvtHandl
  #else
  		void OnWebSocketServerEvent(wxSocketEvent& event);
@@ -49239,6 +50064,24 @@
  #endif
  	public:
  		CWebServerBase(CamulewebApp *webApp, const wxString& templateDir);
+@@ -779,7 +779,7 @@ class CWebServerBase : public wxEvtHandl
+ 
+ class CSession {
+ 	public:
+-		bool m_loggedin;
++		bool m_logged_in;
+ 		time_t m_last_access;
+ 		std::map<std::string, std::string> m_vars, m_get_vars;
+ 
+@@ -790,7 +790,7 @@ class CSession {
+  * Script based webserver
+  */
+ class CScriptWebServer : public CWebServerBase {
+-		wxString m_wwwroot;
++		wxString m_www_root;
+ 		wxString m_index;
+ 
+ 		char *ProcessHtmlRequest(const char *filename, long &size);
 --- a/src/webserver/src/WebSocket.cpp
 +++ b/src/webserver/src/WebSocket.cpp
 @@ -189,7 +189,7 @@ void CWebSocket::OnRequestReceived(char*
