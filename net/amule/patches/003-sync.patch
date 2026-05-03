@@ -18,6 +18,41 @@
      echo "    cryptopp  : $CRYPTOPP_DISTRO"
      echo "    libupnp   : $LIBUPNP_DISTRO"
      echo "    wxWidgets : $WXWIDGETS_DISTRO"
+--- a/amule.desktop
++++ /dev/null
+@@ -1,14 +0,0 @@
+-[Desktop Entry]
+-Name=aMule
+-Exec=amule %u
+-Icon=amule
+-Terminal=false
+-Type=Application
+-Categories=Network;P2P;
+-Comment=A client for the eD2k network
+-Comment[fr]=Un client pour le réseau eD2k
+-Comment[tr]=eD2k ağı için istemci
+-Comment[zh_CN]=eD2k网络客户端
+-Comment[it]=Un client per la rete eD2k
+-Comment[it_CH]=Un client per la rete eD2k
+-MimeType=x-scheme-handler/ed2k;
+--- a/amulegui.desktop
++++ /dev/null
+@@ -1,15 +0,0 @@
+-[Desktop Entry]
+-Name=aMuleGUI
+-Exec=amulegui
+-Icon=amulegui
+-Terminal=false
+-Type=Application
+-Categories=Network;P2P;
+-Comment=aMule remote control
+-Comment[de]=aMule-Fernsteuerung
+-Comment[fr]=Contrôle à distance d'aMule
+-Comment[hu]=aMule távoli vezérlő
+-Comment[tr]=aMule uzaktan kumandası
+-Comment[zh_CN]=aMule远程协议
+-Comment[it]=Terminale remoto per aMule
+-Comment[it_CH]=Terminale remoto per aMule
 --- a/autogen.sh
 +++ b/autogen.sh
 @@ -35,7 +35,7 @@ if expr "$confver" \> "$gettext_version"
@@ -1424,7 +1459,7 @@
  		% ip % ((unsigned int)thePrefs::GetPort() + 3u);
  
  	// Create the ListenSocket (aMule TCP socket).
-@@ -767,7 +872,7 @@ bool CamuleApp::ReinitializeNetwork(wxSt
+@@ -767,12 +872,12 @@ bool CamuleApp::ReinitializeNetwork(wxSt
  	myaddr[2] = myaddr[1];
  	myaddr[2].Service(thePrefs::GetPort());
  	listensocket = new CListenSocket(myaddr[2]);
@@ -1433,6 +1468,12 @@
  		% ip % (unsigned int)(thePrefs::GetPort());
  	// Notify(true) has already been called to the ListenSocket, so events may
  	// be already coming in.
+ 	if (!listensocket->IsOk()) {
+-		// If we wern't able to start listening, we need to warn the user
++		// If we weren't able to start listening, we need to warn the user
+ 		wxString err;
+ 		err = CFormat(_("Port %u is not available. You will be LOWID\n")) %
+ 			(unsigned int)(thePrefs::GetPort());
 @@ -793,10 +898,10 @@ bool CamuleApp::ReinitializeNetwork(wxSt
  	myaddr[3].Service(thePrefs::GetUDPPort());
  	clientudp = new CClientUDPSocket(myaddr[3], thePrefs::GetProxyData());
@@ -1912,6 +1953,15 @@
  
  			long fields[] = {0, 0, 0};
  			for (int i = 0; i < 3; ++i) {
+@@ -1739,7 +1865,7 @@ uint32 CamuleApp::GetKadIndexedLoad() co
+ 
+ 
+ // True IP of machine
+-uint32 CamuleApp::GetKadIPAdress() const
++uint32 CamuleApp::GetKadIPAddress() const
+ {
+ 	return wxUINT32_SWAP_ALWAYS(Kademlia::CKademlia::GetPrefs()->GetIPAddress());
+ }
 @@ -1841,9 +1967,9 @@ void CamuleApp::ShowUserCount() {
  #ifndef ASIO_SOCKETS
  void CamuleApp::ListenSocketHandler(wxSocketEvent& event)
@@ -3530,6 +3580,15 @@
  #ifdef ASIO_SOCKETS
  class CAsioService;
  #else
+@@ -228,7 +232,7 @@ public:
+ 	uint32	GetKadIndexedNotes() const;
+ 	uint32	GetKadIndexedLoad() const;
+ 	// True IP of machine
+-	uint32	GetKadIPAdress() const;
++	uint32	GetKadIPAddress() const;
+ 	// Buddy status
+ 	uint8	GetBuddyStatus() const;
+ 	uint32	GetBuddyIP() const;
 @@ -259,6 +263,8 @@ public:
  	CPreferences*		glob_prefs;
  	CDownloadQueue*		downloadqueue;
@@ -4138,6 +4197,15 @@
  
  	void OnECConnection(wxEvent& event);
  	void OnECInitDone(wxEvent& event);
+@@ -713,7 +726,7 @@ public:
+ 	uint32 GetKadIndexedLoad() const	{ return theStats::GetKadIndexedLoad(); }
+ 	const CUInt128&	GetKadID() const	{ return m_kadID; }
+ 	// True IP of machine
+-	uint32 GetKadIPAdress() const		{ return theStats::GetKadIPAdress(); }
++	uint32 GetKadIPAddress() const		{ return theStats::GetKadIPAddress(); }
+ 	// Buddy status
+ 	uint8	GetBuddyStatus() const		{ return theStats::GetBuddyStatus(); }
+ 	uint32	GetBuddyIP() const			{ return theStats::GetBuddyIP(); }
 @@ -744,7 +757,7 @@ public:
  
  	CUInt128	m_kadID;
@@ -6871,11 +6939,13 @@
  	 *
  	 * Call this function when a new client-instance has been created. This function will then
  	 * compare it against all existing clients and see if we already have an instance matching
-@@ -202,7 +202,7 @@ public:
+@@ -201,8 +201,8 @@ public:
+ 	/**
  	 * Returns the number of tracked client.
  	 *
- 	 * @param dwIP The IP-adress which of the clients.
+-	 * @param dwIP The IP-adress which of the clients.
 -	 * @return The number of clients tracked at the specifed IP.
++	 * @param dwIP The IP-address which of the clients.
 +	 * @return The number of clients tracked at the specified IP.
  	 */
  	uint16	GetClientsFromIP(uint32 dwIP);
@@ -9248,7 +9318,15 @@
  	}
  }
  
-@@ -149,7 +149,7 @@ wxString GetConversionState(unsigned int
+@@ -142,14 +142,14 @@ wxString GetConversionState(unsigned int
+ 	switch (state) {
+ 		case CONV_OK			: return _("Completed");
+ 		case CONV_INPROGRESS		: return _("In progress");
+-		case CONV_OUTOFDISKSPACE	: return _("ERROR: Out of diskspace");
++		case CONV_OUTOFDISKSPACE	: return _("ERROR: Out of disk space");
+ 		case CONV_PARTMETNOTFOUND	: return _("ERROR: Partmet not found");
+ 		case CONV_IOERROR		: return _("ERROR: IO error!");
+ 		case CONV_FAILED		: return _("ERROR: Failed!");
  		case CONV_QUEUE			: return _("Queued");
  		case CONV_ALREADYEXISTS		: return _("Already downloading");
  		case CONV_BADFORMAT		: return _("Unknown or bad tempfile format.");
@@ -12800,6 +12878,15 @@
  			} else {
  				wxString err;
  				if (passwd) {
+@@ -611,7 +611,7 @@ static CECPacket *Get_EC_Response_StatRe
+ 				response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_KEYWORDS, Kademlia::CKademlia::GetIndexed()->m_totalIndexKeyword));
+ 				response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_NOTES, Kademlia::CKademlia::GetIndexed()->m_totalIndexNotes));
+ 				response->AddTag(CECTag(EC_TAG_STATS_KAD_INDEXED_LOAD, Kademlia::CKademlia::GetIndexed()->m_totalIndexLoad));
+-				response->AddTag(CECTag(EC_TAG_STATS_KAD_IP_ADRESS, wxUINT32_SWAP_ALWAYS(Kademlia::CKademlia::GetPrefs()->GetIPAddress())));
++				response->AddTag(CECTag(EC_TAG_STATS_KAD_IP_ADDRESS, wxUINT32_SWAP_ALWAYS(Kademlia::CKademlia::GetPrefs()->GetIPAddress())));
+ 				response->AddTag(CECTag(EC_TAG_STATS_KAD_IN_LAN_MODE, Kademlia::CKademlia::IsRunningInLANMode()));
+ 				response->AddTag(CECTag(EC_TAG_STATS_BUDDY_STATUS, theApp->clientlist->GetBuddyStatus()));
+ 				uint32 BuddyIP = 0;
 @@ -955,7 +955,7 @@ static CECPacket *Get_EC_Response_Friend
  		if (subtag) {
  			CUpDownClient * client = theApp->clientlist->FindClientByECID(subtag->GetInt());
@@ -22804,6 +22891,17 @@
  				SET (FOUND_ENUM FALSE)
  			ENDIF ("${LINE}" STREQUAL "[/Section]")
  
+--- a/src/libs/ec/abstracts/ECCodes.abstract
++++ b/src/libs/ec/abstracts/ECCodes.abstract
+@@ -199,7 +199,7 @@ EC_TAG_STATS_UL_SPEED
+ 	EC_TAG_STATS_KAD_INDEXED_KEYWORDS         0x0210
+ 	EC_TAG_STATS_KAD_INDEXED_NOTES            0x0211
+ 	EC_TAG_STATS_KAD_INDEXED_LOAD             0x0212
+-	EC_TAG_STATS_KAD_IP_ADRESS                0x0213
++	EC_TAG_STATS_KAD_IP_ADDRESS               0x0213
+ 	EC_TAG_STATS_BUDDY_STATUS                 0x0214
+ 	EC_TAG_STATS_BUDDY_IP                     0x0215
+ 	EC_TAG_STATS_BUDDY_PORT                   0x0216
 --- a/src/libs/ec/CMakeLists.txt
 +++ b/src/libs/ec/CMakeLists.txt
 @@ -1,3 +1,3 @@
@@ -22815,6 +22913,15 @@
 +endif()
 --- a/src/libs/ec/cpp/ECCodes.h
 +++ b/src/libs/ec/cpp/ECCodes.h
+@@ -165,7 +165,7 @@ enum ECTagNames {
+ 		EC_TAG_STATS_KAD_INDEXED_KEYWORDS         = 0x0210,
+ 		EC_TAG_STATS_KAD_INDEXED_NOTES            = 0x0211,
+ 		EC_TAG_STATS_KAD_INDEXED_LOAD             = 0x0212,
+-		EC_TAG_STATS_KAD_IP_ADRESS                = 0x0213,
++		EC_TAG_STATS_KAD_IP_ADDRESS                = 0x0213,
+ 		EC_TAG_STATS_BUDDY_STATUS                 = 0x0214,
+ 		EC_TAG_STATS_BUDDY_IP                     = 0x0215,
+ 		EC_TAG_STATS_BUDDY_PORT                   = 0x0216,
 @@ -460,455 +460,455 @@ enum EcPrefs {
  wxString GetDebugNameProtocolVersion(uint16 arg)
  {
@@ -23336,7 +23443,7 @@
 +		case 0x0210: return "EC_TAG_STATS_KAD_INDEXED_KEYWORDS";
 +		case 0x0211: return "EC_TAG_STATS_KAD_INDEXED_NOTES";
 +		case 0x0212: return "EC_TAG_STATS_KAD_INDEXED_LOAD";
-+		case 0x0213: return "EC_TAG_STATS_KAD_IP_ADRESS";
++		case 0x0213: return "EC_TAG_STATS_KAD_IP_ADDRESS";
 +		case 0x0214: return "EC_TAG_STATS_BUDDY_STATUS";
 +		case 0x0215: return "EC_TAG_STATS_BUDDY_IP";
 +		case 0x0216: return "EC_TAG_STATS_BUDDY_PORT";
@@ -24297,6 +24404,17 @@
  
  }
  
+--- a/src/libs/ec/java/ECCodes.java
++++ b/src/libs/ec/java/ECCodes.java
+@@ -153,7 +153,7 @@ public final static short 	EC_TAG_STATS_
+ public final static short 	EC_TAG_STATS_KAD_INDEXED_KEYWORDS         = 0x0210;
+ public final static short 	EC_TAG_STATS_KAD_INDEXED_NOTES            = 0x0211;
+ public final static short 	EC_TAG_STATS_KAD_INDEXED_LOAD             = 0x0212;
+-public final static short 	EC_TAG_STATS_KAD_IP_ADRESS                = 0x0213;
++public final static short 	EC_TAG_STATS_KAD_IP_ADDRESS               = 0x0213;
+ public final static short 	EC_TAG_STATS_BUDDY_STATUS                 = 0x0214;
+ public final static short 	EC_TAG_STATS_BUDDY_IP                     = 0x0215;
+ public final static short 	EC_TAG_STATS_BUDDY_PORT                   = 0x0216;
 --- a/src/LibSocketAsio.cpp
 +++ b/src/LibSocketAsio.cpp
 @@ -41,9 +41,13 @@
@@ -27573,7 +27691,7 @@
 +//
 +// Historical note: this file was originally generated by wxDesigner from
 +// muuli.wdr. wxDesigner is effectively abandonware and the .wdr source is no
-+// longer round-trippable; the file is now maintained by hand.
++// longer round-trip-able; the file is now maintained by hand.
 +//
  
  // For compilers that support precompilation
@@ -27588,7 +27706,7 @@
 +    // Legacy ANSI branch: bytes >=0x80 fail wxConvLibc in POSIX UTF-8 locales.
 +    // Keep wxT() so the literal becomes a wide-char at compile time and matches
 +    // the pre-sweep behaviour — the branch is effectively dead today
-+    // (wxUSE_UNICODE has been on by default since wx 3.0) but toggleable.
++    // (wxUSE_UNICODE has been on by default since wx 3.0) but toggle-able.
      #if defined(__WXMAC__)
          #define __WDR_EURO__ wxT("\xdb")
      #elif defined(__WXMSW__)
@@ -27698,7 +27816,25 @@
      if (set_sizer)
      {
          parent->SetSizer( item0 );
-@@ -181,16 +190,13 @@ wxSizer *searchDlg( wxWindow *parent, bo
+@@ -167,30 +176,27 @@ wxSizer *serverListDlg( wxWindow *parent
+     return item0;
+ }
+ 
+-wxSizer *s_searchsizer;
+-wxSizer *s_extendedsizer;
+-wxSizer *s_filtersizer;
++wxSizer *s_search_sizer;
++wxSizer *s_extended_sizer;
++wxSizer *s_filter_sizer;
+ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
+ {
+     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
+ 
+     wxStaticBox *item2 = new wxStaticBox( parent, -1, _("Search") );
+     wxStaticBoxSizer *item1 = new wxStaticBoxSizer( item2, wxVERTICAL );
+-    s_searchsizer = item1;
++    s_search_sizer = item1;
+ 
      wxBoxSizer *item3 = new wxBoxSizer( wxHORIZONTAL );
  
      wxStaticText *item4 = new wxStaticText( parent, -1, _("Name:"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -27749,7 +27885,8 @@
 +    item1->Add( item3, wxSizerFlags().Expand().CenterVertical() );
      wxFlexGridSizer *item13 = new wxFlexGridSizer( 8, 0, 0 );
      item13->AddGrowableRow( 1 );
-     s_extendedsizer = item13;
+-    s_extendedsizer = item13;
++    s_extended_sizer = item13;
  
      wxStaticText *item14 = new wxStaticText( parent, -1, _("File Type"), wxDefaultPosition, wxDefaultSize, 0 );
 -    item13->Add( item14, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
@@ -27857,10 +27994,11 @@
      item1->Add( item13, 0, wxALIGN_CENTER, 5 );
  
      wxFlexGridSizer *item34 = new wxFlexGridSizer( 1, 0, 0, 0 );
-     s_filtersizer = item34;
- 
--    item34->Add( 10, 10, 1, wxALIGN_CENTER|wxALL, 5 );
+-    s_filtersizer = item34;
 -
+-    item34->Add( 10, 10, 1, wxALIGN_CENTER|wxALL, 5 );
++    s_filter_sizer = item34;
+ 
 +    item34->Add( 10, 10, wxSizerFlags(1).Center().Border(wxALL, 5) );
      wxStaticText *item35 = new wxStaticText( parent, -1, _("Filter:"), wxDefaultPosition, wxDefaultSize, 0 );
 -    item34->Add( item35, 0, wxALIGN_CENTER|wxALL, 5 );
@@ -29569,14 +29707,22 @@
      wxFlexGridSizer *item16 = new wxFlexGridSizer( 3, 0, 0 );
      item16->AddGrowableCol( 0 );
  
-     wxStaticText *item17 = new wxStaticText( parent, -1, _("Colours: "), wxDefaultPosition, wxDefaultSize, 0 );
+-    wxStaticText *item17 = new wxStaticText( parent, -1, _("Colours: "), wxDefaultPosition, wxDefaultSize, 0 );
 -    item16->Add( item17, 0, wxALIGN_CENTER_VERTICAL|wxTOP, 5 );
 -
++    wxStaticText *item17 = new wxStaticText( parent, -1, _("Colors: "), wxDefaultPosition, wxDefaultSize, 0 );
 +    item16->Add( item17, wxSizerFlags().CenterVertical().Border(wxTOP, 5) );
      wxString strs18[] = 
      {
          _("Background"), 
-@@ -2025,15 +1697,11 @@ wxSizer *PreferencesStatisticsTab( wxWin
+@@ -2019,21 +1691,17 @@ wxSizer *PreferencesStatisticsTab( wxWin
+         _("Active connections"), 
+         _("Active downloads"), 
+         _("Active uploads"), 
+-        _("Systray Icon Speedbar"), 
++        _("Systray Icon Speed Bar"), 
+         _("Kad-nodes current"), 
+         _("Kad-nodes running"), 
          _("Kad-nodes session")
      };
      wxChoice *item18 = new wxChoice( parent, IDC_COLORSELECTOR, wxDefaultPosition, wxDefaultSize, 15, strs18, 0 );
@@ -30589,11 +30735,12 @@
 -
 +    item8->Add( item24, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
      wxCheckBox *item25 = new wxCheckBox( parent, IDC_IPFILTERSYS, _("Use system-wide ipfilter.dat if available"), wxDefaultPosition, wxDefaultSize, 0 );
-     item25->SetToolTip( _("If there's no local ipfilter.dat found, allow usage of a systemwide ipfilter file.") );
+-    item25->SetToolTip( _("If there's no local ipfilter.dat found, allow usage of a systemwide ipfilter file.") );
 -    item8->Add( item25, 0, wxALIGN_CENTER_VERTICAL|wxLEFT, 5 );
 -
 -    item0->Add( item8, 0, wxGROW|wxALIGN_CENTER_VERTICAL, 5 );
 -
++    item25->SetToolTip( _("If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file.") );
 +    item8->Add( item25, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
 +    item0->Add( item8, wxSizerFlags().Expand().CenterVertical() );
      if (set_sizer)
@@ -31209,6 +31356,30 @@
  
  #ifndef __WDR_muuli_H__
  #define __WDR_muuli_H__
+@@ -39,12 +62,12 @@ wxSizer *muleDlg( wxWindow *parent, bool
+ #define ID_SRV_SPLITTER 10001
+ wxSizer *serverListDlg( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+ 
+-extern wxSizer *s_searchsizer;
++extern wxSizer *s_search_sizer;
+ #define IDC_SEARCHNAME 10002
+ #define ID_SEARCHTYPE 10003
+ #define IDC_EXTENDEDSEARCHCHECK 10004
+ #define IDC_FILTERCHECK 10005
+-extern wxSizer *s_extendedsizer;
++extern wxSizer *s_extended_sizer;
+ #define IDC_TypeSearch 10006
+ #define ID_AUTOCATASSIGN 10007
+ #define IDC_EDITSEARCHEXTENSION 10008
+@@ -53,7 +76,7 @@ extern wxSizer *s_extendedsizer;
+ #define IDC_SPINSEARCHMAX 10011
+ #define IDC_SEARCHMAXSIZE 10012
+ #define IDC_SPINSEARCHAVAIBILITY 10013
+-extern wxSizer *s_filtersizer;
++extern wxSizer *s_filter_sizer;
+ #define ID_FILTER_TEXT 10014
+ #define ID_FILTER 10015
+ #define ID_FILTER_INVERT 10016
 @@ -341,9 +364,6 @@ wxSizer *ServerInfoLog( wxWindow *parent
  #define ID_DLPINFO 22001
  #define ID_BTN_RESET_DLP 22002
@@ -32953,6 +33124,15 @@
  			oldFile = finder.GetNextFile();
 --- a/src/PartFileConvertDlg.cpp
 +++ b/src/PartFileConvertDlg.cpp
+@@ -35,7 +35,7 @@
+ #include <wx/stdpaths.h>
+ #include "muuli_wdr.h"
+ 
+-CPartFileConvertDlg*	CPartFileConvertDlg::s_convertgui = NULL;
++CPartFileConvertDlg*	CPartFileConvertDlg::s_convert_gui = NULL;
+ 
+ 
+ #ifndef __WINDOWS__
 @@ -72,13 +72,13 @@ static const char * convert_xpm[] = {
  // Modeless Dialog Implementation
  // CPartFileConvertDlg dialog
@@ -32969,36 +33149,123 @@
  
  CPartFileConvertDlg::CPartFileConvertDlg(wxWindow* parent)
  	: wxDialog(parent, -1, _("Import partfiles"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER)
-@@ -131,7 +131,7 @@ void CPartFileConvertDlg::UpdateProgress
- {
- 	if (s_convertgui) {
- 		s_convertgui->m_pb_current->SetValue((int)percent);
--		wxString buffer = CFormat(wxT("%.2f %%")) % percent;
-+		wxString buffer = CFormat("%.2f %%") % percent;
- 		wxStaticText* percentlabel = dynamic_cast<wxStaticText*>(s_convertgui->FindWindow(IDC_CONV_PROZENT));
- 		percentlabel->SetLabel(buffer);
+@@ -108,35 +108,35 @@ CPartFileConvertDlg::CPartFileConvertDlg
  
-@@ -151,9 +151,9 @@ void CPartFileConvertDlg::ClearInfo()
+ void CPartFileConvertDlg::ShowGUI(wxWindow* parent)
  {
- 	if (s_convertgui) {
- 		dynamic_cast<wxStaticBoxSizer*>(IDC_CURJOB)->GetStaticBox()->SetLabel(_("Waiting..."));
--		dynamic_cast<wxStaticText*>(s_convertgui->FindWindow(IDC_CONV_PROZENT))->SetLabel(wxEmptyString);
-+		dynamic_cast<wxStaticText*>(s_convertgui->FindWindow(IDC_CONV_PROZENT))->SetLabel("");
- 		s_convertgui->m_pb_current->SetValue(0);
--		dynamic_cast<wxStaticText*>(s_convertgui->FindWindow(IDC_CONV_PB_LABEL))->SetLabel(wxEmptyString);
-+		dynamic_cast<wxStaticText*>(s_convertgui->FindWindow(IDC_CONV_PB_LABEL))->SetLabel("");
+-	if (s_convertgui) {
+-		s_convertgui->Show(true);
+-		s_convertgui->Raise();
++	if (s_convert_gui) {
++		s_convert_gui->Show(true);
++		s_convert_gui->Raise();
+ 	} else {
+-		s_convertgui = new CPartFileConvertDlg(parent);
+-		s_convertgui->Show(true);
++		s_convert_gui = new CPartFileConvertDlg(parent);
++		s_convert_gui->Show(true);
+ 		Notify_ConvertReaddAllJobs();
  	}
  }
  
-@@ -176,7 +176,7 @@ void CPartFileConvertDlg::UpdateJobInfo(
+ void CPartFileConvertDlg::CloseGUI()
+ {
+-	if (s_convertgui) {
+-		s_convertgui->Show(false);
+-		s_convertgui->Destroy();
+-		s_convertgui = NULL;
++	if (s_convert_gui) {
++		s_convert_gui->Show(false);
++		s_convert_gui->Destroy();
++		s_convert_gui = NULL;
+ 	}
+ }
+ 
+ void CPartFileConvertDlg::UpdateProgress(float percent, wxString text, wxString header)
+ {
+-	if (s_convertgui) {
+-		s_convertgui->m_pb_current->SetValue((int)percent);
+-		wxString buffer = CFormat(wxT("%.2f %%")) % percent;
+-		wxStaticText* percentlabel = dynamic_cast<wxStaticText*>(s_convertgui->FindWindow(IDC_CONV_PROZENT));
++	if (s_convert_gui) {
++		s_convert_gui->m_pb_current->SetValue((int)percent);
++		wxString buffer = CFormat("%.2f %%") % percent;
++		wxStaticText* percentlabel = dynamic_cast<wxStaticText*>(s_convert_gui->FindWindow(IDC_CONV_PROZENT));
+ 		percentlabel->SetLabel(buffer);
+ 
+ 		if (!text.IsEmpty()) {
+-			dynamic_cast<wxStaticText*>(s_convertgui->FindWindow(IDC_CONV_PB_LABEL))->SetLabel(text);
++			dynamic_cast<wxStaticText*>(s_convert_gui->FindWindow(IDC_CONV_PB_LABEL))->SetLabel(text);
+ 		}
+ 
+ 		percentlabel->GetParent()->Layout();
+@@ -149,46 +149,46 @@ void CPartFileConvertDlg::UpdateProgress
+ 
+ void CPartFileConvertDlg::ClearInfo()
+ {
+-	if (s_convertgui) {
++	if (s_convert_gui) {
+ 		dynamic_cast<wxStaticBoxSizer*>(IDC_CURJOB)->GetStaticBox()->SetLabel(_("Waiting..."));
+-		dynamic_cast<wxStaticText*>(s_convertgui->FindWindow(IDC_CONV_PROZENT))->SetLabel(wxEmptyString);
+-		s_convertgui->m_pb_current->SetValue(0);
+-		dynamic_cast<wxStaticText*>(s_convertgui->FindWindow(IDC_CONV_PB_LABEL))->SetLabel(wxEmptyString);
++		dynamic_cast<wxStaticText*>(s_convert_gui->FindWindow(IDC_CONV_PROZENT))->SetLabel("");
++		s_convert_gui->m_pb_current->SetValue(0);
++		dynamic_cast<wxStaticText*>(s_convert_gui->FindWindow(IDC_CONV_PB_LABEL))->SetLabel("");
+ 	}
+ }
+ 
+ void CPartFileConvertDlg::UpdateJobInfo(ConvertInfo& info)
+ {
+-	if (s_convertgui) {
++	if (s_convert_gui) {
+ 		// search jobitem in listctrl
+-		long itemnr = s_convertgui->m_joblist->FindItem(-1, info.id);
++		long item_nr = s_convert_gui->m_joblist->FindItem(-1, info.id);
+ 		// if it does not exist, add it
+-		if (itemnr == -1) {
+-			itemnr = s_convertgui->m_joblist->InsertItem(s_convertgui->m_joblist->GetItemCount(), info.folder.GetPrintable());
+-			if (itemnr != -1) {
+-				s_convertgui->m_joblist->SetItemData(itemnr, info.id);
++		if (item_nr == -1) {
++			item_nr = s_convert_gui->m_joblist->InsertItem(s_convert_gui->m_joblist->GetItemCount(), info.folder.GetPrintable());
++			if (item_nr != -1) {
++				s_convert_gui->m_joblist->SetItemData(item_nr, info.id);
+ 			}
+ 		}
+ 		// update columns
+-		if (itemnr != -1) {
+-			s_convertgui->m_joblist->SetItem(itemnr, 0, info.filename.IsOk() ? info.folder.GetPrintable() : info.filename.GetPrintable() );
+-			s_convertgui->m_joblist->SetItem(itemnr, 1, GetConversionState(info.state) );
++		if (item_nr != -1) {
++			s_convert_gui->m_joblist->SetItem(item_nr, 0, info.filename.IsOk() ? info.folder.GetPrintable() : info.filename.GetPrintable() );
++			s_convert_gui->m_joblist->SetItem(item_nr, 1, GetConversionState(info.state) );
  			if (info.size > 0) {
- 				s_convertgui->m_joblist->SetItem(itemnr, 2, CFormat(_("%s (Disk: %s)")) % CastItoXBytes(info.size) % CastItoXBytes(info.spaceneeded));
+-				s_convertgui->m_joblist->SetItem(itemnr, 2, CFormat(_("%s (Disk: %s)")) % CastItoXBytes(info.size) % CastItoXBytes(info.spaceneeded));
++				s_convert_gui->m_joblist->SetItem(item_nr, 2, CFormat(_("%s (Disk: %s)")) % CastItoXBytes(info.size) % CastItoXBytes(info.spaceneeded));
  			} else {
 -				s_convertgui->m_joblist->SetItem(itemnr, 2, wxEmptyString);
-+				s_convertgui->m_joblist->SetItem(itemnr, 2, "");
++				s_convert_gui->m_joblist->SetItem(item_nr, 2, "");
  			}
- 			s_convertgui->m_joblist->SetItem(itemnr, 3, info.filehash);
+-			s_convertgui->m_joblist->SetItem(itemnr, 3, info.filehash);
++			s_convert_gui->m_joblist->SetItem(item_nr, 3, info.filehash);
  		}
+ 	}
+ }
+ 
+ void CPartFileConvertDlg::RemoveJobInfo(unsigned id)
+ {
+-	if (s_convertgui) {
+-		long itemnr = s_convertgui->m_joblist->FindItem(-1, id);
+-		if (itemnr != -1) {
+-			s_convertgui->m_joblist->DeleteItem(itemnr);
++	if (s_convert_gui) {
++		long item_nr = s_convert_gui->m_joblist->FindItem(-1, id);
++		if (item_nr != -1) {
++			s_convert_gui->m_joblist->DeleteItem(item_nr);
+ 		}
+ 	}
+ }
 @@ -203,7 +203,7 @@ void CPartFileConvertDlg::OnAddFolder(wx
  		wxStandardPaths::Get().GetDocumentsDir(), wxDD_DEFAULT_STYLE,
  		wxDefaultPosition, this);
@@ -33008,6 +33275,35 @@
  					 _("Remove sources?"),
  					 wxYES_NO | wxCANCEL | wxICON_QUESTION, this);
  		if (reply != wxCANCEL) {
+@@ -227,10 +227,10 @@ void CPartFileConvertDlg::RemoveSel(wxCo
+ {
+ 	if (m_joblist->GetSelectedItemCount() == 0) return;
+ 
+-	long itemnr = m_joblist->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+-	while (itemnr != -1) {
+-		Notify_ConvertRemoveJob(m_joblist->GetItemData(itemnr));
+-		itemnr = m_joblist->GetNextItem(itemnr, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
++	long item_nr = m_joblist->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
++	while (item_nr != -1) {
++		Notify_ConvertRemoveJob(m_joblist->GetItemData(item_nr));
++		item_nr = m_joblist->GetNextItem(item_nr, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+ 	}
+ }
+ 
+@@ -238,9 +238,9 @@ void CPartFileConvertDlg::RetrySel(wxCom
+ {
+ 	if (m_joblist->GetSelectedItemCount() == 0) return;
+ 
+-	long itemnr = m_joblist->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+-	while (itemnr != -1) {
+-		Notify_ConvertRetryJob(m_joblist->GetItemData(itemnr));
+-		itemnr = m_joblist->GetNextItem(itemnr, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
++	long item_nr = m_joblist->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
++	while (item_nr != -1) {
++		Notify_ConvertRetryJob(m_joblist->GetItemData(item_nr));
++		item_nr = m_joblist->GetNextItem(item_nr, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+ 	}
+ }
 --- a/src/PartFileConvertDlg.h
 +++ b/src/PartFileConvertDlg.h
 @@ -38,7 +38,7 @@ public:
@@ -33019,15 +33315,18 @@
  	static void	UpdateJobInfo(ConvertInfo& info);
  	static void	RemoveJobInfo(unsigned id);
  	static void	ClearInfo();
-@@ -54,7 +54,7 @@ protected:
+@@ -54,9 +54,9 @@ protected:
  	void	RetrySel(wxCommandEvent& event);
  	void	RemoveSel(wxCommandEvent& event);
  
 -	DECLARE_EVENT_TABLE()
 +	wxDECLARE_EVENT_TABLE();
  
- 	static CPartFileConvertDlg*	s_convertgui;
+-	static CPartFileConvertDlg*	s_convertgui;
++	static CPartFileConvertDlg*	s_convert_gui;
  };
+ 
+ #endif /* PARTFILECONVERTDLG_H */
 --- a/src/PartFile.cpp
 +++ b/src/PartFile.cpp
 @@ -26,6 +26,8 @@
@@ -35530,15 +35829,17 @@
  			}
  		}
  	}
-@@ -981,7 +982,7 @@ CPreferences::CPreferences()
+@@ -981,8 +982,8 @@ CPreferences::CPreferences()
  
  	// serverlist addresses
  	CTextFile slistfile;
 -	if (slistfile.Open(s_configDir + wxT("addresses.dat"), CTextFile::read)) {
+-		adresses_list = slistfile.ReadLines();
 +	if (slistfile.Open(s_configDir + "addresses.dat", CTextFile::read)) {
- 		adresses_list = slistfile.ReadLines();
++		addresses_list = slistfile.ReadLines();
  	}
  #endif
+ }
 @@ -1002,7 +1003,7 @@ void CPreferences::BuildItemList( const
  	/**
  	 * User settings
@@ -36324,7 +36625,7 @@
  	static uint16		GetMaxConnections()		{ return s_maxconnections; }
  	static uint16		GetMaxSourcePerFile()		{ return s_maxsourceperfile; }
  	static uint16		GetMaxSourcePerFileSoft() {
-@@ -345,9 +347,9 @@ public:
+@@ -345,14 +347,14 @@ public:
  	static const wxString&	GetYourHostname()		{ return s_yourHostname; }
  	static void		SetYourHostname(const wxString& s)	{ s_yourHostname = s; }
  
@@ -36337,6 +36638,12 @@
  
  	typedef std::vector<CPath> PathList;
  	PathList shareddir_list;
+ 
+-	wxArrayString adresses_list;
++	wxArrayString addresses_list;
+ 
+ 	static bool		AutoConnectStaticOnly()		{ return s_autoconnectstaticonly; }
+ 	static void		SetAutoConnectStaticOnly(bool val) { s_autoconnectstaticonly = val; }
 @@ -622,9 +624,9 @@ protected:
  	static Cfg_Lang_Base * s_cfgLang;
  
@@ -38804,6 +39111,35 @@
  
  
  
+@@ -120,8 +121,8 @@ CSearchDlg::CSearchDlg(wxWindow* pParent
+ 	CastChild( IDC_SEARCHMAXSIZE, wxChoice )->SetSelection(2);
+ 
+ 	// Not there initially.
+-	s_searchsizer->Show(s_extendedsizer, false);
+-	s_searchsizer->Show(s_filtersizer, false);
++	s_search_sizer->Show(s_extended_sizer, false);
++	s_search_sizer->Show(s_filter_sizer, false);
+ 
+ 	Layout();
+ }
+@@ -204,7 +205,7 @@ void CSearchDlg::OnListItemSelected(wxLi
+ 
+ void CSearchDlg::OnExtendedSearchChange(wxCommandEvent& event)
+ {
+-	s_searchsizer->Show(s_extendedsizer, event.IsChecked());
++	s_search_sizer->Show(s_extended_sizer, event.IsChecked());
+ 
+ 	Layout();
+ }
+@@ -212,7 +213,7 @@ void CSearchDlg::OnExtendedSearchChange(
+ 
+ void CSearchDlg::OnFilterCheckChange(wxCommandEvent& event)
+ {
+-	s_searchsizer->Show(s_filtersizer, event.IsChecked());
++	s_search_sizer->Show(s_filter_sizer, event.IsChecked());
+ 	Layout();
+ 
+ 	int nPages = m_notebook->GetPageCount();
 @@ -264,6 +265,13 @@ void CSearchDlg::OnSearchPageChanged(wxB
  
  		bool enable = (ctrl->GetSelectedItemCount() > 0);
@@ -39973,7 +40309,23 @@
  	}
  	return ret;
  }
-@@ -882,11 +882,11 @@ void CServerList::AutoUpdate()
+@@ -868,7 +868,7 @@ bool CServerList::DownloadFinished(uint3
+ void CServerList::AutoUpdate()
+ {
+ 
+-	uint8 url_count = theApp->glob_prefs->adresses_list.GetCount();
++	uint8 url_count = theApp->glob_prefs->addresses_list.GetCount();
+ 
+ 	if (!url_count) {
+ 		AddLogLineC(_("No server list address entry in 'addresses.dat' found. Please paste a valid server list address into this file in order to auto-update your server list"));
+@@ -876,17 +876,17 @@ void CServerList::AutoUpdate()
+ 	}
+ 	// Do current URL. Callback function will take care of the others.
+ 	while ( current_url_index < url_count ) {
+-		wxString URI = theApp->glob_prefs->adresses_list[current_url_index];
++		wxString URI = theApp->glob_prefs->addresses_list[current_url_index];
+ 		// We use wxURL to validate the URI
+ 		if ( wxURL( URI ).GetError() == wxURL_NOERR ) {
  			// Ok, got a valid URI
  			m_URLUpdate = URI;
  			wxString strTempFilename =
@@ -39996,6 +40348,15 @@
  
  		// curl succeeded. proceed with server.met loading
  		LoadServerMet(tempFilename);
+@@ -918,7 +918,7 @@ void CServerList::AutoDownloadFinished(u
+ 
+ 	++current_url_index;
+ 
+-	if (current_url_index < theApp->glob_prefs->adresses_list.GetCount()) {
++	if (current_url_index < theApp->glob_prefs->addresses_list.GetCount()) {
+ 		// Next!
+ 		AutoUpdate();
+ 	}
 --- a/src/ServerListCtrl.cpp
 +++ b/src/ServerListCtrl.cpp
 @@ -49,7 +49,7 @@
@@ -40891,7 +41252,12 @@
  
  		if (theApp->serverconnect->IsLowID()) {
  			ED2KInfoList->SetItem(1, 1, _("Server")); // LowID, unknown ip
-@@ -257,13 +257,13 @@ void CServerWnd::UpdateKadInfo()
+@@ -253,17 +253,17 @@ void CServerWnd::UpdateKadInfo()
+ 			}
+ 
+ 			KadInfoList->InsertItem(next_row, _("IP address:"));
+-			KadInfoList->SetItem(next_row++, 1, Uint32toStringIP(theApp->GetKadIPAdress()));
++			KadInfoList->SetItem(next_row++, 1, Uint32toStringIP(theApp->GetKadIPAddress()));
  
  			// Index info
  			KadInfoList->InsertItem(next_row, _("Indexed sources:"));
@@ -42169,6 +42535,15 @@
  			++(*OSNode);
  			OSRoot->AddChild(OSNode, OS_ID, true);
  		}
+@@ -1053,7 +1053,7 @@ void CStatistics::UpdateStats(const CECP
+ 	s_statData[sdKadIndexedKeywords] = stats->GetTagByNameSafe(EC_TAG_STATS_KAD_INDEXED_KEYWORDS)->GetInt();
+ 	s_statData[sdKadIndexedNotes] = stats->GetTagByNameSafe(EC_TAG_STATS_KAD_INDEXED_NOTES)->GetInt();
+ 	s_statData[sdKadIndexedLoad] = stats->GetTagByNameSafe(EC_TAG_STATS_KAD_INDEXED_LOAD)->GetInt();
+-	s_statData[sdKadIPAdress] = stats->GetTagByNameSafe(EC_TAG_STATS_KAD_IP_ADRESS)->GetInt();
++	s_statData[sdKadIPAddress] = stats->GetTagByNameSafe(EC_TAG_STATS_KAD_IP_ADDRESS)->GetInt();
+ 	s_statData[sdKadNodes] = stats->GetTagByNameSafe(EC_TAG_STATS_KAD_NODES)->GetInt();
+ 	s_statData[sdBuddyStatus] = stats->GetTagByNameSafe(EC_TAG_STATS_BUDDY_STATUS)->GetInt();
+ 	s_statData[sdBuddyIP] = stats->GetTagByNameSafe(EC_TAG_STATS_BUDDY_IP)->GetInt();
 --- a/src/StatisticsDlg.cpp
 +++ b/src/StatisticsDlg.cpp
 @@ -42,8 +42,8 @@ class CTreeItemData : public wxTreeItemD
@@ -42229,6 +42604,24 @@
  	 */
  	double	GetMaxRate()			{ wxMutexLocker lock(m_mutex); return m_max_rate; }
  
+@@ -499,7 +499,7 @@ enum StatDataIndex {
+ 	sdKadIndexedKeywords,
+ 	sdKadIndexedNotes,
+ 	sdKadIndexedLoad,
+-	sdKadIPAdress,
++	sdKadIPAddress,
+ 	sdKadNodes,
+ 	sdBuddyStatus,
+ 	sdBuddyIP,
+@@ -552,7 +552,7 @@ private:
+ 	static	uint32	GetKadIndexedKeywords()	{ return s_statData[sdKadIndexedKeywords]; }
+ 	static	uint32	GetKadIndexedNotes()	{ return s_statData[sdKadIndexedNotes]; }
+ 	static	uint32	GetKadIndexedLoad()		{ return s_statData[sdKadIndexedLoad]; }
+-	static	uint32	GetKadIPAdress()		{ return s_statData[sdKadIPAdress]; }
++	static	uint32	GetKadIPAddress()		{ return s_statData[sdKadIPAddress]; }
+ 	static	uint8	GetBuddyStatus()		{ return s_statData[sdBuddyStatus]; }
+ 	static	uint32	GetBuddyIP()			{ return s_statData[sdBuddyIP]; }
+ 	static	uint32	GetBuddyPort()			{ return s_statData[sdBuddyPort]; }
 --- a/src/StatTree.cpp
 +++ b/src/StatTree.cpp
 @@ -32,7 +32,7 @@
@@ -46029,7 +46422,7 @@
                  }
          }
      }
-@@ -100,10 +96,10 @@ alcc::OnExit()
+@@ -100,21 +96,21 @@ alcc::OnExit()
  /// Parse command line
  void alcc::OnInitCmdLine(wxCmdLineParser& cmdline)
  {
@@ -46043,8 +46436,11 @@
 +	cmdline.AddParam("input files", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_MULTIPLE);
  }
  
- /// Command line preocessing
-@@ -113,8 +109,8 @@ bool alcc::OnCmdLineParsed(wxCmdLinePars
+-/// Command line preocessing
++/// Command line preprocessing
+ bool alcc::OnCmdLineParsed(wxCmdLineParser& cmdline)
+ {
+ 
    wxFileName filename;
    size_t i;
  

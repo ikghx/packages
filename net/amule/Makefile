@@ -7,7 +7,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=amule
 PKG_VERSION:=2.3.3
-PKG_RELEASE:=8
+PKG_RELEASE:=9
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/amule-project/amule/tar.gz/$(PKG_VERSION)?
@@ -29,7 +29,7 @@ define Package/amule
   CATEGORY:=Network
   TITLE:=A multi-platform eMule-like ed2k client
   URL:=http://www.amule.org/
-  DEPENDS:=+libpng +libpthread +libncurses +libreadline +libwxbase +libupnp +libbfd +libintl-full \
+  DEPENDS:=+libatomic +libpng +libpthread +libncurses +libreadline +libwxbase +libupnp +libbfd +libintl-full \
 	$(ICONV_DEPENDS) $(INTL_DEPENDS) +!AMULE_CRYPTOPP_STATIC_LINKING:libcryptopp \
 	+boost-system +antileech +libcurl
   USERID:=amule=4662:amule=4662
@@ -41,6 +41,7 @@ config AMULE_CRYPTOPP_STATIC_LINKING
 	default n
 endef
 
+TARGET_CFLAGS += -latomic
 TARGET_LDFLAGS+= $(if $(ICONV_FULL),-liconv)
 
 CONFIGURE_ARGS+= \
