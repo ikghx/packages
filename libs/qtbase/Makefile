@@ -5,7 +5,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qtbase
-PKG_BASE:=6.9
+PKG_BASE:=6.10
 PKG_BUGFIX:=3
 PKG_VERSION:=$(PKG_BASE).$(PKG_BUGFIX)
 PKG_RELEASE:=1
@@ -14,7 +14,7 @@ PKG_SOURCE:=$(PKG_NAME)-everywhere-src-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:= \
 		https://download.qt.io/official_releases/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules/ \
 		https://master.qt.io/archive/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules/
-PKG_HASH:=c5a1a2f660356ec081febfa782998ae5ddbc5925117e64f50e4be9cd45b8dc6e
+PKG_HASH:=383dc907816338f0cba72088a524c07458dfc69ce684ca9132fcc4fe91c24b0b
 
 HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)

@@ -5,7 +5,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qttools
-PKG_BASE:=6.9
+PKG_BASE:=6.10
 PKG_BUGFIX:=3
 PKG_VERSION:=$(PKG_BASE).$(PKG_BUGFIX)
 PKG_RELEASE:=1
@@ -14,7 +14,7 @@ PKG_SOURCE:=$(PKG_NAME)-everywhere-src-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:= \
 		https://download.qt.io/official_releases/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules/ \
 		https://master.qt.io/archive/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules/
-PKG_HASH:=0cf7ab0e975fc57f5ce1375576a0a76e9ede25e6b01db3cf2339cd4d9750b4e9
+PKG_HASH:=8f00b9e3d1f80973d81cff67684972b89993183ef19924404d5b8ff0f89675b6
 
 HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)
 

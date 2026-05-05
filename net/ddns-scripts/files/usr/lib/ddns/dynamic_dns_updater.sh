@@ -23,7 +23,7 @@ Usage:
 
 Parameters:
  -S SECTION          SECTION to start
-                     use option -S SECTION
+                     SECTION is the UCI section name/id to start
 
  -h                  show this help and exit
  -V                  show version and exit
