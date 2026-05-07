@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libreswan
 PKG_VERSION:=4.12
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://download.libreswan.org/
@@ -46,7 +46,6 @@ define Package/libreswan
 	  +kmod-crypto-acompress \
 	  +kmod-crypto-aead \
 	  +kmod-crypto-authenc \
-	  +kmod-crypto-arc4 \
 	  +kmod-crypto-cbc \
 	  +kmod-crypto-ccm \
 	  +kmod-crypto-chacha20poly1305 \
