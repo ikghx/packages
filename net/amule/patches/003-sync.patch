@@ -2779,7 +2779,30 @@
  		return;
  	}
  
-@@ -302,7 +302,7 @@ m_clientSkinNames(CLIENT_SKIN_SIZE)
+@@ -295,6 +295,22 @@ m_clientSkinNames(CLIENT_SKIN_SIZE)
+ 	}
+ 
+ 	Show(true);
++
++	// Workaround for wxMSW: Create_Toolbar() above (and the Realize()
++	// inside Apply_Toolbar_Skin) runs before the frame is mapped at
++	// its final on-screen size. wxMSW's native toolbar control
++	// measures whether labels fit at *that* moment to pick its display
++	// mode (icon-only vs icon-with-label-below); with long-string
++	// locales (it_IT, fr_FR, ...) on amulegui (one fewer button than
++	// the monolithic GUI, so a slightly different total width) the
++	// initial measurement decides icon-only and never recovers when
++	// the frame later resizes to the saved/maximized geometry, leaving
++	// the labels clipped. Re-realize the toolbar after Show(true) so
++	// the mode is picked against the actual on-screen frame width.
++	if (m_wndToolbar) {
++		m_wndToolbar->Realize();
++	}
++
+ 	// Must we start minimized?
+ 	if (thePrefs::GetStartMinimized()) {
+ 		Iconize(true);
+@@ -302,7 +318,7 @@ m_clientSkinNames(CLIENT_SKIN_SIZE)
  
  	// Set shortcut keys
  	wxAcceleratorEntry entries[] = {
@@ -2788,7 +2811,7 @@
  	};
  
  	SetAcceleratorTable(wxAcceleratorTable(itemsof(entries), entries));
-@@ -333,7 +333,7 @@ void CamuleDlg::ShowED2KLinksHandler( bo
+@@ -333,7 +349,7 @@ void CamuleDlg::ShowED2KLinksHandler( bo
  {
  	// Errorchecking in case the pointer becomes invalid ...
  	if (s_fed2klh == NULL) {
@@ -2797,7 +2820,7 @@
  		return;
  	}
  
-@@ -346,7 +346,7 @@ void CamuleDlg::ToogleED2KLinksHandler()
+@@ -346,7 +362,7 @@ void CamuleDlg::ToogleED2KLinksHandler()
  {
  	// Errorchecking in case the pointer becomes invalid ...
  	if (s_fed2klh == NULL) {
@@ -2806,7 +2829,7 @@
  		return;
  	}
  	ShowED2KLinksHandler(!s_dlgcnt->IsShown(s_fed2klh));
-@@ -367,7 +367,7 @@ void CamuleDlg::SetActiveDialog(DialogTy
+@@ -367,7 +383,7 @@ void CamuleDlg::SetActiveDialog(DialogTy
  		contentSizer->Detach(m_activewnd);
  	}
  
@@ -2815,7 +2838,7 @@
  	dlg->Show(true);
  	m_activewnd=dlg;
  	s_dlgcnt->Layout();
-@@ -402,7 +402,7 @@ void CamuleDlg::UpdateTrayIcon(int perce
+@@ -402,7 +418,7 @@ void CamuleDlg::UpdateTrayIcon(int perce
  void CamuleDlg::CreateSystray()
  {
  	wxCHECK_RET(m_wndTaskbarNotifier == NULL,
@@ -2824,7 +2847,7 @@
  
  	m_wndTaskbarNotifier = new CMuleTrayIcon();
  	// This will effectively show the Tray Icon.
-@@ -439,7 +439,7 @@ void CamuleDlg::OnToolBarButton(wxComman
+@@ -439,7 +455,7 @@ void CamuleDlg::OnToolBarButton(wxComman
  				case ID_BUTTONNETWORKS:
  					SetActiveDialog(DT_NETWORKS_WND, m_serverwnd);
  					// Set serverlist splitter position
@@ -2833,7 +2856,7 @@
  					break;
  
  				case ID_BUTTONSEARCH:
-@@ -471,7 +471,7 @@ void CamuleDlg::OnToolBarButton(wxComman
+@@ -471,7 +487,7 @@ void CamuleDlg::OnToolBarButton(wxComman
  
  				// This shouldn't happen, but just in case
  				default:
@@ -2842,7 +2865,7 @@
  					break;
  			}
  		}
-@@ -484,17 +484,17 @@ void CamuleDlg::OnToolBarButton(wxComman
+@@ -484,17 +500,17 @@ void CamuleDlg::OnToolBarButton(wxComman
  
  void CamuleDlg::OnAboutButton(wxCommandEvent& WXUNUSED(ev))
  {
@@ -2866,7 +2889,7 @@
  		_("with Dynamic Leecher Protection. \n\n") <<
  		_("Website: http://www.amule.org \n") <<
  		_("Forum: http://forum.amule.org \n") <<
-@@ -601,14 +601,14 @@ void CamuleDlg::OnBnConnect(wxCommandEve
+@@ -601,14 +617,14 @@ void CamuleDlg::OnBnConnect(wxCommandEve
  void CamuleDlg::ResetLog(int id)
  {
  	wxTextCtrl* ct = CastByID(id, m_serverwnd, wxTextCtrl);
@@ -2884,7 +2907,7 @@
  		text->GetParent()->Layout();
  	}
  }
-@@ -628,9 +628,7 @@ void CamuleDlg::AddLogLine(const wxStrin
+@@ -628,9 +644,7 @@ void CamuleDlg::AddLogLine(const wxStrin
  		wxFont font = style.GetFont();
  		font.SetWeight(addtostatusbar ? wxFONTWEIGHT_BOLD : wxFONTWEIGHT_NORMAL);
  		style.SetFont(font);
@@ -2894,7 +2917,7 @@
  		ct->SetDefaultStyle(style);
  		ct->AppendText(bufferline);
  		ct->ShowPosition( ct->GetLastPosition() - 1 );
-@@ -640,10 +638,10 @@ void CamuleDlg::AddLogLine(const wxStrin
+@@ -640,10 +654,10 @@ void CamuleDlg::AddLogLine(const wxStrin
  	// Set the status-bar if the event warrents it
  	if ( addtostatusbar ) {
  		// Escape "&"s, which would otherwise not show up
@@ -2908,7 +2931,7 @@
  		text->SetToolTip( bufferline );
  		text->GetParent()->Layout();
  	}
-@@ -656,9 +654,9 @@ void CamuleDlg::AddServerMessageLine(wxS
+@@ -656,9 +670,9 @@ void CamuleDlg::AddServerMessageLine(wxS
  	wxTextCtrl* cv= CastByID( ID_SERVERINFO, m_serverwnd, wxTextCtrl );
  	if(cv) {
  		if (message.Length() > 500) {
@@ -2920,7 +2943,7 @@
  		}
  		cv->ShowPosition(cv->GetLastPosition()-1);
  	}
-@@ -670,9 +668,9 @@ void CamuleDlg::AddDLPMessageLine(const
+@@ -670,9 +684,9 @@ void CamuleDlg::AddDLPMessageLine(const
  	wxTextCtrl* cv = CastByID( ID_DLPINFO, m_serverwnd, wxTextCtrl );
  	if(cv) {
  		if (msg.Length() > 500) {
@@ -2932,7 +2955,7 @@
  		}
  		cv->ShowPosition(cv->GetLastPosition()-1);
  	}
-@@ -712,7 +710,7 @@ void CamuleDlg::ShowConnectionState(bool
+@@ -712,7 +726,7 @@ void CamuleDlg::ShowConnectionState(bool
  	if (theApp->IsConnectedED2K()) {
  		CServer* server = theApp->serverconnect->GetCurrentServer();
  		if (server) {
@@ -2941,7 +2964,7 @@
  		}
  
  		if (theApp->serverconnect->IsLowID()) {
-@@ -747,12 +745,12 @@ void CamuleDlg::ShowConnectionState(bool
+@@ -747,12 +761,12 @@ void CamuleDlg::ShowConnectionState(bool
  		msgKad = _("Kad: Off");
  	}
  
@@ -2957,7 +2980,7 @@
  	} else {
  		labelMsg = msgED2K + msgKad;
  	}
-@@ -786,7 +784,7 @@ void CamuleDlg::ShowConnectionState(bool
+@@ -786,7 +800,7 @@ void CamuleDlg::ShowConnectionState(bool
  	if ( (true == skinChanged) || (currentState != s_oldState) ) {
  		wxWindowUpdateLocker freezer(m_wndToolbar);
  
@@ -2966,7 +2989,7 @@
  
  		switch (currentState) {
  			case ECS_Connecting:
-@@ -807,8 +805,6 @@ void CamuleDlg::ShowConnectionState(bool
+@@ -807,8 +821,6 @@ void CamuleDlg::ShowConnectionState(bool
  				toolbarTool->SetNormalBitmap(m_tblist.GetBitmap(0));
  		}
  
@@ -2975,7 +2998,7 @@
  		m_wndToolbar->EnableTool(ID_BUTTONCONNECT, (thePrefs::GetNetworkED2K() || thePrefs::GetNetworkKademlia()) && theApp->ipfilter->IsReady());
  
  		s_oldState = currentState;
-@@ -824,8 +820,8 @@ void CamuleDlg::ShowConnectionState(bool
+@@ -824,8 +836,8 @@ void CamuleDlg::ShowConnectionState(bool
  	if (ed2kState != s_ED2KOldState || kadState != s_EKadOldState) {
  		s_ED2KOldState = ed2kState;
  		s_EKadOldState = kadState;
@@ -2986,7 +3009,7 @@
  
  		wxBitmap statusIcon = connBitmap->GetBitmap();
  		// Sanity check - otherwise there's a crash here if aMule runs out of resources
-@@ -845,7 +841,7 @@ void CamuleDlg::ShowConnectionState(bool
+@@ -845,7 +857,7 @@ void CamuleDlg::ShowConnectionState(bool
  
  void CamuleDlg::ShowUserCount(const wxString& info)
  {
@@ -2995,7 +3018,7 @@
  
  	// Update Kad tab
  	m_serverwnd->UpdateKadInfo();
-@@ -867,28 +863,28 @@ void CamuleDlg::ShowTransferRate()
+@@ -867,28 +879,28 @@ void CamuleDlg::ShowTransferRate()
  	if( thePrefs::ShowOverhead() )
  	{
  		buffer = CFormat(_("Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"))
@@ -3034,7 +3057,7 @@
  		}
  	}
  
-@@ -907,7 +903,7 @@ void CamuleDlg::ShowTransferRate()
+@@ -907,7 +919,7 @@ void CamuleDlg::ShowTransferRate()
  		m_wndTaskbarNotifier->SetTrayToolTip(buffer2);
  	}
  
@@ -3043,7 +3066,7 @@
  	bmp->SetBitmap(dlStatusImages((kBpsUp>0.01 ? 2 : 0) + (kBpsDown>0.01 ? 1 : 0)));
  }
  
-@@ -957,7 +953,7 @@ void CamuleDlg::OnClose(wxCloseEvent& ev
+@@ -957,7 +969,7 @@ void CamuleDlg::OnClose(wxCloseEvent& ev
  
  void CamuleDlg::OnBnClickedFast(wxCommandEvent& WXUNUSED(evt))
  {
@@ -3052,7 +3075,7 @@
  
  	for ( int i = 0; i < ctl->GetNumberOfLines(); i++ ) {
  		wxString strlink = ctl->GetLineText(i);
-@@ -968,7 +964,7 @@ void CamuleDlg::OnBnClickedFast(wxComman
+@@ -968,7 +980,7 @@ void CamuleDlg::OnBnClickedFast(wxComman
  		}
  	}
  
@@ -3061,7 +3084,7 @@
  }
  
  
-@@ -983,18 +979,18 @@ bool CamuleDlg::LoadGUIPrefs(bool overri
+@@ -983,18 +995,18 @@ bool CamuleDlg::LoadGUIPrefs(bool overri
  	}
  
  	// The section where to save in in file
@@ -3087,7 +3110,7 @@
  	if (!override_size) {
  		if (x2 > 0 && y2 > 0) {
  			SetSize(x2, y2);
-@@ -1038,7 +1034,7 @@ bool CamuleDlg::SaveGUIPrefs()
+@@ -1038,7 +1050,7 @@ bool CamuleDlg::SaveGUIPrefs()
  		return false;
  	}
  	// The section where to save in in file
@@ -3096,7 +3119,7 @@
  
  	if (!IsIconized()) {
  		// Main window location and size
-@@ -1047,17 +1043,17 @@ bool CamuleDlg::SaveGUIPrefs()
+@@ -1047,17 +1059,17 @@ bool CamuleDlg::SaveGUIPrefs()
  		GetSize(&x2, &y2);
  
  		// Saving window size and position
@@ -3120,7 +3143,7 @@
  
  	config->Flush(true);
  
-@@ -1078,11 +1074,7 @@ void CamuleDlg::OnMinimize(wxIconizeEven
+@@ -1078,11 +1090,7 @@ void CamuleDlg::OnMinimize(wxIconizeEven
  			// Veto.
  		} else {
  			if (m_wndTaskbarNotifier && thePrefs::DoMinToTray()) {
@@ -3132,7 +3155,7 @@
  			}
  			else {
  				evt.Skip();
-@@ -1173,12 +1165,12 @@ void CamuleDlg::LaunchUrl( const wxStrin
+@@ -1173,12 +1181,12 @@ void CamuleDlg::LaunchUrl( const wxStrin
  	cmd = thePrefs::GetBrowser();
  	wxString tmp = url;
  	// Pipes cause problems, so escape them
@@ -3148,7 +3171,7 @@
  		}
  
  		CTerminationProcess *p = new CTerminationProcess(cmd);
-@@ -1194,7 +1186,7 @@ void CamuleDlg::LaunchUrl( const wxStrin
+@@ -1194,7 +1202,7 @@ void CamuleDlg::LaunchUrl( const wxStrin
  	}
  	// Unable to execute browser. But this error message doesn't make sense,
  	// cosidering that you _can't_ set the browser executable path... =/
@@ -3157,7 +3180,7 @@
  }
  
  
-@@ -1207,7 +1199,7 @@ bool CamuleDlg::Check_and_Init_Skin()
+@@ -1207,7 +1215,7 @@ bool CamuleDlg::Check_and_Init_Skin()
  		return false;
  	}
  
@@ -3166,7 +3189,7 @@
  
  	wxStandardPathsBase &spb(wxStandardPaths::Get());
  #ifdef __WINDOWS__
-@@ -1215,13 +1207,13 @@ bool CamuleDlg::Check_and_Init_Skin()
+@@ -1215,13 +1223,13 @@ bool CamuleDlg::Check_and_Init_Skin()
  #elif defined(__WXMAC__)
  		wxString dataDir(spb.GetDataDir());
  #else
@@ -3184,7 +3207,7 @@
  
  	m_skinFileName.Assign(skinFileName);
  	if (!m_skinFileName.FileExists()) {
-@@ -1260,16 +1252,16 @@ void CamuleDlg::Add_Skin_Icon(
+@@ -1260,16 +1268,16 @@ void CamuleDlg::Add_Skin_Icon(
  		wxFFileInputStream in(m_skinFileName.GetFullPath());
  		wxZipInputStream zip(in);
  
@@ -3204,7 +3227,7 @@
  						iconName);
  				useSkins = false;
  		}
-@@ -1277,9 +1269,9 @@ void CamuleDlg::Add_Skin_Icon(
+@@ -1277,9 +1285,9 @@ void CamuleDlg::Add_Skin_Icon(
  	}
  
  	wxBitmap bmp(useSkins ? new_image : stdIcon);
@@ -3216,7 +3239,7 @@
  		m_tblist.Add(bmp);
  	}
  }
-@@ -1294,7 +1286,7 @@ void CamuleDlg::Apply_Clients_Skin()
+@@ -1294,7 +1302,7 @@ void CamuleDlg::Apply_Clients_Skin()
  
  	// Add the images to the image list
  	for (int i = 0; i < CLIENT_SKIN_SIZE; ++i) {
@@ -3225,7 +3248,7 @@
  			clientImages(i), useSkins);
  	}
  }
-@@ -1309,25 +1301,25 @@ void CamuleDlg::Apply_Toolbar_Skin(wxToo
+@@ -1309,25 +1317,25 @@ void CamuleDlg::Apply_Toolbar_Skin(wxToo
  	m_tblist.RemoveAll();
  
  	// Add the images to the image list
@@ -3265,7 +3288,7 @@
  
  	wndToolbar->AddSeparator();
  	wndToolbar->AddTool(ID_BUTTONNETWORKS, _("Networks"), m_tblist.GetBitmap(3), wxNullBitmap, wxITEM_CHECK, _("Networks Window"));
-@@ -1374,19 +1366,11 @@ void CamuleDlg::Create_Toolbar(bool orie
+@@ -1374,19 +1382,11 @@ void CamuleDlg::Create_Toolbar(bool orie
  	}
  
  	if (!m_wndToolbar) {
@@ -3289,7 +3312,7 @@
  	}
  
  	Apply_Toolbar_Skin(m_wndToolbar);
-@@ -1403,7 +1387,7 @@ void CamuleDlg::OnMainGUISizeChange(wxSi
+@@ -1403,7 +1403,7 @@ void CamuleDlg::OnMainGUISizeChange(wxSi
  		if (!m_transferwnd->clientlistctrl->GetShowing()) {
  			int height = m_transferwnd->clientlistctrl->GetSize().GetHeight();
  			wxSplitterWindow* splitter =
@@ -3298,7 +3321,7 @@
  			height += splitter->GetWindow1()->GetSize().GetHeight();
  			splitter->SetSashPosition( height );
  		}
-@@ -1417,7 +1401,7 @@ void CamuleDlg::OnKeyPressed(wxKeyEvent&
+@@ -1417,7 +1417,7 @@ void CamuleDlg::OnKeyPressed(wxKeyEvent&
  		// Ctrl/Alt/Shift must not be pressed, to avoid
  		// conflicts with other (global) shortcuts.
  		if (!event.HasModifiers() && !event.ShiftDown()) {
@@ -3307,7 +3330,7 @@
  			return;
  		}
  	}
-@@ -1439,7 +1423,7 @@ void CamuleDlg::DoNetworkRearrange()
+@@ -1439,7 +1439,7 @@ void CamuleDlg::DoNetworkRearrange()
  	wxWindowUpdateLocker freezer(this);
  #endif
  
@@ -3316,7 +3339,7 @@
  
  	// set the log windows
  	wxNotebook* logs_notebook = CastChild( ID_SRVLOG_NOTEBOOK, wxNotebook);
-@@ -1459,8 +1443,6 @@ void CamuleDlg::DoNetworkRearrange()
+@@ -1459,8 +1459,6 @@ void CamuleDlg::DoNetworkRearrange()
  		logs_notebook->AddPage(m_logpages[3].page, m_logpages[3].name);
  	}
  
@@ -3325,7 +3348,7 @@
  	// Set the main window.
  	// If we have both networks active, activate a notebook to select between them.
  	// If only one is active, show the window directly without a surrounding one tab notebook.
-@@ -1525,19 +1507,16 @@ void CamuleDlg::DoNetworkRearrange()
+@@ -1525,19 +1523,16 @@ void CamuleDlg::DoNetworkRearrange()
  
  		replacement->Reparent(m_networknotebooksizer->GetContainingWindow());
  		replacement->Show();
@@ -19371,8 +19394,16 @@
  what all it does can cause great harm to the network if released in mass form..
  Any mod that changes anything within the Kademlia side will not be allowed to advertise
  there client on the eMule forum..
-@@ -59,7 +59,7 @@ using namespace Kademlia;
- uint32_t  CSearchManager::m_nextID = 0;
+@@ -56,10 +56,14 @@ there client on the eMule forum..
+ using namespace Kademlia;
+ ////////////////////////////////////////
+ 
+-uint32_t  CSearchManager::m_nextID = 0;
++// Top bit reserved for Kad-allocated IDs; ed2k Local/Global IDs
++// (CSearchDlg::StartNewSearch) live in the bottom half. Keeps the
++// two ID spaces from ever colliding regardless of session length.
++#define SEARCH_ID_KAD_MASK 0x80000000
++uint32_t  CSearchManager::m_nextID = SEARCH_ID_KAD_MASK;
  SearchMap CSearchManager::m_searches;
  
 -bool CSearchManager::IsSearching(uint32_t searchID) throw()
@@ -19380,7 +19411,7 @@
  {
  	// Check if this searchID is within the searches
  	for (SearchMap::const_iterator it = m_searches.begin(); it != m_searches.end(); ++it) {
-@@ -70,6 +70,31 @@ bool CSearchManager::IsSearching(uint32_
+@@ -70,6 +74,31 @@ bool CSearchManager::IsSearching(uint32_
  	return false;
  }
  
@@ -19412,7 +19443,7 @@
  void CSearchManager::StopSearch(uint32_t searchID, bool delayDelete)
  {
  	// Stop a specific searchID
-@@ -127,7 +152,7 @@ CSearch* CSearchManager::PrepareFindKeyw
+@@ -127,7 +156,7 @@ CSearch* CSearchManager::PrepareFindKeyw
  
  		wxString wstrKeyword = s->m_words.front();
  
@@ -19421,7 +19452,15 @@
  
  		// Kry - I just decided to assume everyone is unicoded
  		// GonoszTopi - seconded
-@@ -148,11 +173,11 @@ CSearch* CSearchManager::PrepareFindKeyw
+@@ -141,18 +170,18 @@ CSearch* CSearchManager::PrepareFindKeyw
+ 		s->SetSearchTermData(searchTermsDataSize, searchTermsData);
+ 		// Inc our searchID
+ 		// If called from external client use predefined search id
+-		s->SetSearchID((searchid & 0xffffff00) == 0xffffff00 ? searchid : ++m_nextID);
++		s->SetSearchID((searchid & 0xffffff00) == 0xffffff00 ? searchid : (++m_nextID | SEARCH_ID_KAD_MASK));
+ 		// Insert search into map
+ 		m_searches[s->GetTarget()] = s;
+ 		// Start search
  		s->Go();
  	} catch (const CEOFException& err) {
  		delete s;
@@ -19435,7 +19474,15 @@
  		throw strError;
  	} catch (...) {
  		delete s;
-@@ -193,10 +218,10 @@ CSearch* CSearchManager::PrepareLookup(u
+@@ -186,17 +215,17 @@ CSearch* CSearchManager::PrepareLookup(u
+ 				break;
+ 		}
+ 
+-		s->SetSearchID(++m_nextID);
++		s->SetSearchID((++m_nextID | SEARCH_ID_KAD_MASK));
+ 		if (start) {
+ 			m_searches[id] = s;
+ 			s->Go();
  		}
  	} catch (const CEOFException& DEBUG_ONLY(err)) {
  		delete s;
@@ -19448,7 +19495,7 @@
  		delete s;
  		throw;
  	}
-@@ -395,7 +420,7 @@ void CSearchManager::JumpStart()
+@@ -395,7 +424,7 @@ void CSearchManager::JumpStart()
  	}
  }
  
@@ -19457,7 +19504,7 @@
  {
  	uint8_t m_totalFile = 0;
  	uint8_t m_totalStoreSrc = 0;
-@@ -485,7 +510,7 @@ void CSearchManager::ProcessResponse(con
+@@ -485,7 +514,7 @@ void CSearchManager::ProcessResponse(con
  	// If this search was deleted before this response, delete contacts and abort, otherwise process them.
  	if (s == NULL) {
  		AddDebugLogLineN(logKadSearch,
@@ -19466,7 +19513,7 @@
  		DeleteContents(*results);
  	} else {
  		s->ProcessResponse(fromIP, fromPort, results);
-@@ -505,7 +530,7 @@ void CSearchManager::ProcessResult(const
+@@ -505,7 +534,7 @@ void CSearchManager::ProcessResult(const
  	// If this search was deleted before these results, delete contacts and abort, otherwise process them.
  	if (s == NULL) {
  		AddDebugLogLineN(logKadSearch,
@@ -19475,7 +19522,7 @@
  	} else {
  		s->ProcessResult(answer, info);
  	}
-@@ -514,7 +539,7 @@ void CSearchManager::ProcessResult(const
+@@ -514,7 +543,7 @@ void CSearchManager::ProcessResult(const
  bool CSearchManager::FindNodeSpecial(const CUInt128& id, CKadClientSearcher *requester)
  {
  	// Do a node lookup.
@@ -19484,7 +19531,7 @@
  	CSearch *search = new CSearch;
  	search->SetSearchTypes(CSearch::NODESPECIAL);
  	search->SetTargetID(id);
-@@ -526,7 +551,7 @@ bool CSearchManager::FindNodeFWCheckUDP(
+@@ -526,7 +555,7 @@ bool CSearchManager::FindNodeFWCheckUDP(
  {
  	CancelNodeFWCheckUDPSearch();
  	CUInt128 id(GetRandomUint128());
@@ -19513,7 +19560,7 @@
  	static void StopSearch(uint32_t searchID, bool delayDelete);
  	static void StopAllSearches();
  
-@@ -82,16 +82,28 @@ public:
+@@ -82,16 +82,27 @@ public:
  
  	static void GetWords(const wxString& str, WordList *words, bool allowDuplicates = false);
  
@@ -19542,7 +19589,6 @@
  	static bool FindNodeFWCheckUDP();
  	static bool IsFWCheckUDPSearch(const CUInt128& target);
 -	static void SetNextSearchID(uint32_t nextID) throw()	{ m_nextID = nextID; }
-+	static void SetNextSearchID(uint32_t nextID) noexcept	{ m_nextID = nextID; }
  
  private:
  
@@ -27729,7 +27775,7 @@
 -    item2->Add( item4, 1, wxGROW|wxALIGN_CENTER_HORIZONTAL|wxALL, 0 );
 -
 +    item2->Add( item3, wxSizerFlags().Center().Border(wxLEFT, 5) );
-+    CMuleTextCtrl *item4 = new CMuleTextCtrl( parent, -1, "", wxDefaultPosition, wxSize(-1,20), wxTE_MULTILINE );
++    CMuleTextCtrl *item4 = new CMuleTextCtrl( parent, -1, "", wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE );
 +    item4->SetName( "FastEd2kLinks" );
 +    item2->Add( item4, wxSizerFlags(1).Expand().Border(wxALL, 5) );
      wxButton *item5 = new wxButton( parent, ID_BUTTON_FAST, _("Commit"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -39260,7 +39306,7 @@
  }
  
  void CSearchDlg::OnBnClickedDownload(wxCommandEvent& WXUNUSED(evt))
-@@ -430,6 +499,7 @@ void CSearchDlg::OnBnClickedClear(wxComm
+@@ -430,13 +499,17 @@ void CSearchDlg::OnBnClickedClear(wxComm
  
  	FindWindow(IDC_CLEAR_RESULTS)->Enable(FALSE);
  	FindWindow(IDC_SDOWNLOAD)->Enable(FALSE);
@@ -39268,7 +39314,18 @@
  }
  
  
-@@ -487,7 +557,7 @@ void CSearchDlg::StartNewSearch()
+ void CSearchDlg::StartNewSearch()
+ {
++	// Stay in the bottom half of the uint32 search-ID space so the
++	// ed2k-allocated IDs here can never collide with Kad-allocated IDs
++	// from CSearchManager::m_nextID, which starts at 0x80000000
+ 	static uint32 m_nSearchID = 0;
+-	m_nSearchID++;
++	m_nSearchID = (m_nSearchID + 1) & 0x7fffffff;
+ 
+ 	FindWindow(IDC_STARTS)->Disable();
+ 	FindWindow(IDC_SDOWNLOAD)->Disable();
+@@ -487,7 +560,7 @@ void CSearchDlg::StartNewSearch()
  		case 7:	params.typeText = ED2KFTSTR_VIDEO;	break;
  		default:
  			AddDebugLogLineC( logGeneral,
@@ -39277,7 +39334,7 @@
  					% params.typeText
  			);
  			break;
-@@ -533,8 +603,8 @@ void CSearchDlg::StartNewSearch()
+@@ -533,8 +606,8 @@ void CSearchDlg::StartNewSearch()
  		FindWindow(IDC_CANCELS)->Disable();
  	} else {
  		CreateNewTab(
@@ -39288,7 +39345,7 @@
  			real_id);
  	}
  }
-@@ -544,16 +614,16 @@ void CSearchDlg::UpdateHitCount(CSearchL
+@@ -544,16 +617,16 @@ void CSearchDlg::UpdateHitCount(CSearchL
  {
  	for ( uint32 i = 0; i < (uint32)m_notebook->GetPageCount(); ++i ) {
  		if ( m_notebook->GetPage(i) == page ) {
