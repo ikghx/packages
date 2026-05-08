@@ -90,6 +90,10 @@ ifndef CONFIG_OCSERV_LIBOATH
 CONFIGURE_ARGS += --without-liboath
 endif
 
+ifeq ($(ARCH),arm)                                              
+TARGET_CFLAGS += -flax-vector-conversions
+endif
+
 define Package/ocserv/conffiles
 /etc/config/ocserv
 endef
