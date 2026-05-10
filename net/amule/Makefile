@@ -6,102 +6,51 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=amule
-PKG_VERSION:=2.3.3
-PKG_RELEASE:=10
+PKG_VERSION:=3.0.0
+PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/amule-project/amule/tar.gz/$(PKG_VERSION)?
-PKG_HASH:=934f79d4dab41c2d1caea31d6c6e10337c409ba5bb8bd6fac6c63e924e82c9b8
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://github.com/amule-project/amule.git
+PKG_SOURCE_VERSION:=abfcbb8ad375435fcb8291f0b3973d653def478b
+PKG_MIRROR_HASH:=60e983c3853ff655bd53b55bd9e86462fc4b3cea1b827c4150a82cd1d5637f5f
 
-PKG_CONFIG_DEPENDS:= CONFIG_AMULE_CRYPTOPP_STATIC_LINKING
-
-PKG_FIXUP:=autoreconf
-PKG_BUILD_DEPENDS:=libcryptopp libgd
+PKG_BUILD_DEPENDS:=libcryptopp
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
-include $(INCLUDE_DIR)/nls.mk
+include $(INCLUDE_DIR)/cmake.mk
 
 define Package/amule
   SUBMENU:=P2P
   SECTION:=net
   CATEGORY:=Network
   TITLE:=A multi-platform eMule-like ed2k client
-  URL:=http://www.amule.org/
-  DEPENDS:=+libatomic +libpng +libpthread +libncurses +libreadline +libwxbase +libupnp +libbfd +libintl-full \
-	$(ICONV_DEPENDS) $(INTL_DEPENDS) +!AMULE_CRYPTOPP_STATIC_LINKING:libcryptopp \
-	+boost-system +antileech +libcurl
+  URL:=https://github.com/amule-project/amule/
+  DEPENDS:=+libatomic +libpng +libpthread +libncurses +libreadline +libwxbase \
+	+libcryptopp +boost-system +antileech +zlib +glib2-core
   USERID:=amule=4662:amule=4662
 endef
 
-define Package/amule/config
-config AMULE_CRYPTOPP_STATIC_LINKING
-	bool "Link libcryptopp statically"
-	default n
-endef
+TARGET_LDFLAGS += -latomic -Wl,--as-needed
 
-TARGET_CFLAGS += -latomic
-TARGET_LDFLAGS+= $(if $(ICONV_FULL),-liconv)
-
-CONFIGURE_ARGS+= \
-	--disable-static \
-	--disable-rpath \
-	--disable-ccache \
-	--disable-optimize \
-	--disable-profile \
-	--disable-monolithic \
-	--enable-amule-daemon \
-	--enable-amulecmd \
-	--enable-webserver \
-	--disable-amule-gui \
-	--disable-cas \
-	--disable-wxcas \
-	--disable-xas \
-	--disable-ed2k \
-	--disable-alc \
-	--disable-alcc \
-	--disable-debug \
-	--disable-fileview \
-	--enable-mmap \
-	--disable-plasmamule \
-	--disable-geoip \
-	--without-wxdebug \
-	--disable-nls \
-	--enable-dlp \
-	--enable-upnp \
-	--without-gnu-malloc \
-	--with-gnu-ld \
-	--with-zlib="$(STAGING_DIR)/usr" \
-	--with-gdlib-prefix="$(STAGING_DIR)/usr" \
-	--with-libpng-prefix="$(STAGING_DIR)/usr" \
-	--with-wx-prefix="$(STAGING_DIR)/usr" \
-	--with-crypto-prefix="$(STAGING_DIR)/usr" \
-	--with-libiconv-prefix="$(ICONV_PREFIX)" \
-	--with-libintl-prefix="$(INTL_PREFIX)" \
-	--with-libupnp-prefix="$(STAGING_DIR)/usr" \
-	--with-boost="$(STAGING_DIR)/usr" \
-	--disable-debug
-
-define Build/Configure
-	( cd $(PKG_BUILD_DIR); $(SHELL) autogen.sh; )
-	$(call Build/Configure/Default)
-endef
-
-ifeq ($(CONFIG_AMULE_CRYPTOPP_STATIC_LINKING),y)
-	SED_CMD:=sed
-else
-	SED_CMD:=true
-endif
-
-define Build/Compile
-	$(SED_CMD) -i 's;^CRYPTOPP_LIBS.*;CRYPTOPP_LIBS \= "$(STAGING_DIR)/usr/lib/libcryptopp.a";g' \
-		$(PKG_BUILD_DIR)/src/Makefile
-	$(MAKE) -C $(PKG_BUILD_DIR) \
-		HOSTCC="$(HOSTCC)" \
-		DESTDIR="$(PKG_INSTALL_DIR)" \
-		all
-endef
+CMAKE_OPTIONS += \
+	-DBUILD_MONOLITHIC=NO \
+	-DBUILD_DAEMON=YES \
+	-DBUILD_AMULECMD=YES \
+	-DBUILD_WEBSERVER=YES \
+	-DBUILD_ED2K=NO \
+	-DENABLE_UPNP=NO \
+	-DENABLE_DLP=YES \
+	-DENABLE_NLS=NO \
+	-DBUILD_TESTING=NO \
+	-DENABLE_MMAP=YES \
+	-DwxWidgets_CONFIG_EXECUTABLE="$(STAGING_DIR)/usr/bin/wx-config" \
+	-DBOOST_ROOT="$(STAGING_DIR)/usr" \
+	-DSVNDATE="2.3.3-OpenWrt" \
+	-DPS_RUN_RESULT=0 \
+	-DPS_RUN_RESULT__TRYRUN_OUTPUT="0" \
+	-DCRYPTOPP_VERSION="8.9.0"
 
 define Package/amule/install
 	$(INSTALL_DIR) $(1)/usr/bin
