@@ -15,7 +15,7 @@
  set (RECONF_COMMAND ${CMAKE_COMMAND})
 --- a/src/amuleAppCommon.cpp
 +++ b/src/amuleAppCommon.cpp
-@@ -65,6 +65,8 @@ CamuleAppCommon::CamuleAppCommon()
+@@ -71,6 +71,8 @@ CamuleAppCommon::CamuleAppCommon()
  		m_configFile	= "amule.conf";
  		m_logFile		= "logfile";
  
@@ -24,7 +24,7 @@
  		if (IsDaemon()) {
  			m_appName	= "aMuleD";
  		} else {
-@@ -443,6 +445,21 @@ bool CamuleAppCommon::InitCommon(int arg
+@@ -484,6 +486,21 @@ bool CamuleAppCommon::InitCommon(int arg
  		return false;
  	}
  
@@ -48,7 +48,7 @@
  	CPreferences::LoadAllItems( wxConfigBase::Get() );
 --- a/src/amule.cpp
 +++ b/src/amule.cpp
-@@ -99,6 +99,11 @@
+@@ -102,6 +102,11 @@
  #include <wx/sysopt.h>			// Do_not_auto_remove
  #endif
  
@@ -60,7 +60,7 @@
  #ifndef AMULE_DAEMON
  	#ifdef __WXMAC__
  		#include <CoreFoundation/CFBundle.h>  // Do_not_auto_remove
-@@ -623,6 +628,11 @@ bool CamuleApp::OnInit()
+@@ -651,6 +656,11 @@ bool CamuleApp::OnInit()
  	partFileHashThread = new CPartFileHashThread();
  	ipfilter	= new CIPFilter();
  
@@ -72,7 +72,7 @@
  	// Creates all needed listening sockets
  	wxString msg;
  	if (!ReinitializeNetwork(&msg)) {
-@@ -1630,9 +1640,9 @@ wxString CamuleApp::GetLog(bool reset)
+@@ -1715,9 +1725,9 @@ wxString CamuleApp::GetLog(bool reset)
  	// try to guess file format
  	wxString str;
  	if (tmp_buffer[0] && tmp_buffer[1]) {
@@ -84,7 +84,7 @@
  	}
  	delete [] tmp_buffer;
  	if ( reset ) {
-@@ -2250,3 +2260,9 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
+@@ -2335,3 +2345,9 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
  wxDEFINE_EVENT(wxEVT_CORE_SOURCE_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_UDP_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_SERVER_DNS_DONE, wxEvent);// File_checked_for_headers
@@ -109,7 +109,7 @@
  // File_checked_for_headers
 --- a/src/amuleDlg.cpp
 +++ b/src/amuleDlg.cpp
-@@ -334,7 +334,7 @@ m_clientSkinNames(CLIENT_SKIN_SIZE)
+@@ -339,7 +339,7 @@ m_clientSkinNames(CLIENT_SKIN_SIZE)
  	wxNotebook* logs_notebook = CastChild( ID_SRVLOG_NOTEBOOK, wxNotebook);
  	wxNotebook* networks_notebook = CastChild( ID_NETNOTEBOOK, wxNotebook);
  
@@ -118,7 +118,7 @@
  	wxASSERT(networks_notebook->GetPageCount() == 2);
  
  	for (uint32 i = 0; i < logs_notebook->GetPageCount(); ++i) {
-@@ -518,6 +518,7 @@ void CamuleDlg::OnAboutButton(wxCommandE
+@@ -523,6 +523,7 @@ void CamuleDlg::OnAboutButton(wxCommandE
  	msg << _("Snapshot:") << "\n " << SVNDATE;
  #endif
  	msg << "\n\n" << _("'All-Platform' p2p client based on eMule \n\n") <<
@@ -126,7 +126,7 @@
  		_("Website: https://amule-org.github.io \n") <<
  		_("Forum: https://github.com/amule-org/amule/discussions \n") <<
  		_("FAQ: https://github.com/amule-org/amule/wiki \n\n") <<
-@@ -525,8 +526,14 @@ void CamuleDlg::OnAboutButton(wxCommandE
+@@ -530,8 +531,14 @@ void CamuleDlg::OnAboutButton(wxCommandE
  		_("Copyright (c) 2003-2019 aMule Team \n\n") <<
  		_("Part of aMule is based on \n") <<
  		_("Kademlia: Peer-to-peer routing based on the XOR metric.\n") <<
@@ -143,7 +143,7 @@
  
  	if (m_is_safe_state) {
  		wxMessageBox(msg, _("Message"), wxOK | wxICON_INFORMATION, this);
-@@ -678,6 +685,22 @@ void CamuleDlg::AddServerMessageLine(wxS
+@@ -683,6 +690,22 @@ void CamuleDlg::AddServerMessageLine(wxS
  	}
  }
  
@@ -178,7 +178,7 @@
  	void ResetLog(int id);
  
  	void ShowUserCount(const wxString& info = "");
-@@ -222,7 +225,7 @@ private:
+@@ -236,7 +239,7 @@ private:
  	WX_DECLARE_STRING_HASH_MAP(wxZipEntry*, ZipCatalog);
  	ZipCatalog cat;
  
@@ -189,7 +189,7 @@
  	bool LoadGUIPrefs(bool override_pos, bool override_size);
 --- a/src/amule-gui.cpp
 +++ b/src/amule-gui.cpp
-@@ -409,6 +409,21 @@ wxString CamuleGuiApp::GetLog(bool reset
+@@ -415,6 +415,21 @@ wxString CamuleGuiApp::GetLog(bool reset
  	return CamuleApp::GetLog(reset);
  }
  
@@ -213,8 +213,8 @@
  {
 --- a/src/amule.h
 +++ b/src/amule.h
-@@ -138,6 +138,8 @@ protected:
- 	bool		m_geometryEnabled;
+@@ -139,6 +139,8 @@ protected:
+ 	bool		m_disableFatal;
  	wxString	m_geometryString;
  	wxString	m_logFile;
 +	//Dynamic Leech Protect - persmule
@@ -222,7 +222,7 @@
  	wxString	m_appName;
  	wxString	m_PidFile;
  
-@@ -431,6 +433,7 @@ public:
+@@ -461,6 +463,7 @@ public:
  	wxString GetLog(bool reset = false);
  	wxString GetServerLog(bool reset = false);
  	void AddServerMessageLine(wxString &msg);
@@ -230,7 +230,7 @@
  	wxDECLARE_EVENT_TABLE();
  };
  
-@@ -476,6 +479,8 @@ public:
+@@ -506,6 +509,8 @@ public:
  
  	virtual int ShowAlert(wxString msg, wxString title, int flags);
  
@@ -239,7 +239,7 @@
  	wxDECLARE_EVENT_TABLE();
  };
  
-@@ -486,3 +491,8 @@ extern CamuleDaemonApp *theApp;
+@@ -516,3 +521,8 @@ extern CamuleDaemonApp *theApp;
  
  #endif // AMULE_H
  // File_checked_for_headers
@@ -365,18 +365,7 @@
  #include <wx/wx.h>
  #include <wx/mstream.h>
  #include <wx/tokenzr.h>
-@@ -83,10 +88,8 @@
- #include "kademlia/kademlia/UDPFirewallTester.h"
- #include "kademlia/routing/RoutingZone.h"
- 
--
- //#define __PACKET_DEBUG__
- 
--
- // some client testing variables
- static wxString crash_name = "[Invalid User Name]";
- static wxString empty_name = "[Empty User Name]";
-@@ -290,6 +293,10 @@ void CUpDownClient::Init()
+@@ -290,6 +295,10 @@ void CUpDownClient::Init()
  	m_cMessagesReceived = 0;
  	m_cMessagesSent = 0;
  
@@ -387,7 +376,7 @@
  }
  
  
-@@ -635,6 +642,15 @@ bool CUpDownClient::ProcessHelloTypePack
+@@ -635,6 +644,15 @@ bool CUpDownClient::ProcessHelloTypePack
  				m_fSharedDirectories = 1;
  				dwEmuleTags |= 4;
  				break;
@@ -403,7 +392,7 @@
  		}
  	}
  
-@@ -717,6 +733,12 @@ bool CUpDownClient::ProcessHelloTypePack
+@@ -717,6 +735,12 @@ bool CUpDownClient::ProcessHelloTypePack
  		Kademlia::CKademlia::Bootstrap(wxUINT32_SWAP_ALWAYS(GetIP()), GetKadPort());
  	}
  
@@ -416,7 +405,7 @@
  	return bIsMule;
  }
  
-@@ -966,6 +988,14 @@ bool CUpDownClient::ProcessMuleInfoPacke
+@@ -966,6 +990,14 @@ bool CUpDownClient::ProcessMuleInfoPacke
  							% GetClientFullInfo()
  					);
  
@@ -431,7 +420,7 @@
  					break;
  			}
  		}
-@@ -1003,6 +1033,12 @@ bool CUpDownClient::ProcessMuleInfoPacke
+@@ -1003,6 +1035,12 @@ bool CUpDownClient::ProcessMuleInfoPacke
  		m_byInfopacketsReceived |= IP_EMULEPROTPACK;
  	}
  
@@ -444,7 +433,7 @@
  	return (protocol_version == 0xFF); // This was a OS_Info?
  }
  
-@@ -1033,7 +1069,7 @@ void CUpDownClient::SendHelloTypePacket(
+@@ -1033,7 +1071,7 @@ void CUpDownClient::SendHelloTypePacket(
  	}
  	tagcount ++; // eMule misc flags 2 (kad version)
  
@@ -453,7 +442,7 @@
  	// Kry - This is the tagcount!!! Be sure to update it!!
  	// Last update: CT_EMULECOMPAT_OPTIONS included
  	data->WriteUInt32(tagcount + 1);
-@@ -1156,7 +1192,7 @@ void CUpDownClient::SendHelloTypePacket(
+@@ -1156,7 +1194,7 @@ void CUpDownClient::SendHelloTypePacket(
  
  	tagMisCompatOptions.WriteTagToFile(data);
  
@@ -462,7 +451,7 @@
  	wxString mod_name(MOD_VERSION_LONG);
  	CTagString tagModName(ET_MOD_VERSION, mod_name);
  	tagModName.WriteTagToFile(data);
-@@ -2303,7 +2339,12 @@ bool CUpDownClient::CheckHandshakeFinish
+@@ -2303,7 +2341,12 @@ bool CUpDownClient::CheckHandshakeFinish
  }
  
  
@@ -870,10 +859,10 @@
  
  //-------------------- File_Encoder --------------------
  
-@@ -1391,7 +1394,15 @@ CECPacket *CECServerSocket::ProcessReque
- 					response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Invalid link or already on list.")));
- 				}
+@@ -1423,6 +1426,15 @@ CECPacket *CECServerSocket::ProcessReque
  			}
+ 			break;
+ 		}
 +		//Dynamic Leech Protect - Bill Lee
 +		#ifdef AMULE_DLP
 +		case EC_OP_ANTILEECH_RELOAD:
@@ -881,7 +870,7 @@
 +				response = new CECPacket(EC_OP_FAILED);
 +			else
 +				response = new CECPacket(EC_OP_NOOP);
- 			break;
++			break;
 +		#endif
  		//
  		// Status requests
@@ -899,7 +888,7 @@
  #ifdef __SVN__
 --- a/src/libs/ec/abstracts/ECCodes.abstract
 +++ b/src/libs/ec/abstracts/ECCodes.abstract
-@@ -148,6 +148,8 @@ EC_OP_SERVER_SET_STATIC_PRIO        0x56
+@@ -149,6 +149,8 @@ EC_OP_SERVER_SET_STATIC_PRIO        0x56
  
  EC_OP_FRIEND                        0x57
  
@@ -910,7 +899,7 @@
  [Section Content]
 --- a/src/libs/ec/cpp/ECCodes.h
 +++ b/src/libs/ec/cpp/ECCodes.h
-@@ -121,7 +121,8 @@ enum ECOpCodes {
+@@ -122,7 +122,8 @@ enum ECOpCodes {
  	EC_OP_CLIENT_SWAP_TO_ANOTHER_FILE   = 0x54,
  	EC_OP_SHARED_FILE_SET_COMMENT       = 0x55,
  	EC_OP_SERVER_SET_STATIC_PRIO        = 0x56,
@@ -920,7 +909,7 @@
  };
  
  enum ECTagNames {
-@@ -556,6 +557,7 @@ wxString GetDebugNameECOpCodes(uint8 arg
+@@ -559,6 +560,7 @@ wxString GetDebugNameECOpCodes(uint8 arg
  		case 0x55: return "EC_OP_SHARED_FILE_SET_COMMENT";
  		case 0x56: return "EC_OP_SERVER_SET_STATIC_PRIO";
  		case 0x57: return "EC_OP_FRIEND";
@@ -982,7 +971,7 @@
  // File_checked_for_headers
 --- a/src/muuli_wdr.cpp
 +++ b/src/muuli_wdr.cpp
-@@ -1478,6 +1478,51 @@ wxSizer *PreferencesServerTab( wxWindow
+@@ -1479,6 +1479,51 @@ wxSizer *PreferencesServerTab( wxWindow
      return item0;
  }
  
@@ -1034,7 +1023,7 @@
  wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
  {
      wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
-@@ -2536,9 +2581,9 @@ wxSizer *PreferencesProxyTab( wxWindow *
+@@ -2537,9 +2582,9 @@ wxSizer *PreferencesProxyTab( wxWindow *
      item2->Add( item9, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
      wxString strs10[] = 
      {
@@ -1047,14 +1036,6 @@
          "SOCKS4a"
      };
      wxChoice *item10 = new wxChoice( parent, ID_PROXY_TYPE, wxDefaultPosition, wxSize(100,-1), 4, strs10, 0 );
-@@ -2914,6 +2959,7 @@ wxSizer *messagePageMessages( wxWindow *
-     item5->Add( item8, 0, wxALIGN_CENTER, 5 );
- 
-     item0->Add( item5, wxSizerFlags().Expand().CenterVertical().Border(wxTOP|wxBOTTOM, 5) );
-+
-     if (set_sizer)
-     {
-         parent->SetSizer( item0 );
 --- a/src/muuli_wdr.h
 +++ b/src/muuli_wdr.h
 @@ -361,6 +361,9 @@ wxSizer *ServerInfoLog( wxWindow *parent
@@ -1273,7 +1254,7 @@
  #ifdef __DEBUG__
  	,{ wxTRANSLATE("Debugging"),		PreferencesDebug,			25 }
  #endif
-@@ -1100,6 +1113,21 @@ void PrefsUnifiedDlg::OnButtonIPFilterUp
+@@ -1132,6 +1145,21 @@ void PrefsUnifiedDlg::OnButtonIPFilterUp
  	theApp->ipfilter->Update( CastChild( IDC_IPFILTERURL, wxTextCtrl )->GetValue() );
  }
  
@@ -1309,15 +1290,15 @@
  
 --- a/src/ServerWnd.cpp
 +++ b/src/ServerWnd.cpp
-@@ -46,6 +46,7 @@ wxBEGIN_EVENT_TABLE(CServerWnd,wxPanel)
- 	EVT_BUTTON(ID_BTN_RESET, CServerWnd::OnBnClickedResetLog)
+@@ -47,6 +47,7 @@ wxBEGIN_EVENT_TABLE(CServerWnd,wxPanel)
  	EVT_BUTTON(ID_BTN_RESET_SERVER, CServerWnd::OnBnClickedResetServerLog)
+ 	EVT_SPLITTER_SASH_POS_CHANGING(ID_SRV_SPLITTER,CServerWnd::OnSashPositionChanging)
  	EVT_SPLITTER_SASH_POS_CHANGED(ID_SRV_SPLITTER,CServerWnd::OnSashPositionChanged)
 +	EVT_BUTTON(ID_BTN_RESET_DLP, CServerWnd::OnBnClickedResetDLPLog)
  wxEND_EVENT_TABLE()
  
  
-@@ -152,6 +153,11 @@ void CServerWnd::OnBnClickedResetServerL
+@@ -158,6 +159,11 @@ void CServerWnd::OnBnClickedResetServerL
  	theApp->GetServerLog(true); // Reset it
  }
  
@@ -1331,14 +1312,15 @@
  {
 --- a/src/ServerWnd.h
 +++ b/src/ServerWnd.h
-@@ -50,6 +50,7 @@ private:
+@@ -51,7 +51,7 @@ private:
  	void OnBnClickedUpdateservermetfromurl(wxCommandEvent& evt);
  	void OnBnClickedResetLog(wxCommandEvent& evt);
  	void OnBnClickedResetServerLog(wxCommandEvent& evt);
+-
 +	void OnBnClickedResetDLPLog(wxCommandEvent& evt);
- 
- 	wxDECLARE_EVENT_TABLE();
- };
+ 	// Set in OnSashPositionChanging (only fires while the user is
+ 	// actually dragging the sash); checked by OnSashPositionChanged
+ 	// to filter out layout-induced sash moves that fire during
 --- a/src/TextClient.cpp
 +++ b/src/TextClient.cpp
 @@ -67,6 +67,7 @@ enum {
@@ -1349,7 +1331,7 @@
  	CMD_ID_SET_IPFILTER_ON,
  	CMD_ID_SET_IPFILTER_OFF,
  	CMD_ID_SET_IPFILTER_CLIENTS_ON,
-@@ -234,6 +235,12 @@ int CamulecmdApp::ProcessCommand(int Cmd
+@@ -316,6 +317,12 @@ int CamulecmdApp::ProcessCommand(int Cmd
  		case CMD_ID_DISCONNECT_KAD:
  			request_list.push_back(new CECPacket(EC_OP_KAD_STOP));
  			break;
@@ -1362,7 +1344,7 @@
  
  		case CMD_ID_RELOAD_SHARED:
  			request_list.push_back(new CECPacket(EC_OP_SHAREDFILES_RELOAD));
-@@ -904,6 +911,9 @@ void CamulecmdApp::OnInitCommandSet()
+@@ -999,6 +1006,9 @@ void CamulecmdApp::OnInitCommandSet()
  	tmp2->AddCommand("Net", CMD_ID_RELOAD_IPFILTER_NET, wxTRANSLATE("Update IP filtering table from URL."),
  					wxTRANSLATE("If URL is omitted the URL from the preferences is used."), CMD_PARAM_OPTIONAL);
  

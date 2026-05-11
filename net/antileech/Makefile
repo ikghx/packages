@@ -19,12 +19,10 @@ PKG_SOURCE_VERSION:=1b14ed828ed227933333de31ffb8e24e6c10451c
 PKG_MIRROR_HASH:=c52fde67ce2a5a19a5736977c203f898d1df951ed67b9d3e9d1ac071fe706a8a
 
 PKG_FIXUP:=autoreconf
-PKG_BUILD_DEPENDS:=libgd
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
-include $(INCLUDE_DIR)/nls.mk
 
 define Package/antileech
   SUBMENU:=P2P

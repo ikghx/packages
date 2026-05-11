@@ -11,8 +11,8 @@ PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/amule-project/amule.git
-PKG_SOURCE_VERSION:=abfcbb8ad375435fcb8291f0b3973d653def478b
-PKG_MIRROR_HASH:=60e983c3853ff655bd53b55bd9e86462fc4b3cea1b827c4150a82cd1d5637f5f
+PKG_SOURCE_VERSION:=64b83e48ea72deff67c8b76812ebb57914bf6b80
+PKG_MIRROR_HASH:=6eb8e3df1e17f69a0b01fe1a0077534cae4ae23826373b5847dc45a28d0987e0
 
 PKG_BUILD_DEPENDS:=libcryptopp
 PKG_BUILD_PARALLEL:=1
@@ -27,7 +27,7 @@ define Package/amule
   CATEGORY:=Network
   TITLE:=A multi-platform eMule-like ed2k client
   URL:=https://github.com/amule-project/amule/
-  DEPENDS:=+libatomic +libpng +libpthread +libncurses +libreadline +libwxbase \
+  DEPENDS:=+libatomic +libpng +libpthread +libncurses +libreadline +libwxbase +libbfd \
 	+libcryptopp +boost-system +antileech +zlib +glib2-core
   USERID:=amule=4662:amule=4662
 endef
@@ -47,7 +47,7 @@ CMAKE_OPTIONS += \
 	-DENABLE_MMAP=YES \
 	-DwxWidgets_CONFIG_EXECUTABLE="$(STAGING_DIR)/usr/bin/wx-config" \
 	-DBOOST_ROOT="$(STAGING_DIR)/usr" \
-	-DSVNDATE="2.3.3-OpenWrt" \
+	-DSVNDATE="3.0.0-OpenWrt" \
 	-DPS_RUN_RESULT=0 \
 	-DPS_RUN_RESULT__TRYRUN_OUTPUT="0" \
 	-DCRYPTOPP_VERSION="8.9.0"
