@@ -24,7 +24,7 @@
  		if (IsDaemon()) {
  			m_appName	= "aMuleD";
  		} else {
-@@ -484,6 +486,21 @@ bool CamuleAppCommon::InitCommon(int arg
+@@ -494,6 +496,21 @@ bool CamuleAppCommon::InitCommon(int arg
  		return false;
  	}
  
@@ -490,7 +490,7 @@
  			PRIVATE ${BFD_LIBRARY}
  		)
  	endif (HAVE_BFD)
-@@ -141,9 +148,14 @@ if (BUILD_DAEMON)
+@@ -141,6 +148,7 @@ if (BUILD_DAEMON)
  	add_executable (amuled
  		${CORE_SOURCES}
  		${COMMON_SOURCES}
@@ -498,13 +498,6 @@
  		amuled.cpp
  	)
  
-+	if (ENABLE_DLP)
-+		target_compile_definitions(amuled PRIVATE AMULE_DLP)
-+	endif()
-+
- 	if (WIN32)
- 		target_sources (amuled
- 			PRIVATE ${CMAKE_BINARY_DIR}/version.rc
 --- /dev/null
 +++ b/src/CString_wx.h
 @@ -0,0 +1,63 @@
