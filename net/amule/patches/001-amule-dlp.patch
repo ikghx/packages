@@ -1065,7 +1065,7 @@
  #define IDC_CONV_PROZENT 10310
 --- a/src/Preferences.cpp
 +++ b/src/Preferences.cpp
-@@ -49,6 +49,11 @@
+@@ -51,6 +51,11 @@
  
  #include "UserEvents.h"
  
@@ -1077,7 +1077,7 @@
  #ifndef AMULE_DAEMON
  #include <wx/valgen.h>
  #include "muuli_wdr.h"
-@@ -345,6 +350,19 @@ protected:
+@@ -347,6 +352,19 @@ protected:
  	wxWindow*	m_widget;
  };
  
@@ -1097,7 +1097,7 @@
  
  /** Cfg class for wxStrings. */
  class Cfg_Str : public Cfg_Tmpl<wxString>
-@@ -954,6 +972,11 @@ CPreferences::CPreferences()
+@@ -956,6 +974,11 @@ CPreferences::CPreferences()
  	s_userhash[5] = 14;
  	s_userhash[14] = 111;
  
@@ -1109,7 +1109,7 @@
  #ifndef CLIENT_GUI
  	LoadPreferences();
  	ReloadSharedFolders();
-@@ -1063,6 +1086,20 @@ void CPreferences::BuildItemList( const
+@@ -1065,6 +1088,20 @@ void CPreferences::BuildItemList( const
  	NewCfgItem( IDC_NETWORKKAD, (new Cfg_Bool( "/eMule/ConnectToKad",	s_ConnectToKad, true )) );
  	NewCfgItem( IDC_NETWORKED2K, ( new Cfg_Bool( "/eMule/ConnectToED2K",	s_ConnectToED2K, true ) ));
  
@@ -1130,7 +1130,7 @@
  
  	/**
  	 * Files
-@@ -1487,6 +1524,11 @@ void CPreferences::Save()
+@@ -1489,6 +1526,11 @@ void CPreferences::Save()
  	SavePreferences();
  
  	SaveSharedFolders();
@@ -1142,7 +1142,7 @@
  }
  
  
-@@ -1503,6 +1545,21 @@ void CPreferences::SaveSharedFolders()
+@@ -1516,6 +1558,21 @@ void CPreferences::SaveSharedFolders()
  	#endif
  }
  
@@ -1166,7 +1166,7 @@
  {
 --- a/src/Preferences.h
 +++ b/src/Preferences.h
-@@ -592,6 +592,11 @@ public:
+@@ -637,6 +637,11 @@ public:
  	// Sleep
  	static bool		GetPreventSleepWhileDownloading() { return s_preventSleepWhileDownloading; }
  	static void		SetPreventSleepWhileDownloading(bool status) { s_preventSleepWhileDownloading = status; }
@@ -1178,7 +1178,7 @@
  protected:
  	static	int32 GetRecommendedMaxConnections();
  
-@@ -613,6 +618,11 @@ private:
+@@ -658,6 +663,11 @@ private:
  	void LoadPreferences();
  	void SavePreferences();
  
@@ -1190,7 +1190,7 @@
  protected:
  	static wxString	s_configDir;
  
-@@ -831,6 +841,20 @@ protected:
+@@ -876,6 +886,20 @@ protected:
  	// Stats server
  	static wxString s_StatsServerName;
  	static wxString s_StatsServerURL;
@@ -1247,7 +1247,7 @@
  #ifdef __DEBUG__
  	,{ wxTRANSLATE("Debugging"),		PreferencesDebug,			25 }
  #endif
-@@ -1166,6 +1179,21 @@ void PrefsUnifiedDlg::OnButtonIPFilterUp
+@@ -1172,6 +1185,21 @@ void PrefsUnifiedDlg::OnButtonIPFilterUp
  	theApp->ipfilter->Update( CastChild( IDC_IPFILTERURL, wxTextCtrl )->GetValue() );
  }
  
