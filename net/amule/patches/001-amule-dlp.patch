@@ -72,7 +72,7 @@
  	// Creates all needed listening sockets
  	wxString msg;
  	if (!ReinitializeNetwork(&msg)) {
-@@ -1715,9 +1725,9 @@ wxString CamuleApp::GetLog(bool reset)
+@@ -1723,9 +1733,9 @@ wxString CamuleApp::GetLog(bool reset)
  	// try to guess file format
  	wxString str;
  	if (tmp_buffer[0] && tmp_buffer[1]) {
@@ -84,7 +84,7 @@
  	}
  	delete [] tmp_buffer;
  	if ( reset ) {
-@@ -2335,3 +2345,9 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
+@@ -2343,3 +2353,9 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
  wxDEFINE_EVENT(wxEVT_CORE_SOURCE_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_UDP_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_SERVER_DNS_DONE, wxEvent);// File_checked_for_headers
@@ -902,7 +902,7 @@
  };
  
  enum ECTagNames {
-@@ -559,6 +560,7 @@ wxString GetDebugNameECOpCodes(uint8 arg
+@@ -560,6 +561,7 @@ wxString GetDebugNameECOpCodes(uint8 arg
  		case 0x55: return "EC_OP_SHARED_FILE_SET_COMMENT";
  		case 0x56: return "EC_OP_SERVER_SET_STATIC_PRIO";
  		case 0x57: return "EC_OP_FRIEND";
@@ -1016,7 +1016,7 @@
  wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
  {
      wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
-@@ -2537,9 +2582,9 @@ wxSizer *PreferencesProxyTab( wxWindow *
+@@ -2543,9 +2588,9 @@ wxSizer *PreferencesProxyTab( wxWindow *
      item2->Add( item9, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
      wxString strs10[] = 
      {
@@ -1031,7 +1031,7 @@
      wxChoice *item10 = new wxChoice( parent, ID_PROXY_TYPE, wxDefaultPosition, wxSize(100,-1), 4, strs10, 0 );
 --- a/src/muuli_wdr.h
 +++ b/src/muuli_wdr.h
-@@ -361,6 +361,9 @@ wxSizer *ServerInfoLog( wxWindow *parent
+@@ -364,6 +364,9 @@ wxSizer *ServerInfoLog( wxWindow *parent
  
  #define ID_LOGVIEW 10242
  #define ID_BTN_RESET 10243
@@ -1041,7 +1041,7 @@
  wxSizer *aMuleLog( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
  
  #define ID_UPDATELIST 10244
-@@ -448,6 +451,21 @@ wxSizer *CoreConnect( wxWindow *parent,
+@@ -451,6 +454,21 @@ wxSizer *CoreConnect( wxWindow *parent,
  #define ID_DEBUGCATS 10308
  wxSizer *PreferencesDebug( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
  
@@ -1077,7 +1077,7 @@
  #ifndef AMULE_DAEMON
  #include <wx/valgen.h>
  #include "muuli_wdr.h"
-@@ -344,6 +349,19 @@ protected:
+@@ -345,6 +350,19 @@ protected:
  	wxWindow*	m_widget;
  };
  
@@ -1097,7 +1097,7 @@
  
  /** Cfg class for wxStrings. */
  class Cfg_Str : public Cfg_Tmpl<wxString>
-@@ -953,6 +971,11 @@ CPreferences::CPreferences()
+@@ -954,6 +972,11 @@ CPreferences::CPreferences()
  	s_userhash[5] = 14;
  	s_userhash[14] = 111;
  
@@ -1109,7 +1109,7 @@
  #ifndef CLIENT_GUI
  	LoadPreferences();
  	ReloadSharedFolders();
-@@ -1062,6 +1085,20 @@ void CPreferences::BuildItemList( const
+@@ -1063,6 +1086,20 @@ void CPreferences::BuildItemList( const
  	NewCfgItem( IDC_NETWORKKAD, (new Cfg_Bool( "/eMule/ConnectToKad",	s_ConnectToKad, true )) );
  	NewCfgItem( IDC_NETWORKED2K, ( new Cfg_Bool( "/eMule/ConnectToED2K",	s_ConnectToED2K, true ) ));
  
@@ -1130,19 +1130,19 @@
  
  	/**
  	 * Files
-@@ -1478,6 +1515,11 @@ void CPreferences::Save()
- 
+@@ -1487,6 +1524,11 @@ void CPreferences::Save()
  	SavePreferences();
  
+ 	SaveSharedFolders();
++
 +	// Dynamic Leecher Protection
 +	#ifdef AMULE_DLP
 +	CalcDLPCheckMask();
 +	#endif
-+
- 	#ifndef CLIENT_GUI
- 	CTextFile sdirfile;
- 	if (sdirfile.Open(s_configDir + "shareddir.dat", CTextFile::write)) {
-@@ -1489,6 +1531,21 @@ void CPreferences::Save()
+ }
+ 
+ 
+@@ -1503,6 +1545,21 @@ void CPreferences::SaveSharedFolders()
  	#endif
  }
  
@@ -1166,7 +1166,7 @@
  {
 --- a/src/Preferences.h
 +++ b/src/Preferences.h
-@@ -582,6 +582,11 @@ public:
+@@ -592,6 +592,11 @@ public:
  	// Sleep
  	static bool		GetPreventSleepWhileDownloading() { return s_preventSleepWhileDownloading; }
  	static void		SetPreventSleepWhileDownloading(bool status) { s_preventSleepWhileDownloading = status; }
@@ -1178,7 +1178,7 @@
  protected:
  	static	int32 GetRecommendedMaxConnections();
  
-@@ -603,6 +608,11 @@ private:
+@@ -613,6 +618,11 @@ private:
  	void LoadPreferences();
  	void SavePreferences();
  
@@ -1190,7 +1190,7 @@
  protected:
  	static wxString	s_configDir;
  
-@@ -818,6 +828,20 @@ protected:
+@@ -831,6 +841,20 @@ protected:
  	// Stats server
  	static wxString s_StatsServerName;
  	static wxString s_StatsServerURL;
@@ -1213,7 +1213,7 @@
  
 --- a/src/PrefsUnifiedDlg.cpp
 +++ b/src/PrefsUnifiedDlg.cpp
-@@ -53,6 +53,11 @@
+@@ -57,6 +57,11 @@
  #include "UserEvents.h"
  #include "PlatformSpecific.h"		// Needed for PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
  
@@ -1225,7 +1225,7 @@
  wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDialog)
  	// Events
  #define USEREVENTS_EVENT(ID, NAME, VARS) \
-@@ -114,6 +119,11 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDi
+@@ -118,6 +123,11 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDi
  	EVT_CHOICE(IDC_COLORSELECTOR,		PrefsUnifiedDlg::OnColorCategorySelected)
  	EVT_LIST_ITEM_SELECTED(ID_PREFSLISTCTRL,PrefsUnifiedDlg::OnPrefsPageChange)
  
@@ -1237,7 +1237,7 @@
  	EVT_INIT_DIALOG(PrefsUnifiedDlg::OnInitDialog)
  
  	EVT_COMMAND_SCROLL(IDC_SLIDER,		PrefsUnifiedDlg::OnScrollBarChange)
-@@ -187,6 +197,9 @@ PrefsPage pages[] =
+@@ -191,6 +201,9 @@ PrefsPage pages[] =
  	{ wxTRANSLATE("Online Signature"),	PreferencesOnlineSigTab,	21 },
  	{ wxTRANSLATE("Advanced"),			PreferencesaMuleTweaksTab,	12 },
  	{ wxTRANSLATE("Events"),			PreferencesEventsTab,		5 }
@@ -1247,7 +1247,7 @@
  #ifdef __DEBUG__
  	,{ wxTRANSLATE("Debugging"),		PreferencesDebug,			25 }
  #endif
-@@ -1132,6 +1145,21 @@ void PrefsUnifiedDlg::OnButtonIPFilterUp
+@@ -1166,6 +1179,21 @@ void PrefsUnifiedDlg::OnButtonIPFilterUp
  	theApp->ipfilter->Update( CastChild( IDC_IPFILTERURL, wxTextCtrl )->GetValue() );
  }
  
