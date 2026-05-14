@@ -60,7 +60,7 @@
  #ifndef AMULE_DAEMON
  	#ifdef __WXMAC__
  		#include <CoreFoundation/CFBundle.h>  // Do_not_auto_remove
-@@ -651,6 +656,11 @@ bool CamuleApp::OnInit()
+@@ -649,6 +654,11 @@ bool CamuleApp::OnInit()
  	partFileHashThread = new CPartFileHashThread();
  	ipfilter	= new CIPFilter();
  
@@ -72,7 +72,7 @@
  	// Creates all needed listening sockets
  	wxString msg;
  	if (!ReinitializeNetwork(&msg)) {
-@@ -1723,9 +1733,9 @@ wxString CamuleApp::GetLog(bool reset)
+@@ -1717,9 +1727,9 @@ wxString CamuleApp::GetLog(bool reset)
  	// try to guess file format
  	wxString str;
  	if (tmp_buffer[0] && tmp_buffer[1]) {
@@ -84,7 +84,7 @@
  	}
  	delete [] tmp_buffer;
  	if ( reset ) {
-@@ -2343,3 +2353,9 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
+@@ -2277,3 +2287,9 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
  wxDEFINE_EVENT(wxEVT_CORE_SOURCE_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_UDP_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_SERVER_DNS_DONE, wxEvent);// File_checked_for_headers
@@ -96,7 +96,7 @@
 +#endif
 --- a/src/amuled.cpp
 +++ b/src/amuled.cpp
-@@ -281,4 +281,10 @@ int CamuleDaemonApp::ShowAlert(wxString
+@@ -267,4 +267,10 @@ int CamuleDaemonApp::ShowAlert(wxString
  	return 0;	// That's neither yes nor no, ok, cancel
  }
  
@@ -189,7 +189,7 @@
  	bool LoadGUIPrefs(bool override_pos, bool override_size);
 --- a/src/amule-gui.cpp
 +++ b/src/amule-gui.cpp
-@@ -415,6 +415,21 @@ wxString CamuleGuiApp::GetLog(bool reset
+@@ -404,6 +404,21 @@ wxString CamuleGuiApp::GetLog(bool reset
  	return CamuleApp::GetLog(reset);
  }
  
@@ -213,7 +213,7 @@
  {
 --- a/src/amule.h
 +++ b/src/amule.h
-@@ -139,6 +139,8 @@ protected:
+@@ -135,6 +135,8 @@ protected:
  	bool		m_disableFatal;
  	wxString	m_geometryString;
  	wxString	m_logFile;
@@ -222,7 +222,7 @@
  	wxString	m_appName;
  	wxString	m_PidFile;
  
-@@ -461,6 +463,7 @@ public:
+@@ -449,6 +451,7 @@ public:
  	wxString GetLog(bool reset = false);
  	wxString GetServerLog(bool reset = false);
  	void AddServerMessageLine(wxString &msg);
@@ -230,7 +230,7 @@
  	wxDECLARE_EVENT_TABLE();
  };
  
-@@ -506,6 +509,8 @@ public:
+@@ -494,6 +497,8 @@ public:
  
  	virtual int ShowAlert(wxString msg, wxString title, int flags);
  
@@ -239,7 +239,7 @@
  	wxDECLARE_EVENT_TABLE();
  };
  
-@@ -516,3 +521,8 @@ extern CamuleDaemonApp *theApp;
+@@ -504,3 +509,8 @@ extern CamuleDaemonApp *theApp;
  
  #endif // AMULE_H
  // File_checked_for_headers
@@ -852,7 +852,7 @@
  
  //-------------------- File_Encoder --------------------
  
-@@ -1423,6 +1426,15 @@ CECPacket *CECServerSocket::ProcessReque
+@@ -1398,6 +1401,15 @@ CECPacket *CECServerSocket::ProcessReque
  			}
  			break;
  		}
