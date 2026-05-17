@@ -1,0 +1,159 @@
+--- a/udev.c
++++ b/udev.c
+@@ -18,6 +18,10 @@
+ #include <stdlib.h>
+ 
+ #include "udev.h"
++#include <stdio.h>
++#include <stdint.h>
++#include <string.h>
++#include "udev_list.h"
+ 
+ struct udev {
+     int refcount;
+@@ -76,22 +80,138 @@ int udev_get_log_priority(struct udev *u
+     return 0;
+ }
+ 
+-/* XXX NOT IMPLEMENTED */ struct udev_hwdb *udev_hwdb_new(struct udev *udev)
++#define USB_IDS_PATH "/usr/share/hwdata/usb.ids"
++
++struct udev_hwdb {
++    int refcount;
++    struct udev_list_entry head;
++};
++
++static int usb_ids_lookup_vendor(uint16_t vendorid, char *buf, size_t buflen)
+ {
+-    return NULL;
++    FILE *f;
++    char line[512];
++    unsigned int id;
++    char *name;
++    size_t len;
++
++    f = fopen(USB_IDS_PATH, "r");
++    if (!f)
++        return 0;
++    while (fgets(line, sizeof(line), f)) {
++        if (line[0] == '#' || line[0] == '\t' || line[0] == '\n')
++            continue;
++        if (sscanf(line, "%04x", &id) != 1 || id != vendorid)
++            continue;
++        name = strchr(line, ' ');
++        if (name) {
++            while (*name == ' ')
++                name++;
++            len = strlen(name);
++            while (len > 0 && (name[len - 1] == '\n' || name[len - 1] == '\r'))
++                name[--len] = '\0';
++            snprintf(buf, buflen, "%s", name);
++        }
++        break;
++    }
++    fclose(f);
++    return buf[0] != '\0';
+ }
+ 
+-/* XXX NOT IMPLEMENTED */ struct udev_hwdb *udev_hwdb_ref(struct udev_hwdb *hwdb)
++static int usb_ids_lookup_product(uint16_t vendorid, uint16_t productid, char *buf, size_t buflen)
+ {
+-    return NULL;
++    FILE *f;
++    char line[512];
++    unsigned int id;
++    int in_vendor = 0;
++    char *name;
++    size_t len;
++
++    f = fopen(USB_IDS_PATH, "r");
++    if (!f)
++        return 0;
++    while (fgets(line, sizeof(line), f)) {
++        if (line[0] == '#' || line[0] == '\n')
++            continue;
++        if (in_vendor) {
++            if (line[0] != '\t')
++                break;
++            if (line[1] == '\t')
++                continue;
++            if (sscanf(line + 1, "%04x", &id) != 1 || id != productid)
++                continue;
++            name = strchr(line + 1, ' ');
++            if (name) {
++                while (*name == ' ')
++                    name++;
++                len = strlen(name);
++                while (len > 0 && (name[len - 1] == '\n' || name[len - 1] == '\r'))
++                    name[--len] = '\0';
++                snprintf(buf, buflen, "%s", name);
++            }
++            break;
++        }
++        if (line[0] == '\t')
++            continue;
++        if (sscanf(line, "%04x", &id) != 1 || id != vendorid)
++            continue;
++        in_vendor = 1;
++    }
++    fclose(f);
++    return buf[0] != '\0';
+ }
+ 
+-/* XXX NOT IMPLEMENTED */ struct udev_hwdb *udev_hwdb_unref(struct udev_hwdb *hwdb)
++struct udev_hwdb *udev_hwdb_new(struct udev *udev)
+ {
+-    return NULL;
++    struct udev_hwdb *hwdb;
++    FILE *f;
++
++    f = fopen(USB_IDS_PATH, "r");
++    if (!f)
++        return NULL;
++    fclose(f);
++    hwdb = calloc(1, sizeof(*hwdb));
++    if (!hwdb)
++        return NULL;
++    hwdb->refcount = 1;
++    return hwdb;
+ }
+ 
+-/* XXX NOT IMPLEMENTED */ struct udev_list_entry *udev_hwdb_get_properties_list_entry(struct udev_hwdb *hwdb, const char *modalias, unsigned int flags)
++struct udev_hwdb *udev_hwdb_ref(struct udev_hwdb *hwdb)
+ {
++    if (!hwdb)
++        return NULL;
++    hwdb->refcount++;
++    return hwdb;
++}
++
++struct udev_hwdb *udev_hwdb_unref(struct udev_hwdb *hwdb)
++{
++    if (!hwdb)
++        return NULL;
++    if (--hwdb->refcount > 0)
++        return NULL;
++    udev_list_entry_free_all(&hwdb->head);
++    free(hwdb);
+     return NULL;
+ }
++
++struct udev_list_entry *udev_hwdb_get_properties_list_entry(struct udev_hwdb *hwdb, const char *modalias, unsigned int flags)
++{
++    unsigned int vendorid, productid;
++    char name[128];
++
++    if (!hwdb || !modalias)
++        return NULL;
++    udev_list_entry_free_all(&hwdb->head);
++    hwdb->head.next = NULL;
++    name[0] = '\0';
++    if (sscanf(modalias, "usb:v%4xp%4x", &vendorid, &productid) == 2) {
++        if (usb_ids_lookup_product((uint16_t)vendorid, (uint16_t)productid, name, sizeof(name)))
++            udev_list_entry_add(&hwdb->head, "ID_MODEL_FROM_DATABASE", name, 0);
++    } else if (sscanf(modalias, "usb:v%4x", &vendorid) == 1) {
++        if (usb_ids_lookup_vendor((uint16_t)vendorid, name, sizeof(name)))
++            udev_list_entry_add(&hwdb->head, "ID_VENDOR_FROM_DATABASE", name, 0);
++    }
++    return hwdb->head.next;
++}

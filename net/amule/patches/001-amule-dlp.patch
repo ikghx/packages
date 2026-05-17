@@ -852,7 +852,7 @@
  
  //-------------------- File_Encoder --------------------
  
-@@ -1398,6 +1401,15 @@ CECPacket *CECServerSocket::ProcessReque
+@@ -1420,6 +1423,15 @@ CECPacket *CECServerSocket::ProcessReque
  			}
  			break;
  		}
@@ -902,7 +902,7 @@
  };
  
  enum ECTagNames {
-@@ -560,6 +561,7 @@ wxString GetDebugNameECOpCodes(uint8 arg
+@@ -572,6 +573,7 @@ wxString GetDebugNameECOpCodes(uint8 arg
  		case 0x55: return "EC_OP_SHARED_FILE_SET_COMMENT";
  		case 0x56: return "EC_OP_SERVER_SET_STATIC_PRIO";
  		case 0x57: return "EC_OP_FRIEND";
@@ -1016,7 +1016,7 @@
  wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
  {
      wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
-@@ -2543,9 +2588,9 @@ wxSizer *PreferencesProxyTab( wxWindow *
+@@ -2548,9 +2593,9 @@ wxSizer *PreferencesProxyTab( wxWindow *
      item2->Add( item9, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
      wxString strs10[] = 
      {
@@ -1097,7 +1097,7 @@
  
  /** Cfg class for wxStrings. */
  class Cfg_Str : public Cfg_Tmpl<wxString>
-@@ -956,6 +974,11 @@ CPreferences::CPreferences()
+@@ -967,6 +985,11 @@ CPreferences::CPreferences()
  	s_userhash[5] = 14;
  	s_userhash[14] = 111;
  
@@ -1109,7 +1109,7 @@
  #ifndef CLIENT_GUI
  	LoadPreferences();
  	ReloadSharedFolders();
-@@ -1065,6 +1088,20 @@ void CPreferences::BuildItemList( const
+@@ -1076,6 +1099,20 @@ void CPreferences::BuildItemList( const
  	NewCfgItem( IDC_NETWORKKAD, (new Cfg_Bool( "/eMule/ConnectToKad",	s_ConnectToKad, true )) );
  	NewCfgItem( IDC_NETWORKED2K, ( new Cfg_Bool( "/eMule/ConnectToED2K",	s_ConnectToED2K, true ) ));
  
@@ -1130,7 +1130,7 @@
  
  	/**
  	 * Files
-@@ -1489,6 +1526,11 @@ void CPreferences::Save()
+@@ -1500,6 +1537,11 @@ void CPreferences::Save()
  	SavePreferences();
  
  	SaveSharedFolders();
@@ -1142,7 +1142,7 @@
  }
  
  
-@@ -1516,6 +1558,21 @@ void CPreferences::SaveSharedFolders()
+@@ -1527,6 +1569,21 @@ void CPreferences::SaveSharedFolders()
  	#endif
  }
  
