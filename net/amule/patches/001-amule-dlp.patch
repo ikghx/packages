@@ -60,7 +60,7 @@
  #ifndef AMULE_DAEMON
  	#ifdef __WXMAC__
  		#include <CoreFoundation/CFBundle.h>  // Do_not_auto_remove
-@@ -649,6 +654,11 @@ bool CamuleApp::OnInit()
+@@ -653,6 +658,11 @@ bool CamuleApp::OnInit()
  	partFileHashThread = new CPartFileHashThread();
  	ipfilter	= new CIPFilter();
  
@@ -72,7 +72,7 @@
  	// Creates all needed listening sockets
  	wxString msg;
  	if (!ReinitializeNetwork(&msg)) {
-@@ -1717,9 +1727,9 @@ wxString CamuleApp::GetLog(bool reset)
+@@ -1721,9 +1731,9 @@ wxString CamuleApp::GetLog(bool reset)
  	// try to guess file format
  	wxString str;
  	if (tmp_buffer[0] && tmp_buffer[1]) {
@@ -84,7 +84,7 @@
  	}
  	delete [] tmp_buffer;
  	if ( reset ) {
-@@ -2277,3 +2287,9 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
+@@ -2281,3 +2291,9 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
  wxDEFINE_EVENT(wxEVT_CORE_SOURCE_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_UDP_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_SERVER_DNS_DONE, wxEvent);// File_checked_for_headers

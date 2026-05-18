@@ -11,8 +11,8 @@ PKG_RELEASE:=3
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/amule-project/amule.git
-PKG_SOURCE_VERSION:=377ec8d9d56618f1059d8705ae53a70fa4ffbe87
-PKG_MIRROR_HASH:=456eb1482a0e10da1d408ae6c4d8f4a0ae0750a27b3637db953a6e65977e4b6b
+PKG_SOURCE_VERSION:=e21efb46dc0f535a84941ee90196ca27144d4778
+PKG_MIRROR_HASH:=ff26db6b9df043d7b58be0f77641d2060f36b3ecff062bfbd754ab682a4301db
 
 PKG_BUILD_DEPENDS:=libcryptopp
 PKG_BUILD_PARALLEL:=1
@@ -27,12 +27,15 @@ define Package/amule
   CATEGORY:=Network
   TITLE:=A multi-platform eMule-like ed2k client
   URL:=https://github.com/amule-project/amule/
-  DEPENDS:=+libatomic +libpng +libpthread +libncurses +libreadline +libwxbase +libbfd \
-	+libcryptopp +libcurl +boost-system +antileech +zlib +glib2-core
+  DEPENDS:=+libpng +libpthread +libncurses +libreadline +libwxbase +libbfd \
+	+libcryptopp +libcurl +boost-system +antileech +zlib +glib2-core \
+	+(armeb||arm||powerpc||mips||mipsel):libatomic
   USERID:=amule=4662:amule=4662
 endef
 
-TARGET_LDFLAGS += -latomic -Wl,--as-needed
+TARGET_CFLAGS += -ffunction-sections -fdata-sections
+TARGET_CXXFLAGS += -ffunction-sections -fdata-sections
+TARGET_LDFLAGS += -Wl,--as-needed -Wl,--gc-sections -latomic
 
 CMAKE_OPTIONS += \
 	-DBUILD_MONOLITHIC=NO \
