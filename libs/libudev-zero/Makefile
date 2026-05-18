@@ -32,7 +32,8 @@ define Package/libudev-zero
 endef
 
 MAKE_FLAGS += \
-	PREFIX=/usr
+	PREFIX=/usr \
+	USB_IDS_PATH=/usr/share/hwdata/usb.ids
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include

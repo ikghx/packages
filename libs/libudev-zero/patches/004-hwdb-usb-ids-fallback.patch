@@ -1,41 +1,96 @@
+From 65f80d9537cb270af86d9fa49b89849fda5fe155 Mon Sep 17 00:00:00 2001
+From: Alexandru Ardelean <alex@shruggie.ro>
+Date: Sat, 16 May 2026 15:55:44 +0300
+Subject: [PATCH] udev: implement hwdb USB ID lookup from usb.ids
+
+Replace the four stub udev_hwdb_*() functions with a working
+implementation that looks up vendor and product names from a
+usb.ids database file (e.g. provided by the hwdata package).
+
+udev_hwdb_new() opens the file to verify it exists; subsequent
+calls to udev_hwdb_get_properties_list_entry() parse the file for
+USB modalias strings of the form "usb:vVVVVpPPPP" (product lookup)
+or "usb:vVVVV" (vendor lookup), and populate the entry list with
+ID_MODEL_FROM_DATABASE or ID_VENDOR_FROM_DATABASE properties.
+
+The path to the usb.ids file defaults to /usr/share/hwdata/usb.ids
+but is configurable at build time.
+It can be configured at build-time and also passed via env-var
+at run-time.
+
+Signed-off-by: Alexandru Ardelean <alex@shruggie.ro>
+---
+ Makefile |   2 +
+ udev.c   | 154 ++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 149 insertions(+), 7 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 1fc5a1f..9aa1c5b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -5,7 +5,9 @@ PREFIX = /usr/local
+ LIBDIR = ${PREFIX}/lib
+ INCLUDEDIR = ${PREFIX}/include
+ PKGCONFIGDIR = ${LIBDIR}/pkgconfig
++USB_IDS_PATH = /usr/share/hwdata/usb.ids
+ XCFLAGS = ${CPPFLAGS} ${CFLAGS} -std=c99 -fPIC -D_XOPEN_SOURCE=700 \
++		  -DUSB_IDS_PATH=\"${USB_IDS_PATH}\" \
+ 		  -Wall -Wextra -Wpedantic -Wmissing-prototypes -Wstrict-prototypes \
+ 		  -Wno-unused-parameter
+ XLDFLAGS = ${LDFLAGS} -shared -Wl,-soname,libudev.so.1
+diff --git a/udev.c b/udev.c
+index ab5d33a..10778db 100644
 --- a/udev.c
 +++ b/udev.c
-@@ -18,6 +18,10 @@
- #include <stdlib.h>
+@@ -15,9 +15,13 @@
+  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+  */
  
- #include "udev.h"
 +#include <stdio.h>
 +#include <stdint.h>
+ #include <stdlib.h>
 +#include <string.h>
+ 
+ #include "udev.h"
 +#include "udev_list.h"
  
  struct udev {
      int refcount;
-@@ -76,22 +80,138 @@ int udev_get_log_priority(struct udev *u
+@@ -76,22 +80,158 @@ int udev_get_log_priority(struct udev *udev)
      return 0;
  }
  
 -/* XXX NOT IMPLEMENTED */ struct udev_hwdb *udev_hwdb_new(struct udev *udev)
++#ifndef USB_IDS_PATH
 +#define USB_IDS_PATH "/usr/share/hwdata/usb.ids"
++#endif
 +
 +struct udev_hwdb {
-+    int refcount;
 +    struct udev_list_entry head;
++    int refcount;
 +};
 +
 +static int usb_ids_lookup_vendor(uint16_t vendorid, char *buf, size_t buflen)
  {
 -    return NULL;
-+    FILE *f;
-+    char line[512];
++    char *line, *name;
++    const char *path;
 +    unsigned int id;
-+    char *name;
 +    size_t len;
++    FILE *f;
 +
-+    f = fopen(USB_IDS_PATH, "r");
-+    if (!f)
++    /* heap-allocated to avoid a 512-byte stack frame; libudev-zero may
++     * be called from small thread stacks (musl default ~128 KiB) */
++    line = malloc(512);
++    if (!line)
 +        return 0;
-+    while (fgets(line, sizeof(line), f)) {
++    path = getenv("USB_IDS_PATH");
++    f = fopen(path ? path : USB_IDS_PATH, "r");
++    if (!f) {
++        free(line);
++        return 0;
++    }
++    while (fgets(line, 512, f)) {
 +        if (line[0] == '#' || line[0] == '\t' || line[0] == '\n')
 +            continue;
 +        if (sscanf(line, "%04x", &id) != 1 || id != vendorid)
@@ -52,6 +107,7 @@
 +        break;
 +    }
 +    fclose(f);
++    free(line);
 +    return buf[0] != '\0';
  }
  
@@ -59,17 +115,23 @@
 +static int usb_ids_lookup_product(uint16_t vendorid, uint16_t productid, char *buf, size_t buflen)
  {
 -    return NULL;
-+    FILE *f;
-+    char line[512];
-+    unsigned int id;
 +    int in_vendor = 0;
-+    char *name;
++    char *line, *name;
++    const char *path;
++    unsigned int id;
 +    size_t len;
++    FILE *f;
 +
-+    f = fopen(USB_IDS_PATH, "r");
-+    if (!f)
++    line = malloc(512);
++    if (!line)
 +        return 0;
-+    while (fgets(line, sizeof(line), f)) {
++    path = getenv("USB_IDS_PATH");
++    f = fopen(path ? path : USB_IDS_PATH, "r");
++    if (!f) {
++        free(line);
++        return 0;
++    }
++    while (fgets(line, 512, f)) {
 +        if (line[0] == '#' || line[0] == '\n')
 +            continue;
 +        if (in_vendor) {
@@ -97,6 +159,7 @@
 +        in_vendor = 1;
 +    }
 +    fclose(f);
++    free(line);
 +    return buf[0] != '\0';
  }
  
@@ -105,9 +168,11 @@
  {
 -    return NULL;
 +    struct udev_hwdb *hwdb;
++    const char *path;
 +    FILE *f;
 +
-+    f = fopen(USB_IDS_PATH, "r");
++    path = getenv("USB_IDS_PATH");
++    f = fopen(path ? path : USB_IDS_PATH, "r");
 +    if (!f)
 +        return NULL;
 +    fclose(f);
@@ -141,7 +206,7 @@
 +struct udev_list_entry *udev_hwdb_get_properties_list_entry(struct udev_hwdb *hwdb, const char *modalias, unsigned int flags)
 +{
 +    unsigned int vendorid, productid;
-+    char name[128];
++    char name[64];
 +
 +    if (!hwdb || !modalias)
 +        return NULL;
@@ -157,3 +222,5 @@
 +    }
 +    return hwdb->head.next;
 +}
+-- 
+2.43.0

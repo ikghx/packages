@@ -11,11 +11,14 @@ PKG_RELEASE:=3
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/amule-project/amule.git
-PKG_SOURCE_VERSION:=e21efb46dc0f535a84941ee90196ca27144d4778
-PKG_MIRROR_HASH:=ff26db6b9df043d7b58be0f77641d2060f36b3ecff062bfbd754ab682a4301db
+PKG_SOURCE_VERSION:=a5fb7797d4c4cfb42a60d24588e20d32e637fb30
+PKG_MIRROR_HASH:=34556e437aab8f595decacd91a808c0cbc2f62a5f064fc7fd8e1aa325748eb6f
 
-PKG_BUILD_DEPENDS:=libcryptopp
+PKG_BUILD_DEPENDS:=\
+	boost libcryptopp glib2 \
+	zlib
 PKG_BUILD_PARALLEL:=1
+PKG_BUILD_FLAGS:=no-mips16 gc-sections lto
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -33,9 +36,7 @@ define Package/amule
   USERID:=amule=4662:amule=4662
 endef
 
-TARGET_CFLAGS += -ffunction-sections -fdata-sections
-TARGET_CXXFLAGS += -ffunction-sections -fdata-sections
-TARGET_LDFLAGS += -Wl,--as-needed -Wl,--gc-sections -latomic
+TARGET_LDFLAGS += -Wl,--as-needed
 
 CMAKE_OPTIONS += \
 	-DBUILD_MONOLITHIC=NO \
@@ -54,6 +55,12 @@ CMAKE_OPTIONS += \
 	-DPS_RUN_RESULT=0 \
 	-DPS_RUN_RESULT__TRYRUN_OUTPUT="0" \
 	-DCRYPTOPP_VERSION="8.9.0"
+
+ifneq ($(CONFIG_ARCH_64BIT),y)
+  CMAKE_OPTIONS += \
+	-DCMAKE_CXX_STANDARD_LIBRARIES="-latomic" \
+	-DCMAKE_C_STANDARD_LIBRARIES="-latomic"
+endif
 
 define Package/amule/install
 	$(INSTALL_DIR) $(1)/usr/bin
