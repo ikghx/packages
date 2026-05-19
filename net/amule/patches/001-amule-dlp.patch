@@ -922,7 +922,7 @@
  public final static short EC_TAG_PASSWD_HASH                        = 0x0001;
 --- a/src/LoggerConsole.cpp
 +++ b/src/LoggerConsole.cpp
-@@ -93,6 +93,8 @@ void CLogger::AddLogLine(
+@@ -109,6 +109,8 @@ void CLogger::AddLogLine(
  }
  
  CLogger theLogger;
@@ -933,7 +933,7 @@
  wxEND_EVENT_TABLE()
 --- a/src/Logger.cpp
 +++ b/src/Logger.cpp
-@@ -296,6 +296,8 @@ void CLogger::FlushApplog()
+@@ -302,6 +302,8 @@ void CLogger::FlushApplog()
  }
  
  CLogger theLogger;
@@ -944,7 +944,7 @@
  	EVT_MULE_LOGGING(CLogger::OnLoggingEvent)
 --- a/src/Logger.h
 +++ b/src/Logger.h
-@@ -310,6 +310,8 @@ private:
+@@ -322,6 +322,8 @@ private:
  };
  
  extern CLogger theLogger;
@@ -953,7 +953,7 @@
  
  /**
   * This class forwards log-lines from wxWidgets to CLogger.
-@@ -449,5 +451,8 @@ public:
+@@ -461,5 +463,8 @@ public:
  	#define AddLogLineF(string) theLogger.AddLogLine(__TFILE__, __LINE__, false, logStandard, string, false, false)
  #endif
  
