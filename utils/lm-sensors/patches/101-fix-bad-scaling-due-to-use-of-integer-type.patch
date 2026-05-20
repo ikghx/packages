@@ -14,11 +14,9 @@ ms: adjust test
  lib/sysfs.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/lib/sysfs.c b/lib/sysfs.c
-index 39644f11..6e93b95c 100644
 --- a/lib/sysfs.c
 +++ b/lib/sysfs.c
-@@ -139,7 +139,7 @@ static int sysfs_foreach_busdev(const char *bus_type,
+@@ -139,7 +139,7 @@ static int sysfs_foreach_busdev(const ch
  const char *sensors_sysfs_mount = "/sys";
  
  static
@@ -27,5 +25,3 @@ index 39644f11..6e93b95c 100644
  {
  	/* Multipliers for second class subfeatures
  	   that need their own multiplier */
--- 
-2.54.0
