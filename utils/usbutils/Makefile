@@ -31,11 +31,12 @@ define Package/usbutils
   DEPENDS:=+libusb-1.0 +libudev +usbids
   TITLE:=USB devices listing utilities
   URL:=http://www.linux-usb.org/
+  ALTERNATIVES:=200:/usr/bin/lsusb:/usr/libexec/lsusb-usbutils
 endef
 
 define Package/usbutils/install
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/lsusb $(1)/usr/bin/
+	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/libexec
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/lsusb $(1)/usr/libexec/lsusb-usbutils
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/openwrt-build/usbreset $(1)/usr/bin/
 endef
 
