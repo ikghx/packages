@@ -852,7 +852,7 @@
  
  //-------------------- File_Encoder --------------------
  
-@@ -1420,6 +1423,15 @@ CECPacket *CECServerSocket::ProcessReque
+@@ -1467,6 +1470,15 @@ CECPacket *CECServerSocket::ProcessReque
  			}
  			break;
  		}
