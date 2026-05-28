@@ -4,18 +4,18 @@
  set (PACKAGE "amule")
  set (PACKAGE_BUGREPORT "admin@amule.org")
  set (PACKAGE_NAME "aMule")
--set (PACKAGE_STRING "aMule SVN")
+-set (PACKAGE_STRING "aMule GIT")
 +set (PACKAGE_STRING "aMule 3.0.0")
  set (PACKAGE_TARNAME "amule")
  set (PACKAGE_URL \"\")
--set (PACKAGE_VERSION "SVN")
+-set (PACKAGE_VERSION "GIT")
 +set (PACKAGE_VERSION "3.0.0")
  set (VERSION "GIT")
  set (DEFAULT_BUILD_TYPE "Release")
  set (RECONF_COMMAND ${CMAKE_COMMAND})
 --- a/src/amuleAppCommon.cpp
 +++ b/src/amuleAppCommon.cpp
-@@ -71,6 +71,8 @@ CamuleAppCommon::CamuleAppCommon()
+@@ -72,6 +72,8 @@ CamuleAppCommon::CamuleAppCommon()
  		m_configFile	= "amule.conf";
  		m_logFile		= "logfile";
  
@@ -24,7 +24,7 @@
  		if (IsDaemon()) {
  			m_appName	= "aMuleD";
  		} else {
-@@ -494,6 +496,21 @@ bool CamuleAppCommon::InitCommon(int arg
+@@ -524,6 +526,21 @@ bool CamuleAppCommon::InitCommon(int arg
  		return false;
  	}
  
@@ -72,7 +72,7 @@
  	// Creates all needed listening sockets
  	wxString msg;
  	if (!ReinitializeNetwork(&msg)) {
-@@ -1721,9 +1731,9 @@ wxString CamuleApp::GetLog(bool reset)
+@@ -1738,9 +1748,9 @@ wxString CamuleApp::GetLog(bool reset)
  	// try to guess file format
  	wxString str;
  	if (tmp_buffer[0] && tmp_buffer[1]) {
@@ -84,11 +84,10 @@
  	}
  	delete [] tmp_buffer;
  	if ( reset ) {
-@@ -2281,3 +2291,9 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
+@@ -2298,3 +2308,8 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
  wxDEFINE_EVENT(wxEVT_CORE_SOURCE_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_UDP_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_SERVER_DNS_DONE, wxEvent);// File_checked_for_headers
-+// File_checked_for_headers
 +
 +//Dynamic Leech Protect - Bill Lee
 +#ifdef AMULE_DLP
@@ -119,7 +118,7 @@
  
  	for (uint32 i = 0; i < logs_notebook->GetPageCount(); ++i) {
 @@ -523,6 +523,7 @@ void CamuleDlg::OnAboutButton(wxCommandE
- 	msg << _("Snapshot:") << "\n " << SVNDATE;
+ 	msg << _("Snapshot:") << "\n " << GITDATE;
  #endif
  	msg << "\n\n" << _("'All-Platform' p2p client based on eMule \n\n") <<
 +		_("with Dynamic Leecher Protection. \n\n") <<
@@ -365,7 +364,7 @@
  #include <wx/wx.h>
  #include <wx/mstream.h>
  #include <wx/tokenzr.h>
-@@ -290,6 +295,10 @@ void CUpDownClient::Init()
+@@ -287,6 +292,10 @@ void CUpDownClient::Init()
  	m_cMessagesReceived = 0;
  	m_cMessagesSent = 0;
  
@@ -376,7 +375,7 @@
  }
  
  
-@@ -635,6 +644,15 @@ bool CUpDownClient::ProcessHelloTypePack
+@@ -632,6 +641,15 @@ bool CUpDownClient::ProcessHelloTypePack
  				m_fSharedDirectories = 1;
  				dwEmuleTags |= 4;
  				break;
@@ -392,7 +391,7 @@
  		}
  	}
  
-@@ -717,6 +735,12 @@ bool CUpDownClient::ProcessHelloTypePack
+@@ -714,6 +732,12 @@ bool CUpDownClient::ProcessHelloTypePack
  		Kademlia::CKademlia::Bootstrap(wxUINT32_SWAP_ALWAYS(GetIP()), GetKadPort());
  	}
  
@@ -405,7 +404,7 @@
  	return bIsMule;
  }
  
-@@ -966,6 +990,14 @@ bool CUpDownClient::ProcessMuleInfoPacke
+@@ -963,6 +987,14 @@ bool CUpDownClient::ProcessMuleInfoPacke
  							% GetClientFullInfo()
  					);
  
@@ -420,7 +419,7 @@
  					break;
  			}
  		}
-@@ -1003,6 +1035,12 @@ bool CUpDownClient::ProcessMuleInfoPacke
+@@ -1000,6 +1032,12 @@ bool CUpDownClient::ProcessMuleInfoPacke
  		m_byInfopacketsReceived |= IP_EMULEPROTPACK;
  	}
  
@@ -433,25 +432,25 @@
  	return (protocol_version == 0xFF); // This was a OS_Info?
  }
  
-@@ -1033,7 +1071,7 @@ void CUpDownClient::SendHelloTypePacket(
+@@ -1030,7 +1068,7 @@ void CUpDownClient::SendHelloTypePacket(
  	}
  	tagcount ++; // eMule misc flags 2 (kad version)
  
--	#ifdef __SVN__
-+	#if (defined __SVN__ || defined AMULE_DLP)
+-	#ifdef __GIT__
++	#if (defined __GIT__ || defined AMULE_DLP)
  	// Kry - This is the tagcount!!! Be sure to update it!!
  	// Last update: CT_EMULECOMPAT_OPTIONS included
  	data->WriteUInt32(tagcount + 1);
-@@ -1156,7 +1194,7 @@ void CUpDownClient::SendHelloTypePacket(
+@@ -1153,7 +1191,7 @@ void CUpDownClient::SendHelloTypePacket(
  
  	tagMisCompatOptions.WriteTagToFile(data);
  
--#ifdef __SVN__
-+#if (defined __SVN__ || defined AMULE_DLP)
+-#ifdef __GIT__
++#if (defined __GIT__ || defined AMULE_DLP)
  	wxString mod_name(MOD_VERSION_LONG);
  	CTagString tagModName(ET_MOD_VERSION, mod_name);
  	tagModName.WriteTagToFile(data);
-@@ -2303,7 +2341,12 @@ bool CUpDownClient::CheckHandshakeFinish
+@@ -2300,7 +2338,12 @@ bool CUpDownClient::CheckHandshakeFinish
  }
  
  
@@ -842,7 +841,7 @@
  		source->Safe_Delete();
 --- a/src/ExternalConn.cpp
 +++ b/src/ExternalConn.cpp
-@@ -55,6 +55,9 @@
+@@ -58,6 +58,9 @@
  #include "kademlia/kademlia/UDPFirewallTester.h"
  #include "Statistics.h"
  
@@ -852,7 +851,7 @@
  
  //-------------------- File_Encoder --------------------
  
-@@ -1481,6 +1484,15 @@ CECPacket *CECServerSocket::ProcessReque
+@@ -1738,6 +1741,15 @@ CECPacket *CECServerSocket::ProcessReque
  			}
  			break;
  		}
@@ -878,7 +877,7 @@
 +	#define VERSION "3.0.0"
  #endif
  
- #ifdef __SVN__
+ #ifdef __GIT__
 --- a/src/libs/ec/abstracts/ECCodes.abstract
 +++ b/src/libs/ec/abstracts/ECCodes.abstract
 @@ -149,6 +149,8 @@ EC_OP_SERVER_SET_STATIC_PRIO        0x56
@@ -902,7 +901,7 @@
  };
  
  enum ECTagNames {
-@@ -572,6 +573,7 @@ wxString GetDebugNameECOpCodes(uint8 arg
+@@ -574,6 +575,7 @@ wxString GetDebugNameECOpCodes(uint8 arg
  		case 0x55: return "EC_OP_SHARED_FILE_SET_COMMENT";
  		case 0x56: return "EC_OP_SERVER_SET_STATIC_PRIO";
  		case 0x57: return "EC_OP_FRIEND";
@@ -964,7 +963,7 @@
  // File_checked_for_headers
 --- a/src/muuli_wdr.cpp
 +++ b/src/muuli_wdr.cpp
-@@ -1479,6 +1479,51 @@ wxSizer *PreferencesServerTab( wxWindow
+@@ -1487,6 +1487,51 @@ wxSizer *PreferencesServerTab( wxWindow
      return item0;
  }
  
@@ -1016,7 +1015,7 @@
  wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
  {
      wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
-@@ -2548,9 +2593,9 @@ wxSizer *PreferencesProxyTab( wxWindow *
+@@ -2556,9 +2601,9 @@ wxSizer *PreferencesProxyTab( wxWindow *
      item2->Add( item9, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
      wxString strs10[] = 
      {
@@ -1031,7 +1030,7 @@
      wxChoice *item10 = new wxChoice( parent, ID_PROXY_TYPE, wxDefaultPosition, wxSize(100,-1), 4, strs10, 0 );
 --- a/src/muuli_wdr.h
 +++ b/src/muuli_wdr.h
-@@ -364,6 +364,9 @@ wxSizer *ServerInfoLog( wxWindow *parent
+@@ -367,6 +367,9 @@ wxSizer *ServerInfoLog( wxWindow *parent
  
  #define ID_LOGVIEW 10242
  #define ID_BTN_RESET 10243
@@ -1041,7 +1040,7 @@
  wxSizer *aMuleLog( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
  
  #define ID_UPDATELIST 10244
-@@ -451,6 +454,21 @@ wxSizer *CoreConnect( wxWindow *parent,
+@@ -454,6 +457,21 @@ wxSizer *CoreConnect( wxWindow *parent,
  #define ID_DEBUGCATS 10308
  wxSizer *PreferencesDebug( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
  
@@ -1213,7 +1212,7 @@
  
 --- a/src/PrefsUnifiedDlg.cpp
 +++ b/src/PrefsUnifiedDlg.cpp
-@@ -57,6 +57,11 @@
+@@ -58,6 +58,11 @@
  #include "UserEvents.h"
  #include "PlatformSpecific.h"		// Needed for PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
  
@@ -1225,7 +1224,7 @@
  wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDialog)
  	// Events
  #define USEREVENTS_EVENT(ID, NAME, VARS) \
-@@ -118,6 +123,11 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDi
+@@ -124,6 +129,11 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDi
  	EVT_CHOICE(IDC_COLORSELECTOR,		PrefsUnifiedDlg::OnColorCategorySelected)
  	EVT_LIST_ITEM_SELECTED(ID_PREFSLISTCTRL,PrefsUnifiedDlg::OnPrefsPageChange)
  
@@ -1237,7 +1236,7 @@
  	EVT_INIT_DIALOG(PrefsUnifiedDlg::OnInitDialog)
  
  	EVT_COMMAND_SCROLL(IDC_SLIDER,		PrefsUnifiedDlg::OnScrollBarChange)
-@@ -191,6 +201,9 @@ PrefsPage pages[] =
+@@ -197,6 +207,9 @@ PrefsPage pages[] =
  	{ wxTRANSLATE("Online Signature"),	PreferencesOnlineSigTab,	21 },
  	{ wxTRANSLATE("Advanced"),			PreferencesaMuleTweaksTab,	12 },
  	{ wxTRANSLATE("Events"),			PreferencesEventsTab,		5 }
@@ -1247,7 +1246,7 @@
  #ifdef __DEBUG__
  	,{ wxTRANSLATE("Debugging"),		PreferencesDebug,			25 }
  #endif
-@@ -1172,6 +1185,21 @@ void PrefsUnifiedDlg::OnButtonIPFilterUp
+@@ -1209,6 +1222,21 @@ void PrefsUnifiedDlg::OnButtonIPFilterUp
  	theApp->ipfilter->Update( CastChild( IDC_IPFILTERURL, wxTextCtrl )->GetValue() );
  }
  
@@ -1271,7 +1270,7 @@
  {
 --- a/src/PrefsUnifiedDlg.h
 +++ b/src/PrefsUnifiedDlg.h
-@@ -124,6 +124,9 @@ protected:
+@@ -125,6 +125,9 @@ protected:
  	void OnUserEventSelected(wxListEvent& event);
  	void OnLanguageChoice(wxCommandEvent &event);
  	void CreateEventPanels(const int idx, const wxString& vars, wxWindow* parent);
@@ -1364,7 +1363,7 @@
  	wxString	GetClientShortInfo();
  
  	const wxString& GetClientOSInfo() const		{ return m_sClientOSInfo; }
-@@ -587,6 +593,10 @@ public:
+@@ -585,6 +591,10 @@ public:
  
  	bool		HasDisabledSharedFiles() const { return m_fNoViewSharedFiles; }
  
@@ -1375,7 +1374,7 @@
  private:
  
  	CClientCredits	*credits;
-@@ -851,6 +861,10 @@ private:
+@@ -846,6 +856,10 @@ private:
  #ifdef __DEBUG__
  	wxString	connection_reason;
  #endif

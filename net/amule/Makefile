@@ -7,12 +7,12 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=amule
 PKG_VERSION:=3.0.0
-PKG_RELEASE:=4
+PKG_RELEASE:=5
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/amule-project/amule.git
-PKG_SOURCE_VERSION:=317dedb9b773e7b8b16822d8b2e4925a837b950d
-PKG_MIRROR_HASH:=aef1f0e57c7f4e04906c673261f30d255c345f22206ddf1bc4852bbc7870be91
+PKG_SOURCE_VERSION:=2ef97637ef33e2fcb686c3a2706b40f04e7c8708
+PKG_MIRROR_HASH:=112b9d356638ac8e7aaeba6420050455157fabec311c1d92a371573478742587
 
 PKG_BUILD_DEPENDS:=\
 	boost libcryptopp glib2 \
@@ -61,6 +61,8 @@ define Package/amule/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/amule{cmd,d,web} $(1)/usr/bin/
 	$(INSTALL_DIR) $(1)/usr/share
 	$(CP) $(PKG_INSTALL_DIR)/usr/share/amule $(1)/usr/share/
+	$(INSTALL_DIR) $(1)/etc/sysctl.d/
+	$(INSTALL_CONF) ./files/amule.sysctl $(1)/etc/sysctl.d/20-amule.conf
 endef
 
 $(eval $(call BuildPackage,amule))

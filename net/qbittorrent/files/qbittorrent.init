@@ -104,24 +104,18 @@ init_instance() {
 	fi
 
 	sed_options "BitTorrent" "Session" \
-				"AnnounceToAllTiers" "BTProtocol" \
-				"SeedChokingAlgorithm" "SlowTorrentsDownloadRate" "SlowTorrentsInactivityTimer" "SlowTorrentsUploadRate"
+				"AnnounceToAllTiers" "AnnounceToAllTrackers" "BTProtocol" "DefaultSavePath" "TempPathEnabled" "TempPath" \
+				"SeedChokingAlgorithm" "SlowTorrentsDownloadRate" "SlowTorrentsInactivityTimer" "SlowTorrentsUploadRate" \
+				"MaxActiveDownloads" "MaxActiveTorrents" "MaxActiveUploads" "DHTEnabled" "PeXEnabled" "LSDEnabled" \
+				"Encryption" "AnonymousModeEnabled" "Preallocation" "AddExtensionToIncompleteFiles" "GlobalDLSpeedLimit" \
+				"GlobalUPSpeedLimit" "AlternativeGlobalDLSpeedLimit" "AlternativeGlobalUPSpeedLimit" \
+				"IgnoreSlowTorrentsForQueueing" "QueueingSystemEnabled"
 	sed_options "Preferences" "WebUI" \
-				"Address" "Password_ha1" "Password_PBKDF2" "Port" "Username"
-	sed_options "Preferences" "Queueing" \
-				"IgnoreSlowTorrentsForQueueing" "MaxActiveDownloads" "MaxActiveTorrents" "MaxActiveUploads" \
-				"QueueingSystemEnabled"
+				"Address" "Password_ha1" "Password_PBKDF2" "Port" "Username" "CSRFProtection"
 	sed_options "Preferences" "General" \
 				"Locale"
-	sed_options "Preferences" "Downloads" \
-				"Preallocation" "DefaultSavePath" "TempPathEnabled" "TempPath" "AddExtensionToIncompleteFiles"
-	sed_options "Preferences" "Connection" \
-				"GlobalDLSpeedLimit" "AlternativeGlobalDLSpeedLimit" "GlobalUPSpeedLimit" "AlternativeGlobalUPSpeedLimit" \
-				"PortRangeMin"
-	sed_options "Preferences" "Bittorrent" \
-				"DHTEnabled" "Encryption" "LSDEnabled" "PeXEnabled"
 	sed_options "Preferences" "Advanced" \
-				"AnnounceToAllTrackers" "AnonymousModeEnabled" "IgnoreLimitsOnLAN" "IncludeOverheadInLimits" "OutgoingPortsMax" \
+				"IgnoreLimitsOnLAN" "IncludeOverheadInLimits" "OutgoingPortsMax" \
 				"OutgoingPortsMin"
 	sed_options "Application" "FileLogger" \
 				"Enabled" "Path" "Backup" "DeleteOld" "MaxSizeBytes" "Age" "AgeType"
@@ -165,7 +159,6 @@ start_service() {
 		'Encryption:or("0","1","2"):0' \
 		'LSDEnabled:or("true","false"):true' \
 		'PeXEnabled:or("true","false"):true' \
-		'PortRangeMin:range(1024,65535)' \
 		'GlobalDLSpeedLimit:float' \
 		'AlternativeGlobalDLSpeedLimit:float' \
 		'GlobalUPSpeedLimit:float' \
@@ -182,6 +175,7 @@ start_service() {
 		'MaxActiveUploads:integer' \
 		'QueueingSystemEnabled:or("true","false")' \
 		'Address:ipaddr' \
+		'CSRFProtection:or("true","false"):true' \
 		'Password:string' \
 		'Port:port:8080' \
 		'Username:string' \

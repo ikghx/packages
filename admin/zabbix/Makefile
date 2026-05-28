@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=zabbix
-PKG_VERSION:=7.0.23
-PKG_RELEASE:=2
+PKG_VERSION:=7.0.26
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://cdn.zabbix.com/zabbix/sources/stable/$(basename $(PKG_VERSION))/ \
 	https://cdn.zabbix.com/zabbix/sources/oldstable/$(basename $(PKG_VERSION))/
-PKG_HASH:=43ea5fcb1e5db25e74bdc83ea8936d79b8093b614af4e889417485bc74f061e2
+PKG_HASH:=3c27a97b52c75e2eccfa43dec5e3fd7d52876f5fdd94172495b025ec9f2a13a8
 
 PKG_MAINTAINER:=Daniel F. Dickinson <dfdpublic@wildtechgarden.ca>
 PKG_LICENSE:=AGPL-3.0-only
@@ -62,12 +62,13 @@ endef
 define Package/zabbix-get/config
 	config ZABBIX_BUILD_SUPPORT_BIN
 		bool
-		depends on (PACKAGE_zabbix-agentd || PACKAGE_zabbix-proxy || PACKAGE_zabbix-server) && ZABBIX_ENABLE_ZABBIX
+		depends on PACKAGE_zabbix-agentd && ZABBIX_ENABLE_ZABBIX
 		default y
 		help
-			This option exists to prevent trying to build get and/or sender when none
-			of agentd, server, or proxy are being built. In that case get and sender are
-			not built by the Zabbix build system.
+			This option exists to prevent trying to build get and/or sender when the
+			of agent is not being built. In that case get and sender are not built by
+			the Zabbix build system. This is not a dependency DEPENDS because the
+			binaries do not require the agent to function.
 endef
 
 define Package/zabbix/Default
