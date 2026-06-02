@@ -51,13 +51,13 @@ define Package/openlist/conffiles
 /etc/config/openlist
 endef
 
-WEB_VERSION:=4.2.1
+WEB_VERSION:=4.2.2
 WEB_FILE:=$(PKG_NAME)-frontend-dist-v$(WEB_VERSION).tar.gz
 define Download/openlist-web
 	URL:=https://github.com/OpenListTeam/OpenList-Frontend/releases/download/v$(WEB_VERSION)/
 	URL_FILE:=$(WEB_FILE)
 	FILE:=$(WEB_FILE)
-	HASH:=e63cf21666f9c0ef41e46e5dfe05055c81e1531a668e577ced39f296952f5bd3
+	HASH:=361354a219d4c31e42933fd6423d56e740184ae0b709440a1df1f368f13474fb
 endef
 
 define Build/Prepare
