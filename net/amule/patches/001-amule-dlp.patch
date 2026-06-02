@@ -72,7 +72,7 @@
  	// Creates all needed listening sockets
  	wxString msg;
  	if (!ReinitializeNetwork(&msg)) {
-@@ -1738,9 +1748,9 @@ wxString CamuleApp::GetLog(bool reset)
+@@ -1772,9 +1782,9 @@ wxString CamuleApp::GetLog(bool reset)
  	// try to guess file format
  	wxString str;
  	if (tmp_buffer[0] && tmp_buffer[1]) {
@@ -84,7 +84,7 @@
  	}
  	delete [] tmp_buffer;
  	if ( reset ) {
-@@ -2298,3 +2308,8 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
+@@ -2332,3 +2342,8 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
  wxDEFINE_EVENT(wxEVT_CORE_SOURCE_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_UDP_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_SERVER_DNS_DONE, wxEvent);// File_checked_for_headers
@@ -851,7 +851,7 @@
  
  //-------------------- File_Encoder --------------------
  
-@@ -1738,6 +1741,15 @@ CECPacket *CECServerSocket::ProcessReque
+@@ -1754,6 +1757,15 @@ CECPacket *CECServerSocket::ProcessReque
  			}
  			break;
  		}
@@ -932,7 +932,7 @@
  wxEND_EVENT_TABLE()
 --- a/src/Logger.cpp
 +++ b/src/Logger.cpp
-@@ -302,6 +302,8 @@ void CLogger::FlushApplog()
+@@ -306,6 +306,8 @@ void CLogger::FlushApplog()
  }
  
  CLogger theLogger;
@@ -1015,7 +1015,7 @@
  wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
  {
      wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
-@@ -2556,9 +2601,9 @@ wxSizer *PreferencesProxyTab( wxWindow *
+@@ -2560,9 +2605,9 @@ wxSizer *PreferencesProxyTab( wxWindow *
      item2->Add( item9, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
      wxString strs10[] = 
      {
@@ -1030,7 +1030,7 @@
      wxChoice *item10 = new wxChoice( parent, ID_PROXY_TYPE, wxDefaultPosition, wxSize(100,-1), 4, strs10, 0 );
 --- a/src/muuli_wdr.h
 +++ b/src/muuli_wdr.h
-@@ -367,6 +367,9 @@ wxSizer *ServerInfoLog( wxWindow *parent
+@@ -368,6 +368,9 @@ wxSizer *ServerInfoLog( wxWindow *parent
  
  #define ID_LOGVIEW 10242
  #define ID_BTN_RESET 10243
@@ -1076,7 +1076,7 @@
  #ifndef AMULE_DAEMON
  #include <wx/valgen.h>
  #include "muuli_wdr.h"
-@@ -347,6 +352,19 @@ protected:
+@@ -348,6 +353,19 @@ protected:
  	wxWindow*	m_widget;
  };
  
@@ -1096,7 +1096,7 @@
  
  /** Cfg class for wxStrings. */
  class Cfg_Str : public Cfg_Tmpl<wxString>
-@@ -967,6 +985,11 @@ CPreferences::CPreferences()
+@@ -994,6 +1012,11 @@ CPreferences::CPreferences()
  	s_userhash[5] = 14;
  	s_userhash[14] = 111;
  
@@ -1108,7 +1108,7 @@
  #ifndef CLIENT_GUI
  	LoadPreferences();
  	ReloadSharedFolders();
-@@ -1076,6 +1099,20 @@ void CPreferences::BuildItemList( const
+@@ -1101,6 +1124,20 @@ void CPreferences::BuildItemList( const
  	NewCfgItem( IDC_NETWORKKAD, (new Cfg_Bool( "/eMule/ConnectToKad",	s_ConnectToKad, true )) );
  	NewCfgItem( IDC_NETWORKED2K, ( new Cfg_Bool( "/eMule/ConnectToED2K",	s_ConnectToED2K, true ) ));
  
@@ -1129,7 +1129,7 @@
  
  	/**
  	 * Files
-@@ -1500,6 +1537,11 @@ void CPreferences::Save()
+@@ -1532,6 +1569,11 @@ void CPreferences::Save()
  	SavePreferences();
  
  	SaveSharedFolders();
@@ -1141,7 +1141,7 @@
  }
  
  
-@@ -1527,6 +1569,21 @@ void CPreferences::SaveSharedFolders()
+@@ -1559,6 +1601,21 @@ void CPreferences::SaveSharedFolders()
  	#endif
  }
  
@@ -1165,7 +1165,7 @@
  {
 --- a/src/Preferences.h
 +++ b/src/Preferences.h
-@@ -637,6 +637,11 @@ public:
+@@ -644,6 +644,11 @@ public:
  	// Sleep
  	static bool		GetPreventSleepWhileDownloading() { return s_preventSleepWhileDownloading; }
  	static void		SetPreventSleepWhileDownloading(bool status) { s_preventSleepWhileDownloading = status; }
@@ -1177,7 +1177,7 @@
  protected:
  	static	int32 GetRecommendedMaxConnections();
  
-@@ -658,6 +663,11 @@ private:
+@@ -665,6 +670,11 @@ private:
  	void LoadPreferences();
  	void SavePreferences();
  
@@ -1189,7 +1189,7 @@
  protected:
  	static wxString	s_configDir;
  
-@@ -876,6 +886,20 @@ protected:
+@@ -886,6 +896,20 @@ protected:
  	// Stats server
  	static wxString s_StatsServerName;
  	static wxString s_StatsServerURL;
@@ -1224,7 +1224,7 @@
  wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDialog)
  	// Events
  #define USEREVENTS_EVENT(ID, NAME, VARS) \
-@@ -124,6 +129,11 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDi
+@@ -123,6 +128,11 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDi
  	EVT_CHOICE(IDC_COLORSELECTOR,		PrefsUnifiedDlg::OnColorCategorySelected)
  	EVT_LIST_ITEM_SELECTED(ID_PREFSLISTCTRL,PrefsUnifiedDlg::OnPrefsPageChange)
  
@@ -1236,7 +1236,7 @@
  	EVT_INIT_DIALOG(PrefsUnifiedDlg::OnInitDialog)
  
  	EVT_COMMAND_SCROLL(IDC_SLIDER,		PrefsUnifiedDlg::OnScrollBarChange)
-@@ -197,6 +207,9 @@ PrefsPage pages[] =
+@@ -196,6 +206,9 @@ PrefsPage pages[] =
  	{ wxTRANSLATE("Online Signature"),	PreferencesOnlineSigTab,	21 },
  	{ wxTRANSLATE("Advanced"),			PreferencesaMuleTweaksTab,	12 },
  	{ wxTRANSLATE("Events"),			PreferencesEventsTab,		5 }
@@ -1246,7 +1246,7 @@
  #ifdef __DEBUG__
  	,{ wxTRANSLATE("Debugging"),		PreferencesDebug,			25 }
  #endif
-@@ -1209,6 +1222,21 @@ void PrefsUnifiedDlg::OnButtonIPFilterUp
+@@ -1211,6 +1224,21 @@ void PrefsUnifiedDlg::OnButtonIPFilterUp
  	theApp->ipfilter->Update( CastChild( IDC_IPFILTERURL, wxTextCtrl )->GetValue() );
  }
  
