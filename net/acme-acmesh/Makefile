@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=acme-acmesh
-PKG_VERSION:=2026.05.16
+PKG_VERSION:=2026.06.05
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/acmesh-official/acme.sh.git
-PKG_SOURCE_VERSION:=f265c304daf53afdf26c3e6346f393d9d098c804
-PKG_MIRROR_HASH:=6cc8bd63cc335cadff8a464c1b72aec8964f2759c9b47ae554857c0645c88e6f
+PKG_SOURCE_VERSION:=3c848adbb709563b0b8dffcd3e3430e2dc4fd153
+PKG_MIRROR_HASH:=bf0cddbacc04e860d1b47e545a12afc33a6fc0c3f0c5632bedd194b9b0c99af2
 
 PKG_MAINTAINER:=Toke Høiland-Jørgensen <toke@toke.dk>
 PKG_LICENSE:=GPL-3.0-only

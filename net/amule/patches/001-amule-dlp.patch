@@ -15,7 +15,7 @@
  set (RECONF_COMMAND ${CMAKE_COMMAND})
 --- a/src/amuleAppCommon.cpp
 +++ b/src/amuleAppCommon.cpp
-@@ -72,6 +72,8 @@ CamuleAppCommon::CamuleAppCommon()
+@@ -73,6 +73,8 @@ CamuleAppCommon::CamuleAppCommon()
  		m_configFile	= "amule.conf";
  		m_logFile		= "logfile";
  
@@ -24,7 +24,7 @@
  		if (IsDaemon()) {
  			m_appName	= "aMuleD";
  		} else {
-@@ -524,6 +526,21 @@ bool CamuleAppCommon::InitCommon(int arg
+@@ -537,6 +539,21 @@ bool CamuleAppCommon::InitCommon(int arg
  		return false;
  	}
  
@@ -60,8 +60,8 @@
  #ifndef AMULE_DAEMON
  	#ifdef __WXMAC__
  		#include <CoreFoundation/CFBundle.h>  // Do_not_auto_remove
-@@ -653,6 +658,11 @@ bool CamuleApp::OnInit()
- 	partFileHashThread = new CPartFileHashThread();
+@@ -659,6 +664,11 @@ bool CamuleApp::OnInit()
+ 	// happily receiving chunks (#849).
  	ipfilter	= new CIPFilter();
  
 +	//DLP initialization - Bill Lee
@@ -72,7 +72,7 @@
  	// Creates all needed listening sockets
  	wxString msg;
  	if (!ReinitializeNetwork(&msg)) {
-@@ -1772,9 +1782,9 @@ wxString CamuleApp::GetLog(bool reset)
+@@ -1805,9 +1815,9 @@ wxString CamuleApp::GetLog(bool reset)
  	// try to guess file format
  	wxString str;
  	if (tmp_buffer[0] && tmp_buffer[1]) {
@@ -84,7 +84,7 @@
  	}
  	delete [] tmp_buffer;
  	if ( reset ) {
-@@ -2332,3 +2342,8 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
+@@ -2365,3 +2375,8 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
  wxDEFINE_EVENT(wxEVT_CORE_SOURCE_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_UDP_DNS_DONE, wxEvent);
  wxDEFINE_EVENT(wxEVT_CORE_SERVER_DNS_DONE, wxEvent);// File_checked_for_headers
@@ -124,13 +124,13 @@
 +		_("with Dynamic Leecher Protection. \n\n") <<
  		_("Website: https://amule-org.github.io \n") <<
  		_("Forum: https://github.com/amule-org/amule/discussions \n") <<
- 		_("FAQ: https://github.com/amule-org/amule/wiki \n\n") <<
+ 		_("Documentation: https://amule-org.github.io/docs \n") <<
 @@ -530,8 +531,14 @@ void CamuleDlg::OnAboutButton(wxCommandE
- 		_("Copyright (c) 2003-2019 aMule Team \n\n") <<
+ 		_("Copyright (c) 2003-2026 aMule Team \n\n") <<
  		_("Part of aMule is based on \n") <<
  		_("Kademlia: Peer-to-peer routing based on the XOR metric.\n") <<
--                _(" Copyright (c) 2002-2011 Petar Maymounkov ( petar@post.harvard.edu )\n") <<
--		_("http://kademlia.scs.cs.nyu.edu\n");
+-                _(" Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n") <<
+-		_("https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n");
 +		_(" Copyright (c) 2002-2011 Petar Maymounkov ( petar@post.harvard.edu )\n") <<
 +		_("http://kademlia.scs.cs.nyu.edu\n") <<
 +		_("\nDynamic Leech Protection\n") <<
@@ -851,7 +851,7 @@
  
  //-------------------- File_Encoder --------------------
  
-@@ -1754,6 +1757,15 @@ CECPacket *CECServerSocket::ProcessReque
+@@ -1790,6 +1793,15 @@ CECPacket *CECServerSocket::ProcessReque
  			}
  			break;
  		}
@@ -901,7 +901,7 @@
  };
  
  enum ECTagNames {
-@@ -574,6 +575,7 @@ wxString GetDebugNameECOpCodes(uint8 arg
+@@ -575,6 +576,7 @@ wxString GetDebugNameECOpCodes(uint8 arg
  		case 0x55: return "EC_OP_SHARED_FILE_SET_COMMENT";
  		case 0x56: return "EC_OP_SERVER_SET_STATIC_PRIO";
  		case 0x57: return "EC_OP_FRIEND";
@@ -1040,7 +1040,7 @@
  wxSizer *aMuleLog( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
  
  #define ID_UPDATELIST 10244
-@@ -454,6 +457,21 @@ wxSizer *CoreConnect( wxWindow *parent,
+@@ -455,6 +458,21 @@ wxSizer *CoreConnect( wxWindow *parent,
  #define ID_DEBUGCATS 10308
  wxSizer *PreferencesDebug( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
  
@@ -1282,7 +1282,7 @@
  
 --- a/src/ServerWnd.cpp
 +++ b/src/ServerWnd.cpp
-@@ -47,6 +47,7 @@ wxBEGIN_EVENT_TABLE(CServerWnd,wxPanel)
+@@ -54,6 +54,7 @@ wxBEGIN_EVENT_TABLE(CServerWnd,wxPanel)
  	EVT_BUTTON(ID_BTN_RESET_SERVER, CServerWnd::OnBnClickedResetServerLog)
  	EVT_SPLITTER_SASH_POS_CHANGING(ID_SRV_SPLITTER,CServerWnd::OnSashPositionChanging)
  	EVT_SPLITTER_SASH_POS_CHANGED(ID_SRV_SPLITTER,CServerWnd::OnSashPositionChanged)
@@ -1290,7 +1290,7 @@
  wxEND_EVENT_TABLE()
  
  
-@@ -158,6 +159,11 @@ void CServerWnd::OnBnClickedResetServerL
+@@ -173,6 +174,11 @@ void CServerWnd::OnBnClickedResetServerL
  	theApp->GetServerLog(true); // Reset it
  }
  
@@ -1304,15 +1304,14 @@
  {
 --- a/src/ServerWnd.h
 +++ b/src/ServerWnd.h
-@@ -51,7 +51,7 @@ private:
- 	void OnBnClickedUpdateservermetfromurl(wxCommandEvent& evt);
- 	void OnBnClickedResetLog(wxCommandEvent& evt);
- 	void OnBnClickedResetServerLog(wxCommandEvent& evt);
--
+@@ -71,6 +71,7 @@ private:
+ 	void OnInfoListKeyDown(wxKeyEvent& evt);
+ 	void OnInfoListContextMenu(wxContextMenuEvent& evt);
+ 	void OnInfoListCopy(wxCommandEvent& evt);
 +	void OnBnClickedResetDLPLog(wxCommandEvent& evt);
+ 
  	// Set in OnSashPositionChanging (only fires while the user is
  	// actually dragging the sash); checked by OnSashPositionChanged
- 	// to filter out layout-induced sash moves that fire during
 --- a/src/TextClient.cpp
 +++ b/src/TextClient.cpp
 @@ -67,6 +67,7 @@ enum {
