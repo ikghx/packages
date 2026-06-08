@@ -1,16 +1,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sing-box
-PKG_VERSION:=1.13.12
+PKG_VERSION:=1.13.13
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/SagerNet/sing-box/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=08f3f7295130b76a60c1cb6565b89da6c4ce98d7bdea8852973a5d2e3c6de3b7
+PKG_HASH:=38d6570738445c07497423dd05ac2a62276f00d9259f765bc843cac3365df324
 
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=Van Waholtz <brvphoenix@gmail.com>
+PKG_CPE_ID:=cpe:/a:sagernet:sing-box
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
@@ -18,6 +19,8 @@ PKG_BUILD_FLAGS:=no-mips16
 
 GO_PKG:=github.com/sagernet/sing-box
 GO_PKG_BUILD_PKG:=$(GO_PKG)/cmd/sing-box
+
+GO_PKG_LDFLAGS:=-checklinkname=0
 GO_PKG_LDFLAGS_X:=$(GO_PKG)/constant.Version=$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
@@ -96,7 +99,9 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_SINGBOX_WITH_V2RAY_API \
 	CONFIG_SINGBOX_WITH_WIREGUARD
 
-GO_PKG_TAGS:=$(subst $(space),$(comma),$(strip \
+BASE_TAGS:=with_musl
+
+GO_PKG_TAGS:=$(BASE_TAGS),$(subst $(space),$(comma),$(strip \
 	$(if $(CONFIG_SINGBOX_WITH_ACME),with_acme) \
 	$(if $(CONFIG_SINGBOX_WITH_CLASH_API),with_clash_api) \
 	$(if $(CONFIG_SINGBOX_WITH_DHCP),with_dhcp) \

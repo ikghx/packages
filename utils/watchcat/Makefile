@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=watchcat
 PKG_VERSION:=1
-PKG_RELEASE:=23
+PKG_RELEASE:=24
 
 PKG_MAINTAINER:=Daniel F. Dickinson <dfdpublic@wildtechgarden.ca>
 PKG_LICENSE:=GPL-2.0
