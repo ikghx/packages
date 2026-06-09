@@ -45,8 +45,19 @@ define Package/sing-box/config
 	menu "Select build options"
 		depends on PACKAGE_sing-box
 
+		config SINGBOX_BADLINKNAME
+			bool "Enable go:linkname for internal kTLS/TLS APIs"
+			default y
+
+		config SINGBOX_TFOGO_CHECKLINKNAME0
+			bool "Bypass Go 1.23+ linkname restrictions (match -checklinkname=0)"
+			default y
+
 		config SINGBOX_WITH_ACME
 			bool "Build with ACME TLS certificate issuer support"
+
+		config SINGBOX_WITH_CCM
+			bool "Build with Claude Code Multiplexer service support"
 
 		config SINGBOX_WITH_CLASH_API
 			bool "Build with Clash API support"
@@ -64,6 +75,16 @@ define Package/sing-box/config
 		config SINGBOX_WITH_GVISOR
 			bool "Build with gVisor support"
 			default y
+
+		config SINGBOX_WITH_MUSL
+			bool "Build with musl libc"
+			default y
+
+		config SINGBOX_WITH_NAIVE
+			bool "Build with NaiveProxy outbound support"
+
+		config SINGBOX_WITH_OCM
+			bool "Build with OpenAI Codex Multiplexer service support"
 
 		config SINGBOX_WITH_QUIC
 			bool "Build with QUIC support"
@@ -87,27 +108,37 @@ define Package/sing-box/config
 endef
 
 PKG_CONFIG_DEPENDS:= \
+	CONFIG_SINGBOX_BADLINKNAME \
+	CONFIG_SINGBOX_TFOGO_CHECKLINKNAME0 \
 	CONFIG_SINGBOX_WITH_ACME \
+	CONFIG_SINGBOX_WITH_CCM \
 	CONFIG_SINGBOX_WITH_CLASH_API \
 	CONFIG_SINGBOX_WITH_DHCP \
 	CONFIG_SINGBOX_WITH_EMBEDDED_TOR \
 	CONFIG_SINGBOX_WITH_GRPC \
 	CONFIG_SINGBOX_WITH_GVISOR \
+	CONFIG_SINGBOX_WITH_MUSL \
+	CONFIG_SINGBOX_WITH_NAIVE \
+	CONFIG_SINGBOX_WITH_OCM \
 	CONFIG_SINGBOX_WITH_QUIC \
 	CONFIG_SINGBOX_WITH_TAILSCALE \
 	CONFIG_SINGBOX_WITH_UTLS \
 	CONFIG_SINGBOX_WITH_V2RAY_API \
 	CONFIG_SINGBOX_WITH_WIREGUARD
 
-BASE_TAGS:=with_musl
-
-GO_PKG_TAGS:=$(BASE_TAGS),$(subst $(space),$(comma),$(strip \
+GO_PKG_TAGS:=$(subst $(space),$(comma),$(strip \
+	$(if $(CONFIG_SINGBOX_BADLINKNAME),badlinkname) \
+	$(if $(CONFIG_SINGBOX_TFOGO_CHECKLINKNAME0),tfogo_checklinkname0) \
 	$(if $(CONFIG_SINGBOX_WITH_ACME),with_acme) \
+	$(if $(CONFIG_SINGBOX_WITH_CCM),with_ccm) \
 	$(if $(CONFIG_SINGBOX_WITH_CLASH_API),with_clash_api) \
 	$(if $(CONFIG_SINGBOX_WITH_DHCP),with_dhcp) \
 	$(if $(CONFIG_SINGBOX_WITH_EMBEDDED_TOR),with_embedded_tor) \
 	$(if $(CONFIG_SINGBOX_WITH_GRPC),with_grpc) \
 	$(if $(CONFIG_SINGBOX_WITH_GVISOR),with_gvisor) \
+	$(if $(CONFIG_SINGBOX_WITH_MUSL),with_musl) \
+	$(if $(CONFIG_SINGBOX_WITH_NAIVE),with_naive_outbound) \
+	$(if $(CONFIG_SINGBOX_WITH_OCM),with_ocm) \
 	$(if $(CONFIG_SINGBOX_WITH_QUIC),with_quic) \
 	$(if $(CONFIG_SINGBOX_WITH_TAILSCALE),with_tailscale) \
 	$(if $(CONFIG_SINGBOX_WITH_UTLS),with_utls) \
