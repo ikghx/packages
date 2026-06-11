@@ -41,7 +41,7 @@ endef
 define Package/smartdns
   $(call Package/smartdns/Default)
   TITLE+= server
-  DEPENDS:=+i386:libatomic +libopenssl
+  DEPENDS:=+i386:libatomic +libopenssl +zlib
 endef
 
 define Package/smartdns/description

@@ -28,7 +28,7 @@ define Package/apfree-wifidog
   SECTION:=net
   CATEGORY:=Network
   DEPENDS:=+zlib +libjson-c +libevent2 +libevent2-openssl +libuci +openssl-util \
-	+libnetfilter-queue +conntrack +libmosquitto +libbpf +libnftnl
+	+libnetfilter-queue +conntrack +libmosquitto +libbpf +libnftnl +libmnl
   TITLE:=Apfree's wireless captive portal solution
   URL:=https://github.com/liudf0716/apfree_wifidog
 endef
@@ -49,7 +49,6 @@ define Package/apfree-wifidog/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/wifidogx $(1)/usr/bin/wifidogx
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/wdctlx $(1)/usr/bin/wdctlx
 	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) ./files/wdping $(1)/usr/sbin/
 	$(INSTALL_DIR) $(1)/etc
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/wifidog-msg.html $(1)/etc/
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/wifidog-redir.html $(1)/etc/
@@ -62,6 +61,9 @@ define Package/apfree-wifidog/install
 	$(INSTALL_DIR) $(1)/etc/config
 	$(CP) ./files/wifidogx.conf $(1)/etc/config/wifidogx
 	$(INSTALL_DIR) $(1)/etc/wifidogx
+	$(INSTALL_DIR) $(1)/www/cgi-bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wifi-config $(1)/www/cgi-bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wifi-diag $(1)/www/cgi-bin/
 endef
 
 $(eval $(call BuildPackage,apfree-wifidog))
