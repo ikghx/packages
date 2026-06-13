@@ -7,12 +7,7 @@ PKG_RELEASE:=1
 PKG_LICENSE:=GPL3.0+
 PKG_MAINTAINER:=Joseph Mory <morytyann@gmail.com>
 
-PKG_BUILD_DEPENDS:=golang/host
-PKG_BUILD_PARALLEL:=1
-PKG_BUILD_FLAGS:=no-mips16
-
 include $(INCLUDE_DIR)/package.mk
-include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
 
 define Package/nikki
   SECTION:=net
@@ -25,15 +20,6 @@ endef
 define Package/nikki/conffiles
 /etc/config/nikki
 /etc/nikki/mixin.yaml
-endef
-
-define Build/Prepare
-endef
-
-define Build/Configure
-endef
-
-define Build/Compile
 endef
 
 define Package/nikki/install
@@ -90,5 +76,4 @@ define Build/Compile
 
 endef
 
-$(eval $(call GoBinPackage,nikki))
 $(eval $(call BuildPackage,nikki))
