@@ -1,0 +1,1400 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -8,10 +8,10 @@ set (MIN_WX_VERSION 3.2.0)
+ set (PACKAGE "amule")
+ set (PACKAGE_BUGREPORT "admin@amule.org")
+ set (PACKAGE_NAME "aMule")
+-set (PACKAGE_STRING "aMule GIT")
++set (PACKAGE_STRING "aMule 3.0.0")
+ set (PACKAGE_TARNAME "amule")
+ set (PACKAGE_URL \"\")
+-set (PACKAGE_VERSION "GIT")
++set (PACKAGE_VERSION "3.0.0")
+ set (VERSION "GIT")
+ set (DEFAULT_BUILD_TYPE "Release")
+ set (RECONF_COMMAND ${CMAKE_COMMAND})
+--- a/src/amuleAppCommon.cpp
++++ b/src/amuleAppCommon.cpp
+@@ -73,6 +73,8 @@ CamuleAppCommon::CamuleAppCommon()
+ 		m_configFile	= "amule.conf";
+ 		m_logFile		= "logfile";
+ 
++		//Dynamic Leech Protect - persmule
++		m_dlplogFile = "antileech.log";
+ 		if (IsDaemon()) {
+ 			m_appName	= "aMuleD";
+ 		} else {
+@@ -537,6 +539,21 @@ bool CamuleAppCommon::InitCommon(int arg
+ 		return false;
+ 	}
+ 
++	// Open the dlp log file - Dynamic Leech Protect - persmule
++	if (!IsRemoteGui()){
++		CPath dlplogfileName = CPath(thePrefs::GetConfigDir() + m_dlplogFile);
++		if (dlplogfileName.FileExists()) {
++		CPath::BackupFile(dlplogfileName, ".bak");
++	}
++
++	if (!dlpLogger.OpenLogfile(dlplogfileName.GetRaw())) {
++		// use std err as last resolt to indicate problem
++		fputs("ERROR: unable to open dlp log file\n", stderr);
++		// failure to open log is serious problem
++		return false;
++		}
++	}
++
+ 	// Load Preferences
+ 	CPreferences::BuildItemList(thePrefs::GetConfigDir());
+ 	CPreferences::LoadAllItems( wxConfigBase::Get() );
+--- a/src/amule.cpp
++++ b/src/amule.cpp
+@@ -102,6 +102,11 @@
+ #include <wx/sysopt.h>			// Do_not_auto_remove
+ #endif
+ 
++//Dynamic Leecher Protection - Bill Lee
++#ifdef AMULE_DLP
++#include "DLP.h"
++#endif
++
+ #ifndef AMULE_DAEMON
+ 	#ifdef __WXMAC__
+ 		#include <CoreFoundation/CFBundle.h>  // Do_not_auto_remove
+@@ -659,6 +664,11 @@ bool CamuleApp::OnInit()
+ 	// happily receiving chunks (#849).
+ 	ipfilter	= new CIPFilter();
+ 
++	//DLP initialization - Bill Lee
++	#ifdef AMULE_DLP
++	theDLP = new DLP();
++	#endif
++
+ 	// Creates all needed listening sockets
+ 	wxString msg;
+ 	if (!ReinitializeNetwork(&msg)) {
+@@ -1805,9 +1815,9 @@ wxString CamuleApp::GetLog(bool reset)
+ 	// try to guess file format
+ 	wxString str;
+ 	if (tmp_buffer[0] && tmp_buffer[1]) {
+-		str = wxString::FromUTF8(tmp_buffer); 
++		str = wxString::FromUTF8(tmp_buffer);
+ 	} else {
+-		str = wxString(tmp_buffer); 
++		str = wxString(tmp_buffer);
+ 	}
+ 	delete [] tmp_buffer;
+ 	if ( reset ) {
+@@ -2365,3 +2375,8 @@ wxDEFINE_EVENT(wxEVT_CORE_FINISHED_HTTP_
+ wxDEFINE_EVENT(wxEVT_CORE_SOURCE_DNS_DONE, wxEvent);
+ wxDEFINE_EVENT(wxEVT_CORE_UDP_DNS_DONE, wxEvent);
+ wxDEFINE_EVENT(wxEVT_CORE_SERVER_DNS_DONE, wxEvent);// File_checked_for_headers
++
++//Dynamic Leech Protect - Bill Lee
++#ifdef AMULE_DLP
++DLP* theDLP;
++#endif
+--- a/src/amuled.cpp
++++ b/src/amuled.cpp
+@@ -267,4 +267,10 @@ int CamuleDaemonApp::ShowAlert(wxString
+ 	return 0;	// That's neither yes nor no, ok, cancel
+ }
+ 
++void CamuleDaemonApp::AddDLPMessageLine(const wxString &msg)
++{
++  //Dynamic Leech Protect - persmule
++  DlpAddLogLine(msg);
++}
++
+ // File_checked_for_headers
+--- a/src/amuleDlg.cpp
++++ b/src/amuleDlg.cpp
+@@ -339,7 +339,7 @@ m_clientSkinNames(CLIENT_SKIN_SIZE)
+ 	wxNotebook* logs_notebook = CastChild( ID_SRVLOG_NOTEBOOK, wxNotebook);
+ 	wxNotebook* networks_notebook = CastChild( ID_NETNOTEBOOK, wxNotebook);
+ 
+-	wxASSERT(logs_notebook->GetPageCount() == 4);
++	wxASSERT(logs_notebook->GetPageCount() == 5);
+ 	wxASSERT(networks_notebook->GetPageCount() == 2);
+ 
+ 	for (uint32 i = 0; i < logs_notebook->GetPageCount(); ++i) {
+@@ -523,6 +523,7 @@ void CamuleDlg::OnAboutButton(wxCommandE
+ 	msg << _("Snapshot:") << "\n " << GITDATE;
+ #endif
+ 	msg << "\n\n" << _("'All-Platform' p2p client based on eMule \n\n") <<
++		_("with Dynamic Leecher Protection. \n\n") <<
+ 		_("Website: https://amule-org.github.io \n") <<
+ 		_("Forum: https://github.com/amule-org/amule/discussions \n") <<
+ 		_("Documentation: https://amule-org.github.io/docs \n") <<
+@@ -530,8 +531,14 @@ void CamuleDlg::OnAboutButton(wxCommandE
+ 		_("Copyright (c) 2003-2026 aMule Team \n\n") <<
+ 		_("Part of aMule is based on \n") <<
+ 		_("Kademlia: Peer-to-peer routing based on the XOR metric.\n") <<
+-                _(" Copyright (c) 2002-2011 Petar Maymounkov ( petar@maymounkov.org )\n") <<
+-		_("https://pdos.csail.mit.edu/~petar/papers/maymounkov-kademlia-lncs.pdf\n");
++		_(" Copyright (c) 2002-2011 Petar Maymounkov ( petar@post.harvard.edu )\n") <<
++		_("http://kademlia.scs.cs.nyu.edu\n") <<
++		_("\nDynamic Leech Protection\n") <<
++		_(" Homepage: https://github.com/persmule/amule-dlp \n") <<
++		_(" Copyright (C) 2002-2007 Xtreme-Mod \n") <<
++		_(" Copyright (C) 2009 greensea \n") <<
++		_(" Copyright (C) 2009-2011 Bill Lee \n") <<
++		_(" Copyright (C) 2014 Persmule \n");
+ 
+ 	if (m_is_safe_state) {
+ 		wxMessageBox(msg, _("Message"), wxOK | wxICON_INFORMATION, this);
+@@ -683,6 +690,22 @@ void CamuleDlg::AddServerMessageLine(wxS
+ 	}
+ }
+ 
++#ifdef AMULE_DLP
++void CamuleDlg::AddDLPMessageLine(const wxString& msg) /* modified by Bill Lee */
++{
++	wxTextCtrl* cv = CastByID( ID_DLPINFO, m_serverwnd, wxTextCtrl );
++	if(cv) {
++		if (msg.Length() > 500) {
++			cv->AppendText(msg.Left(500) + "\n");
++		} else {
++			cv->AppendText(msg + "\n");
++		}
++		cv->ShowPosition(cv->GetLastPosition()-1);
++	}
++	//Dynamic Leech Protect - persmule
++	DlpAddLogLine(msg);
++}
++#endif
+ 
+ void CamuleDlg::ShowConnectionState(bool skinChanged)
+ {
+--- a/src/amuleDlg.h
++++ b/src/amuleDlg.h
+@@ -114,6 +114,9 @@ public:
+ 
+ 	void AddLogLine(const wxString& line);
+ 	void AddServerMessageLine(wxString& message);
++	#ifdef AMULE_DLP
++	void AddDLPMessageLine(const wxString& msg); /* Modified by Bill Lee */
++	#endif
+ 	void ResetLog(int id);
+ 
+ 	void ShowUserCount(const wxString& info = "");
+@@ -236,7 +239,7 @@ private:
+ 	WX_DECLARE_STRING_HASH_MAP(wxZipEntry*, ZipCatalog);
+ 	ZipCatalog cat;
+ 
+-	PageType m_logpages[4];
++	PageType m_logpages[5];
+ 	PageType m_networkpages[2];
+ 
+ 	bool LoadGUIPrefs(bool override_pos, bool override_size);
+--- a/src/amule-gui.cpp
++++ b/src/amule-gui.cpp
+@@ -404,6 +404,21 @@ wxString CamuleGuiApp::GetLog(bool reset
+ 	return CamuleApp::GetLog(reset);
+ }
+ 
++#ifdef AMULE_DLP
++void CamuleGuiApp::AddDLPMessageLine(const wxString &msg)
++{
++	wxString message;
++	time_t rawtime;
++	struct tm *timeinfo;
++	char tbuf[101];
++	time(&rawtime);
++	timeinfo = localtime(&rawtime);
++	strftime(tbuf, 100, "%Y-%m-%d %X: ", timeinfo);
++
++	message = wxString(tbuf, wxConvUTF8) + msg;
++	amuledlg->AddDLPMessageLine(message);
++}
++#endif
+ 
+ wxString CamuleGuiApp::GetServerLog(bool reset)
+ {
+--- a/src/amule.h
++++ b/src/amule.h
+@@ -135,6 +135,8 @@ protected:
+ 	bool		m_disableFatal;
+ 	wxString	m_geometryString;
+ 	wxString	m_logFile;
++	//Dynamic Leech Protect - persmule
++	wxString	m_dlplogFile;
+ 	wxString	m_appName;
+ 	wxString	m_PidFile;
+ 
+@@ -449,6 +451,7 @@ public:
+ 	wxString GetLog(bool reset = false);
+ 	wxString GetServerLog(bool reset = false);
+ 	void AddServerMessageLine(wxString &msg);
++	void AddDLPMessageLine(const wxString &msg);
+ 	wxDECLARE_EVENT_TABLE();
+ };
+ 
+@@ -494,6 +497,8 @@ public:
+ 
+ 	virtual int ShowAlert(wxString msg, wxString title, int flags);
+ 
++	void AddDLPMessageLine(const wxString &msg);
++
+ 	wxDECLARE_EVENT_TABLE();
+ };
+ 
+@@ -504,3 +509,8 @@ extern CamuleDaemonApp *theApp;
+ 
+ #endif // AMULE_H
+ // File_checked_for_headers
++
++#ifdef AMULE_DLP
++class DLP;	//forward declaretion
++extern DLP* theDLP;
++#endif
+--- /dev/null
++++ b/src/antiLeech.h
+@@ -0,0 +1,48 @@
++#ifndef ANTILEECH_H
++#define ANTILEECH_H
++
++
++#pragma once
++
++#include "antiLeech_wx.h"
++#include "CString_wx.h"
++
++class IantiLeech
++{
++public:
++	virtual ~IantiLeech(){};                /* Bill Lee: Not be used currently */
++	//BOOL WINAPI DllMain(HINSTANCE hinstDLL,DWORD,LPVOID);
++	virtual DWORD GetDLPVersion() = 0;
++	//old versions to keep compatible
++	/* //drop old version support
++	virtual LPCTSTR DLPCheckModstring(LPCTSTR modversion, LPCTSTR clientversion);
++	virtual LPCTSTR DLPCheckUsername(LPCTSTR username);
++	virtual LPCTSTR DLPCheckNameAndHash(CString username, CString& userhash);
++	*/
++	//new versions
++	virtual LPCTSTR DLPCheckModstring_Hard(LPCTSTR modversion, LPCTSTR clientversion) = 0;
++	virtual LPCTSTR DLPCheckModstring_Soft(LPCTSTR modversion, LPCTSTR clientversion) = 0;
++	virtual LPCTSTR DLPCheckUsername_Hard(LPCTSTR username) = 0;
++	virtual LPCTSTR DLPCheckUsername_Soft(LPCTSTR username) = 0;
++	virtual LPCTSTR DLPCheckNameAndHashAndMod(const CString& username, const CString& userhash, const CString& modversion) = 0;
++	virtual LPCTSTR DLPCheckMessageSpam(LPCTSTR messagetext) = 0;
++
++
++	virtual LPCTSTR DLPCheckUserhash(const PBYTE userhash) = 0;
++
++
++	virtual LPCTSTR DLPCheckHelloTag(UINT tagnumber) = 0;
++	virtual LPCTSTR DLPCheckInfoTag(UINT tagnumber) = 0;
++
++	//void  TestFunc();
++
++//Bill Lee: no need in interface abstract class
++//private:
++//	static bool IsTypicalHex (const CString& addon);
++};
++
++//Bill Lee: never call delete on IantiLeech, use destoryAntiLeechInstat instead.
++extern "C" IantiLeech* createAntiLeechInstant();
++extern "C" int destoryAntiLeechInstant(IantiLeech*);
++
++#endif
+--- /dev/null
++++ b/src/antiLeech_wx.h
+@@ -0,0 +1,49 @@
++#ifndef ANTILEECH_WX_H
++#define ANTILEECH_WX_H
++
++#include <wx/defs.h>
++#include <string.h>
++
++#define LPCTSTR		const wxChar*
++#define BOOL		bool
++//#define _T(var)		wxT(var)	//defined in wxWidgets
++#define DWORD		wxUint32
++#define UINT		wxUint16
++#define WINAPI
++#define HINSTANCE
++#define LPVOID		void*
++#define PBYTE		unsigned char*
++#define TCHAR		wxChar
++#define _TINT		wxInt32
++
++#define StrCmpI _tcsicmp
++
++#define _istdigit(var)		iswdigit(var)
++#define _istcntrl(var)		iswcntrl(var)
++#define _istpunct(var)		iswpunct(var)
++#define _istspace(var)		iswspace(var)
++#define _istxdigit(var)		iswxdigit(var)
++inline float _tstof(const wchar_t* str){
++	wchar_t** ptail = NULL;
++	return wcstof(str, ptail);
++}
++//This function is not used. by Orzogc Lee
++//But I think there is no need to removing, linker will remove it.
++/*
++inline void tolowers(wxChar* str){
++	int i = 0;
++	do{
++		str[i] = towlower(str[i]);
++	}while(str[++i]);
++}
++*/
++#define _tcsstr(haystack, needle)	wcsstr(haystack, needle)
++#define _tcslen(var)		wcslen(var)
++#define StrStr(a, b)		wcsstr(a, b)
++
++LPCTSTR StrStrI(LPCTSTR haystack, LPCTSTR needle);
++//Bill Lee: I think inlining this function make no senses, because it is a very large operation.
++
++#define _tcsicmp(a, b)		wcscasecmp(a, b)
++
++#endif
+--- a/src/BaseClient.cpp
++++ b/src/BaseClient.cpp
+@@ -23,6 +23,11 @@
+ // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
+ //
+ 
++//Dynamic Leech Protect - Bill Lee
++#ifdef AMULE_DLP
++#include "DLP.h"
++#endif
++
+ #include <wx/wx.h>
+ #include <wx/mstream.h>
+ #include <wx/tokenzr.h>
+@@ -287,6 +292,10 @@ void CUpDownClient::Init()
+ 	m_cMessagesReceived = 0;
+ 	m_cMessagesSent = 0;
+ 
++	#ifdef AMULE_DLP
++	dlp_nonofficialopcodes = false; //Dynamic Leecher Protect
++	#endif
++
+ }
+ 
+ 
+@@ -632,6 +641,15 @@ bool CUpDownClient::ProcessHelloTypePack
+ 				m_fSharedDirectories = 1;
+ 				dwEmuleTags |= 4;
+ 				break;
++			//Bill Lee start
++			//Dynamic Leecher Protection
++			#ifdef AMULE_DLP
++			default:	//if tag isn't those above, it may be used by leecher.
++				theDLP->CheckHelloTag(this, temptag.GetNameID());
++				dlp_nonofficialopcodes = true; //to detect Ghost Mod
++					break;
++			//Bill Lee end
++			#endif
+ 		}
+ 	}
+ 
+@@ -714,6 +732,12 @@ bool CUpDownClient::ProcessHelloTypePack
+ 		Kademlia::CKademlia::Bootstrap(wxUINT32_SWAP_ALWAYS(GetIP()), GetKadPort());
+ 	}
+ 
++	//Dynamic Leecher Protection - Bill Lee
++	#ifdef AMULE_DLP
++	if(theDLP->IsValid())
++	  theDLP->DLPCheck(this);
++	#endif
++
+ 	return bIsMule;
+ }
+ 
+@@ -963,6 +987,14 @@ bool CUpDownClient::ProcessMuleInfoPacke
+ 							% GetClientFullInfo()
+ 					);
+ 
++					//Bill Lee start
++					//Dynamic Leecher Protection
++					#ifdef AMULE_DLP
++					theDLP->CheckInfoTag(this, temptag.GetNameID());
++					dlp_nonofficialopcodes = true;
++					#endif
++					//Bill Lee end
++
+ 					break;
+ 			}
+ 		}
+@@ -1000,6 +1032,12 @@ bool CUpDownClient::ProcessMuleInfoPacke
+ 		m_byInfopacketsReceived |= IP_EMULEPROTPACK;
+ 	}
+ 
++	//Dynamic Leecher Protection - Added by Bill Lee
++	#ifdef AMULE_DLP
++	if(theDLP->IsValid())
++	  theDLP->DLPCheck(this);
++	#endif
++
+ 	return (protocol_version == 0xFF); // This was a OS_Info?
+ }
+ 
+@@ -1030,7 +1068,7 @@ void CUpDownClient::SendHelloTypePacket(
+ 	}
+ 	tagcount ++; // eMule misc flags 2 (kad version)
+ 
+-	#ifdef __GIT__
++	#if (defined __GIT__ || defined AMULE_DLP)
+ 	// Kry - This is the tagcount!!! Be sure to update it!!
+ 	// Last update: CT_EMULECOMPAT_OPTIONS included
+ 	data->WriteUInt32(tagcount + 1);
+@@ -1153,7 +1191,7 @@ void CUpDownClient::SendHelloTypePacket(
+ 
+ 	tagMisCompatOptions.WriteTagToFile(data);
+ 
+-#ifdef __GIT__
++#if (defined __GIT__ || defined AMULE_DLP)
+ 	wxString mod_name(MOD_VERSION_LONG);
+ 	CTagString tagModName(ET_MOD_VERSION, mod_name);
+ 	tagModName.WriteTagToFile(data);
+@@ -2300,7 +2338,12 @@ bool CUpDownClient::CheckHandshakeFinish
+ }
+ 
+ 
+-#ifdef __DEBUG__
++#if defined (__DEBUG__) || defined (AMULE_DLP)
++/*
++ * This function is essential for dlp to produce ban log.
++ * So I decide to retain it when dlp is enabled.
++ * by Persmule.
++ */
+ wxString CUpDownClient::GetClientFullInfo()
+ {
+ 	if (m_clientVerString.IsEmpty()) {
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -61,6 +61,13 @@ set_source_files_properties (${EC_INCLUD
+ set_source_files_properties (${EC_INCLUDE_DIR}/ECTagTypes.h PROPERTIES GENERATED TRUE)
+ include (${CMAKE_SOURCE_DIR}/cmake/source-vars.cmake)
+ 
++if (ENABLE_DLP)
++    set(DLP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/DLP.cpp")
++    add_definitions(-DAMULE_DLP)
++else()
++    set(DLP_SOURCES "")
++endif()
++
+ if (BUILD_UTIL)
+ 	add_subdirectory (utils)
+ endif()
+@@ -121,7 +128,7 @@ if (BUILD_AMULECMD)
+ 	)
+ 
+ 	if (HAVE_BFD)
+-		target_link_libraries (amulecmd 
++		target_link_libraries (amulecmd
+ 			PRIVATE ${BFD_LIBRARY}
+ 		)
+ 	endif (HAVE_BFD)
+@@ -141,6 +148,7 @@ if (BUILD_DAEMON)
+ 	add_executable (amuled
+ 		${CORE_SOURCES}
+ 		${COMMON_SOURCES}
++		${DLP_SOURCES}
+ 		amuled.cpp
+ 	)
+ 
+--- /dev/null
++++ b/src/CString_wx.h
+@@ -0,0 +1,63 @@
++/**
++ * Author:	Bill Lee<bill.lee.y@gmail.com>
++ * License:	GNU GPL
++ */
++//---------------------
++#ifndef CSTRING_WX_H
++#define CSTRING_WX_H
++
++//#include <wx/wx.h>
++#include <wx/string.h>
++
++class CString : public wxString{
++	public:
++		CString(){}
++		CString(wxChar c, size_t n=1): wxString(c, n){}
++		CString(const wxChar* str): wxString(str){}
++		CString(const wxString& str): wxString(str){}
++		CString(const CString& str): wxString(str){}
++		//---------------------
++		CString& operator=(const wxChar* str){
++			wxString::operator=(str);
++			return *this;
++		}
++		//operator*() from wxString;
++		size_t GetLength()const{	return Length();	}
++		wxChar GetAt(size_t nIndex)const{	return GetChar(nIndex);	}
++		//IsEmpty() from wxString;
++		CString& TrimLeft(wxChar c){
++			size_t pos = find_first_not_of(c);
++			if(pos == 0)
++				return *this;
++			erase(0, pos);
++			return *this;
++		}
++		CString& TrimRight(wxChar c){
++			size_t pos = find_last_not_of(c) + 1;
++			if(pos == Length())
++				return *this;
++			erase(pos, Length() - pos);
++			return *this;
++		}
++		CString Trim(){
++			CString ret(*this);
++			ret.wxString::Trim(false);        /* wxString::Trim(bool fromright = true) */
++			ret.wxString::Trim(true);
++			return ret;
++		}
++		//Find(wxChar) and Find(wxChar*) from wxString;
++		int Find(const CString& str)const{	return wxString::Find(str.c_str());	}
++		int ReverseFind(const wxChar c)const{	return wxString::Find(c, true);	}
++		int ReverseFind(const wxChar* str)const{	return rfind(str);	}
++		int ReverseFind(const CString& str)const{	return rfind(str);	}
++		CString Right(size_t len)const{	return wxString::Right(len);	}
++		CString Left(size_t len)const{	return wxString::Left(len);	}
++#if wxCHECK_VERSION(2, 9, 0)
++		CString Mid(size_t first, size_t count = wxString::npos)const{
++#else
++		CString Mid(size_t first, size_t count = wxSTRING_MAXLEN)const{
++#endif
++			return wxString::Mid(first, count);
++		}
++};
++#endif
+--- /dev/null
++++ b/src/DLP.cpp
+@@ -0,0 +1,186 @@
++// Copyright (C) 2011 Bill Lee <bill.lee.y@gmail.com>, 2014 Persmule <persmule@gmail.com>
++//
++// This program is free software; you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation; either version 2 of the License, or
++// (at your option) any later version.
++//
++// This program is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with this program; if not, write to the Free Software
++// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
++//
++#include "Logger.h"
++
++#include "DLP.h"
++#include "antiLeech.h"
++#include <wx/dynlib.h>                          /* Needed for wxDynamicLibrary */
++
++#include "DLPPref.h"
++#include "Preferences.h"	// Needed for CPreferences
++#include "amule.h"		// Needed for theApp
++
++#include <wx/stdpaths.h>                        /* Needed for wxStandardPaths */
++
++#define PRE_CHECK(tag)	if( (!c->IsBanned()) && antiLeech && (thePrefs::GetDLPCheckMask() & tagn) )
++
++void DLP::CheckHelloTag(CUpDownClient* c, UINT tagn){
++	PRE_CHECK(PF_HELLOTAG){
++		const wxChar* dlp_result = antiLeech->DLPCheckHelloTag(tagn);
++		if(dlp_result != NULL) {
++			wxString ret;
++			ret.Printf(_("[HelloTag %s] %s"), dlp_result, c->GetClientFullInfo().c_str());
++			c->Ban();
++			theApp->AddDLPMessageLine(ret);
++		}
++	}
++}
++
++void DLP::CheckInfoTag(CUpDownClient* c, UINT tagn){
++	PRE_CHECK(PF_INFOTAG){
++		const wxChar* dlp_result = antiLeech->DLPCheckInfoTag(tagn);
++		if(dlp_result != NULL) {
++			wxString ret;
++			ret.Printf(_("[InfoTag %s] %s"), dlp_result, c->GetClientFullInfo().c_str());
++			c->Ban();
++			theApp->AddDLPMessageLine(ret);
++		}
++	}
++}
++
++bool DLP::DLPCheck(CUpDownClient* c){
++	const wxChar* tmp = NULL;
++	wxString ret;
++
++	unsigned int prefs = thePrefs::GetDLPCheckMask();
++
++	CString modver(c->GetClientModString());
++	CString clientver(c->GetClientVerString());
++	CString uname(c->GetUserName());
++	CString uhash(wxString(c->GetUserHash().EncodeSTL().c_str(), wxConvUTF8));
++
++	//CheckGhostMod
++	if(prefs & PF_GHOSTMOD) {
++		if(c->HasNonOfficialOpCodes() && (modver.IsEmpty())) {
++			ret = _("GhostMod");
++			tmp = ret.c_str(); //char pointer
++		}
++	}
++
++	// Check bad modstring
++	if ((prefs & PF_MODSTRING) && (tmp == NULL)) {
++		if((tmp = antiLeech->DLPCheckModstring_Soft(modver.c_str(), clientver.c_str())) == NULL)
++			tmp = antiLeech->DLPCheckModstring_Hard(modver.c_str(), clientver.c_str());
++	}
++	/*
++	if ((prefs & PF_USERHASH) && (tmp == NULL)) {
++		// not finished
++	}
++	*/
++	// Check bad username
++	if ((prefs & PF_USERNAME) && (tmp == NULL)) {
++		if ((tmp = antiLeech->DLPCheckNameAndHashAndMod(uname, uhash, modver)) == NULL){
++			if( (tmp = antiLeech->DLPCheckUsername_Hard(uname.c_str())) == NULL )
++				tmp = antiLeech->DLPCheckUsername_Soft(uname.c_str());
++		}
++	}
++
++
++	// Check VeryCD eMule
++	if ((prefs & PF_VERYCDEMULE) && (tmp == NULL)) {
++		if(modver.Find(wxT("VeryCD")) != wxNOT_FOUND){
++			ret = _("VeryCD Mod");
++			tmp = ret.c_str();
++		}
++	}
++
++	if (tmp != NULL) {
++		ret = tmp;
++		wxString wxInfo;
++		wxInfo.Printf(wxT("[%s] %s"), ret.c_str(), c->GetClientFullInfo().c_str());
++		c->Ban();
++		theApp->AddDLPMessageLine(wxInfo);
++		return true;
++	}
++
++	return false;
++
++}
++
++int DLP::ReloadAntiLeech(){
++	//Unloading
++	AddLogLineN(  _("Checking if there is a antiLeech working..."));
++	if(antiLeechLib.IsLoaded()){
++		Destoryer fn = (Destoryer)(antiLeechLib.GetSymbol( wxT("destoryAntiLeechInstant")));
++		wxASSERT(fn);
++		AddLogLineN(  _("Unload previous antiLeech..."));
++		fn(antiLeech);
++		antiLeech = NULL;
++		antiLeechLib.Unload();
++	}
++	else
++		AddLogLineN(  _("No working antiLeech exists."));
++	//Get lib's location
++	wxStandardPathsBase &spb(wxStandardPaths::Get());
++#ifdef __WXMSW__
++	wxString dataDir(spb.GetPluginsDir());
++#elif defined(__WXMAC__)
++	wxString dataDir(spb.GetDataDir());
++#else
++	wxString dataDir(spb.GetDataDir().BeforeLast(wxT('/')) + wxT("/amule"));
++#endif
++	wxString localName = wxDynamicLibrary::CanonicalizeName(wxT("antiLeech"));
++	wxString systemwideFile(JoinPaths(dataDir, localName));
++	wxString userFile(thePrefs::GetConfigDir() + localName);
++	wxString fallbackFile(wxT("antiLeech"));
++	//Try to load lib;
++	AddLogLineN(  _("Trying to load antiLeech..."));
++	if( !LoadFrom(userFile) ){
++		if( !LoadFrom(systemwideFile) ){
++			if( !LoadFrom(fallbackFile) ){
++				AddLogLineC(  _("No antiLeech available!"));
++				return 1;	//Not found
++			}
++		}
++	}
++	//Searching symbol "createAntiLeechInstant"
++	Creator fn = (Creator)(antiLeechLib.GetSymbol( wxT("createAntiLeechInstant") ));
++	if(!fn){
++		antiLeechLib.Unload();
++		AddLogLineC(  _("antiLeech found, but it seems not to be a valid antiLeech!"));
++		return 2;	//Found, but isn't antiLeech
++	}
++	//Try to create antiLeech
++	antiLeech = fn();
++	if(antiLeech){
++		wxString logline;
++		logline.Printf(_("Succeed loading antiLeech! Version: %d"), antiLeech->GetDLPVersion());
++		AddLogLineC( logline);
++		return 0;
++	}
++	//else
++	antiLeechLib.Unload();
++	AddLogLineC(  _("FAIL! An error occur when setting up antiLeech."));
++	return 3;	//Fail to create antiLeech instant
++
++}
++
++DLP::~DLP(){
++	if(antiLeechLib.IsLoaded()){
++		Destoryer fn = (Destoryer)(antiLeechLib.GetSymbol( wxT("destoryAntiLeechInstant")));
++		wxASSERT(fn);
++		AddLogLineN(  _("Unload previous antiLeech..."));
++		fn(antiLeech);
++		//antiLeech = NULL;
++		//antiLeechLib.Unload();
++	}
++}
++
++bool DLP::LoadFrom(wxString& file){
++	antiLeechLib.Load(file);
++	return antiLeechLib.IsLoaded();
++}
+--- /dev/null
++++ b/src/DLP.h
+@@ -0,0 +1,48 @@
++// Copyright (C) 2011 Bill Lee <bill.lee.y@gmail.com>, 2014 Persmule <persmule@gmail.com>
++//
++// This program is free software; you can redistribute it and/or modify
++// it under the terms of the GNU General Public License as published by
++// the Free Software Foundation; either version 2 of the License, or
++// (at your option) any later version.
++//
++// This program is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++//
++// You should have received a copy of the GNU General Public License
++// along with this program; if not, write to the Free Software
++// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
++//
++
++class IantiLeech;	//forward declaretion
++
++#include "updownclient.h"	// Needed for CUpDownClient
++#include "antiLeech_wx.h"
++
++#include <wx/dynlib.h>
++
++class DLP
++{
++public:
++	DLP() : antiLeech(NULL) {	DLPInitState=ReloadAntiLeech();	}
++	~DLP();
++
++	void CheckHelloTag(CUpDownClient*, UINT tagnumber);
++	void CheckInfoTag(CUpDownClient*, UINT tagnumber);
++	bool DLPCheck(CUpDownClient*);
++
++	int ReloadAntiLeech();
++	int GetInitState(void){return DLPInitState;}
++	bool IsValid(void){return (0==DLPInitState);}
++
++private:
++	typedef IantiLeech* (*Creator)();
++	typedef int (*Destoryer)(IantiLeech*);
++
++	wxDynamicLibrary antiLeechLib;
++	IantiLeech* antiLeech;
++	int DLPInitState;
++
++	bool LoadFrom(wxString& file);
++};
+--- /dev/null
++++ b/src/DLPPref.h
+@@ -0,0 +1,15 @@
++#ifndef ANTILEECH_AMULE_H
++#define ANTILEECH_AMULE_H
++
++/* Define DLPCheck prefs arg */
++#define PF_MODSTRING	0x1
++#define PF_USERHASH		0x2
++#define PF_USERNAME		0x4
++#define PF_HELLOTAG		0x8
++#define PF_INFOTAG		0x10
++#define PF_VERYCDEMULE	0x20
++//#define PF_EASYMULE		0x40
++//#define PF_MINIMULE	0x80
++#define PF_GHOSTMOD	0x100
++
++#endif
+--- a/src/DownloadQueue.cpp
++++ b/src/DownloadQueue.cpp
+@@ -636,6 +636,15 @@ void CDownloadQueue::CheckAndAddSource(C
+ 		return;
+ 	}
+ 
++	//Dynamic Leecher Protect - Bill Lee
++	#ifdef AMULE_DLP
++	if ( source->IsBanned() ){
++		source->Safe_Delete();
++		return;
++	}
++	#endif
++	//Bill Lee end
++
+ 	// Filter sources which are known to be dead/useless
+ 	if ( theApp->clientlist->IsDeadSource( source ) || sender->IsDeadSource(source) ) {
+ 		source->Safe_Delete();
+--- a/src/ExternalConn.cpp
++++ b/src/ExternalConn.cpp
+@@ -58,6 +58,9 @@
+ #include "kademlia/kademlia/UDPFirewallTester.h"
+ #include "Statistics.h"
+ 
++#ifdef AMULE_DLP
++#include "DLP.h"
++#endif
+ 
+ //-------------------- File_Encoder --------------------
+ 
+@@ -1790,6 +1793,15 @@ CECPacket *CECServerSocket::ProcessReque
+ 			}
+ 			break;
+ 		}
++		//Dynamic Leech Protect - Bill Lee
++		#ifdef AMULE_DLP
++		case EC_OP_ANTILEECH_RELOAD:
++			if( theDLP->ReloadAntiLeech() )
++				response = new CECPacket(EC_OP_FAILED);
++			else
++				response = new CECPacket(EC_OP_NOOP);
++			break;
++		#endif
+ 		//
+ 		// Status requests
+ 		//
+--- a/src/include/common/ClientVersion.h
++++ b/src/include/common/ClientVersion.h
+@@ -57,7 +57,7 @@
+ #endif
+ 
+ #ifndef VERSION
+-	#define VERSION "3.0.0-dev"
++	#define VERSION "3.0.0"
+ #endif
+ 
+ #ifdef __GIT__
+--- a/src/libs/ec/abstracts/ECCodes.abstract
++++ b/src/libs/ec/abstracts/ECCodes.abstract
+@@ -149,6 +149,8 @@ EC_OP_SERVER_SET_STATIC_PRIO        0x56
+ 
+ EC_OP_FRIEND                        0x57
+ 
++EC_OP_ANTILEECH_RELOAD              0x80
++
+ [/Section]
+ 
+ [Section Content]
+--- a/src/libs/ec/cpp/ECCodes.h
++++ b/src/libs/ec/cpp/ECCodes.h
+@@ -122,7 +122,8 @@ enum ECOpCodes {
+ 	EC_OP_CLIENT_SWAP_TO_ANOTHER_FILE   = 0x54,
+ 	EC_OP_SHARED_FILE_SET_COMMENT       = 0x55,
+ 	EC_OP_SERVER_SET_STATIC_PRIO        = 0x56,
+-	EC_OP_FRIEND                        = 0x57
++	EC_OP_FRIEND                        = 0x57,
++	EC_OP_ANTILEECH_RELOAD              = 0x80
+ };
+ 
+ enum ECTagNames {
+@@ -575,6 +576,7 @@ wxString GetDebugNameECOpCodes(uint8 arg
+ 		case 0x55: return "EC_OP_SHARED_FILE_SET_COMMENT";
+ 		case 0x56: return "EC_OP_SERVER_SET_STATIC_PRIO";
+ 		case 0x57: return "EC_OP_FRIEND";
++		case 0x80: return "EC_OP_ANTILEECH_RELOAD";
+ 		default: return CFormat("unknown %d 0x%x") % arg % arg;
+ 	}
+ }
+--- a/src/libs/ec/java/ECCodes.java
++++ b/src/libs/ec/java/ECCodes.java
+@@ -112,6 +112,7 @@ public final static byte EC_OP_CLIENT_SW
+ public final static byte EC_OP_SHARED_FILE_SET_COMMENT       = 0x55;
+ public final static byte EC_OP_SERVER_SET_STATIC_PRIO        = 0x56;
+ public final static byte EC_OP_FRIEND                        = 0x57;
++public final static byte EC_OP_ANTILEECH_RELOAD              = 0x80;
+ 
+ public final static short EC_TAG_STRING                             = 0x0000;
+ public final static short EC_TAG_PASSWD_HASH                        = 0x0001;
+--- a/src/LoggerConsole.cpp
++++ b/src/LoggerConsole.cpp
+@@ -109,6 +109,8 @@ void CLogger::AddLogLine(
+ }
+ 
+ CLogger theLogger;
++//Dynamic Leech Protect - persmule
++CLogger dlpLogger;
+ 
+ wxBEGIN_EVENT_TABLE(CLogger, wxEvtHandler)
+ wxEND_EVENT_TABLE()
+--- a/src/Logger.cpp
++++ b/src/Logger.cpp
+@@ -306,6 +306,8 @@ void CLogger::FlushApplog()
+ }
+ 
+ CLogger theLogger;
++//Dynamic Leech Protect - persmule
++CLogger dlpLogger;
+ 
+ wxBEGIN_EVENT_TABLE(CLogger, wxEvtHandler)
+ 	EVT_MULE_LOGGING(CLogger::OnLoggingEvent)
+--- a/src/Logger.h
++++ b/src/Logger.h
+@@ -322,6 +322,8 @@ private:
+ };
+ 
+ extern CLogger theLogger;
++//Dynamic Leech Protect - persmule
++extern CLogger dlpLogger;
+ 
+ /**
+  * This class forwards log-lines from wxWidgets to CLogger.
+@@ -461,5 +463,8 @@ public:
+ 	#define AddLogLineF(string) theLogger.AddLogLine(__TFILE__, __LINE__, false, logStandard, string, false, false)
+ #endif
+ 
++//Dynamic Leech Protect - persmule
++#define DlpAddLogLine(string) dlpLogger.AddLogLine(__TFILE__, __LINE__, false, logStandard, string, false, false)
++
+ #endif
+ // File_checked_for_headers
+--- a/src/muuli_wdr.cpp
++++ b/src/muuli_wdr.cpp
+@@ -1487,6 +1487,51 @@ wxSizer *PreferencesServerTab( wxWindow
+     return item0;
+ }
+ 
++#ifdef AMULE_DLP
++wxSizer *PreferencesDLPTab( wxWindow *parent, bool call_fit, bool set_sizer )
++{
++	wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
++
++	wxButton* btnReload = new wxButton( parent, IDC_RELOADANTILEECH, _("Reload antiLeech"), wxDefaultPosition, wxDefaultSize, 0 ); //Bill Lee
++
++	wxStaticBox *item2 = new wxStaticBox( parent, -1, _("Dynamic Leecher Protection Options") );
++	wxStaticBoxSizer *item1 = new wxStaticBoxSizer( item2, wxVERTICAL );
++
++	wxCheckBox *item4 = new wxCheckBox( parent, IDC_CHECKMODSTRING, _("Check bad modstring"), wxDefaultPosition, wxDefaultSize, 0 );
++	item1->Add( item4, 0, wxALIGN_CENTER_VERTICAL, 5 );
++
++	wxCheckBox *item5 = new wxCheckBox( parent, IDC_CHECKUSERNAME, _("Check bad username"), wxDefaultPosition, wxDefaultSize, 0 );
++	item1->Add( item5, 0, wxALIGN_CENTER_VERTICAL, 5 );
++
++	wxCheckBox *item6 = new wxCheckBox( parent, IDC_CHECKUSERHASH, _("Check bad userhash"), wxDefaultPosition, wxDefaultSize, 0 );
++	item1->Add( item6, 0, wxALIGN_CENTER_VERTICAL, 5 );
++
++	wxCheckBox *item7 = new wxCheckBox( parent, IDC_CHECKHELLOTAG, _("Check bad hello tag"), wxDefaultPosition, wxDefaultSize, 0 );
++	item1->Add( item7, 0, wxALIGN_CENTER_VERTICAL, 5 );
++
++	wxCheckBox *item8 = new wxCheckBox( parent, IDC_CHECKINFOTAG, _("Check bad info tag"), wxDefaultPosition, wxDefaultSize, 0 );
++	item1->Add( item8, 0, wxALIGN_CENTER_VERTICAL, 5 );
++
++	wxCheckBox *item9 = new wxCheckBox( parent, IDC_CHECKGHOSTMOD, _("Check ghost mod"), wxDefaultPosition, wxDefaultSize, 0);
++	item1->Add( item9, 0, wxALIGN_CENTER_VERTICAL, 5 );
++
++	wxCheckBox *item10 = new wxCheckBox( parent, IDC_CHECKVERYCDMOD, _("Ban eMule VeryCD mod(Please consider carefully whether to use)"), wxDefaultPosition, wxDefaultSize, 0 ); //Modified by Bill Lee
++	item1->Add( item10, 0, wxALIGN_CENTER_VERTICAL, 5 );
++
++	item0->Add( btnReload, 0, wxGROW|wxALL, 5); //Bill Lee
++	item0->Add( item1, 0, wxGROW|wxALL, 5 );
++
++	if (set_sizer)
++	{
++	parent->SetSizer( item0 );
++	if (call_fit)
++	    item0->SetSizeHints( parent );
++	}
++
++	return item0;
++}
++#endif
++
+ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
+ {
+     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
+@@ -2560,9 +2605,9 @@ wxSizer *PreferencesProxyTab( wxWindow *
+     item2->Add( item9, wxSizerFlags().CenterVertical().Border(wxLEFT, 20) );
+     wxString strs10[] = 
+     {
+-        "SOCKS5", 
+-        "SOCKS4", 
+-        "HTTP", 
++        "SOCKS5",
++        "SOCKS4",
++        "HTTP",
+         "SOCKS4a"
+     };
+     wxChoice *item10 = new wxChoice( parent, ID_PROXY_TYPE, wxDefaultPosition, wxSize(100,-1), 4, strs10, 0 );
+--- a/src/muuli_wdr.h
++++ b/src/muuli_wdr.h
+@@ -368,6 +368,9 @@ wxSizer *ServerInfoLog( wxWindow *parent
+ 
+ #define ID_LOGVIEW 10242
+ #define ID_BTN_RESET 10243
++#define ID_DLPINFO 22001
++#define ID_BTN_RESET_DLP 22002
++wxSizer *DLPInfoLog( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+ wxSizer *aMuleLog( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+ 
+ #define ID_UPDATELIST 10244
+@@ -455,6 +458,21 @@ wxSizer *CoreConnect( wxWindow *parent,
+ #define ID_DEBUGCATS 10308
+ wxSizer *PreferencesDebug( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
+ 
++/* Dynamic Leecher Protection */
++#define IDC_CHECKMODSTRING 11001
++#define IDC_CHECKUSERNAME 11002
++#define IDC_CHECKUSERHASH 11003
++#define IDC_CHECKHELLOTAG 11004
++#define IDC_CHECKINFOTAG 11005
++#define IDC_CHECKEASYMULE 11006
++#define IDC_CHECKVERYCDMOD 11007
++#define IDC_CHECKMINIMULE 11008
++#define IDC_CHECKGHOSTMOD 11009
++#ifdef AMULE_DLP
++#define IDC_RELOADANTILEECH 11010 //Bill Lee
++wxSizer *PreferencesDLPTab( wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE );
++#endif
++
+ extern wxSizer *IDC_CURJOB;
+ #define IDC_CONV_PB_LABEL 10309
+ #define IDC_CONV_PROZENT 10310
+--- a/src/Preferences.cpp
++++ b/src/Preferences.cpp
+@@ -51,6 +51,11 @@
+ 
+ #include "UserEvents.h"
+ 
++#ifdef AMULE_DLP
++#include "DLPPref.h"
++#include "antiLeech.h"
++#endif
++
+ #ifndef AMULE_DAEMON
+ #include <wx/valgen.h>
+ #include "muuli_wdr.h"
+@@ -348,6 +353,19 @@ protected:
+ 	wxWindow*	m_widget;
+ };
+ 
++/* Dynamic Leecher Protection */
++#ifdef AMULE_DLP
++bool CPreferences::s_DLPCheckModString;
++bool CPreferences::s_DLPCheckUsername;
++bool CPreferences::s_DLPCheckUserHash;
++bool CPreferences::s_DLPCheckHelloTag;
++bool CPreferences::s_DLPCheckInfoTag;
++//bool CPreferences::s_DLPCheckEasyMule;
++bool CPreferences::s_DLPCheckVeryCDMod;
++//bool CPreferences::s_DLPCheckminiMule; //Added by Bill Lee
++bool CPreferences::s_DLPCheckGhostMod;
++unsigned int CPreferences::s_DLPCheckMask;
++#endif
+ 
+ /** Cfg class for wxStrings. */
+ class Cfg_Str : public Cfg_Tmpl<wxString>
+@@ -994,6 +1012,11 @@ CPreferences::CPreferences()
+ 	s_userhash[5] = 14;
+ 	s_userhash[14] = 111;
+ 
++	// Dynamic Leecher Protection
++	#ifdef AMULE_DLP
++	CalcDLPCheckMask();
++	#endif
++
+ #ifndef CLIENT_GUI
+ 	LoadPreferences();
+ 	ReloadSharedFolders();
+@@ -1101,6 +1124,20 @@ void CPreferences::BuildItemList( const
+ 	NewCfgItem( IDC_NETWORKKAD, (new Cfg_Bool( "/eMule/ConnectToKad",	s_ConnectToKad, true )) );
+ 	NewCfgItem( IDC_NETWORKED2K, ( new Cfg_Bool( "/eMule/ConnectToED2K",	s_ConnectToED2K, true ) ));
+ 
++	/**
++	 * Dynamic Leecher Protection
++	 **/
++	#ifdef AMULE_DLP
++	NewCfgItem(IDC_CHECKMODSTRING, 		(new Cfg_Bool( "/DLP/CheckModString", s_DLPCheckModString, true )));
++	NewCfgItem(IDC_CHECKUSERNAME, 		(new Cfg_Bool( "/DLP/CheckUsername", s_DLPCheckUsername, true )));
++	NewCfgItem(IDC_CHECKUSERHASH, 		(new Cfg_Bool( "/DLP/CheckUserHash", s_DLPCheckUserHash, true )));
++	NewCfgItem(IDC_CHECKHELLOTAG, 		(new Cfg_Bool( "/DLP/CheckHelloTag", s_DLPCheckHelloTag, true )));
++	NewCfgItem(IDC_CHECKINFOTAG, 		(new Cfg_Bool( "/DLP/CheckInfoTag", s_DLPCheckInfoTag, true )));
++	//NewCfgItem(IDC_CHECKEASYMULE, 		(new Cfg_Bool( "/DLP/CheckEasyMule", s_DLPCheckEasyMule, true ))); //Modified by Bill Lee
++	NewCfgItem(IDC_CHECKVERYCDMOD, 		(new Cfg_Bool( "/DLP/CheckVeryCDMod", s_DLPCheckVeryCDMod, false )));
++	//NewCfgItem(IDC_CHECKMINIMULE,		(new Cfg_Bool( "/DLP/CheckminiMule", s_DLPCheckminiMule, true))); //Added by Bill Lee
++	NewCfgItem(IDC_CHECKGHOSTMOD, 		(new Cfg_Bool( "/DLP/CheckGhostMod", s_DLPCheckGhostMod, true ))); //Added by Bill Lee.
++	#endif
+ 
+ 	/**
+ 	 * Files
+@@ -1532,6 +1569,11 @@ void CPreferences::Save()
+ 	SavePreferences();
+ 
+ 	SaveSharedFolders();
++
++	// Dynamic Leecher Protection
++	#ifdef AMULE_DLP
++	CalcDLPCheckMask();
++	#endif
+ }
+ 
+ 
+@@ -1559,6 +1601,21 @@ void CPreferences::SaveSharedFolders()
+ 	#endif
+ }
+ 
++#ifdef AMULE_DLP
++void CPreferences::CalcDLPCheckMask()
++{
++	s_DLPCheckMask = 0;
++	if (s_DLPCheckModString) s_DLPCheckMask |= PF_MODSTRING;
++	if (s_DLPCheckUsername) s_DLPCheckMask |= PF_USERNAME;
++	if (s_DLPCheckUserHash) s_DLPCheckMask |= PF_USERHASH;
++	if (s_DLPCheckHelloTag) s_DLPCheckMask |= PF_HELLOTAG;
++	if (s_DLPCheckInfoTag) s_DLPCheckMask |= PF_INFOTAG;
++	if (s_DLPCheckGhostMod) s_DLPCheckMask |= PF_GHOSTMOD;
++	//if (s_DLPCheckEasyMule) s_DLPCheckMask |= PF_EASYMULE;
++	if (s_DLPCheckVeryCDMod) s_DLPCheckMask |= PF_VERYCDEMULE;
++	//if (s_DLPCheckminiMule) s_DLPCheckMask |= PF_MINIMULE; //Added by Bill Lee
++}
++#endif
+ 
+ CPreferences::~CPreferences()
+ {
+--- a/src/Preferences.h
++++ b/src/Preferences.h
+@@ -644,6 +644,11 @@ public:
+ 	// Sleep
+ 	static bool		GetPreventSleepWhileDownloading() { return s_preventSleepWhileDownloading; }
+ 	static void		SetPreventSleepWhileDownloading(bool status) { s_preventSleepWhileDownloading = status; }
++
++	// Dynamic Leecher Protection
++	#ifdef AMULE_DLP
++	static unsigned int GetDLPCheckMask()		{return s_DLPCheckMask;}
++	#endif
+ protected:
+ 	static	int32 GetRecommendedMaxConnections();
+ 
+@@ -665,6 +670,11 @@ private:
+ 	void LoadPreferences();
+ 	void SavePreferences();
+ 
++	// Dynamic Leecher Protection
++	#ifdef AMULE_DLP
++	void CalcDLPCheckMask();
++	#endif
++
+ protected:
+ 	static wxString	s_configDir;
+ 
+@@ -886,6 +896,20 @@ protected:
+ 	// Stats server
+ 	static wxString s_StatsServerName;
+ 	static wxString s_StatsServerURL;
++
++	// Dynamic Leecher Protection
++	#ifdef AMULE_DLP
++	static bool s_DLPCheckModString;
++	static bool s_DLPCheckUsername;
++	static bool s_DLPCheckUserHash;
++	static bool s_DLPCheckHelloTag;
++	static bool s_DLPCheckInfoTag;
++	//static bool s_DLPCheckEasyMule;
++	static bool s_DLPCheckVeryCDMod;
++	//static bool s_DLPCheckminiMule; //Added by Bill Lee
++	static bool s_DLPCheckGhostMod; //Added by Bill Lee
++	static unsigned int s_DLPCheckMask;
++	#endif
+ };
+ 
+ 
+--- a/src/PrefsUnifiedDlg.cpp
++++ b/src/PrefsUnifiedDlg.cpp
+@@ -58,6 +58,11 @@
+ #include "UserEvents.h"
+ #include "PlatformSpecific.h"		// Needed for PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
+ 
++//Dynamic Leech Protect - Bill Lee
++#ifdef AMULE_DLP
++#include "DLP.h"
++#endif
++
+ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDialog)
+ 	// Events
+ #define USEREVENTS_EVENT(ID, NAME, VARS) \
+@@ -123,6 +128,11 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg,wxDi
+ 	EVT_CHOICE(IDC_COLORSELECTOR,		PrefsUnifiedDlg::OnColorCategorySelected)
+ 	EVT_LIST_ITEM_SELECTED(ID_PREFSLISTCTRL,PrefsUnifiedDlg::OnPrefsPageChange)
+ 
++	//Dynamic Leech Protect - Bill Lee
++	#ifdef AMULE_DLP
++	EVT_BUTTON(IDC_RELOADANTILEECH,		PrefsUnifiedDlg::OnButtonReloadAntiLeech)
++	#endif
++
+ 	EVT_INIT_DIALOG(PrefsUnifiedDlg::OnInitDialog)
+ 
+ 	EVT_COMMAND_SCROLL(IDC_SLIDER,		PrefsUnifiedDlg::OnScrollBarChange)
+@@ -196,6 +206,9 @@ PrefsPage pages[] =
+ 	{ wxTRANSLATE("Online Signature"),	PreferencesOnlineSigTab,	21 },
+ 	{ wxTRANSLATE("Advanced"),			PreferencesaMuleTweaksTab,	12 },
+ 	{ wxTRANSLATE("Events"),			PreferencesEventsTab,		5 }
++#ifdef AMULE_DLP
++	,{ wxTRANSLATE("DLP"),				PreferencesDLPTab,			5}
++#endif
+ #ifdef __DEBUG__
+ 	,{ wxTRANSLATE("Debugging"),		PreferencesDebug,			25 }
+ #endif
+@@ -1211,6 +1224,21 @@ void PrefsUnifiedDlg::OnButtonIPFilterUp
+ 	theApp->ipfilter->Update( CastChild( IDC_IPFILTERURL, wxTextCtrl )->GetValue() );
+ }
+ 
++//Bill Lee
++#ifdef AMULE_DLP
++void PrefsUnifiedDlg::OnButtonReloadAntiLeech(wxCommandEvent& WXUNUSED(event)){
++	#ifndef CLIENT_GUI
++	if( theDLP->ReloadAntiLeech() )
++		wxMessageBox(_("Cannot load antiLeech!"), _("Message"), wxOK | wxICON_EXCLAMATION, this);
++	else
++		wxMessageBox(_("Succeed loading antiLeech!"), _("Message"), wxOK | wxICON_INFORMATION, this);
++	#else
++	AddLogLineN(_("Reload antiLeech from remote GUI has not been implemented."));
++	wxMessageBox(_("Sorry, it has not been implemented yet!"));
++	#endif
++}
++#endif
++
+ 
+ void PrefsUnifiedDlg::OnPrefsPageChange(wxListEvent& event)
+ {
+--- a/src/PrefsUnifiedDlg.h
++++ b/src/PrefsUnifiedDlg.h
+@@ -125,6 +125,9 @@ protected:
+ 	void OnUserEventSelected(wxListEvent& event);
+ 	void OnLanguageChoice(wxCommandEvent &event);
+ 	void CreateEventPanels(const int idx, const wxString& vars, wxWindow* parent);
++	#ifdef AMULE_DLP
++	void OnButtonReloadAntiLeech(wxCommandEvent &event); /* Dynamic Leech Protect - Bill Lee */
++	#endif
+ 
+ 	void OnInitDialog( wxInitDialogEvent& evt );
+ 
+--- a/src/ServerWnd.cpp
++++ b/src/ServerWnd.cpp
+@@ -54,6 +54,7 @@ wxBEGIN_EVENT_TABLE(CServerWnd,wxPanel)
+ 	EVT_BUTTON(ID_BTN_RESET_SERVER, CServerWnd::OnBnClickedResetServerLog)
+ 	EVT_SPLITTER_SASH_POS_CHANGING(ID_SRV_SPLITTER,CServerWnd::OnSashPositionChanging)
+ 	EVT_SPLITTER_SASH_POS_CHANGED(ID_SRV_SPLITTER,CServerWnd::OnSashPositionChanged)
++	EVT_BUTTON(ID_BTN_RESET_DLP, CServerWnd::OnBnClickedResetDLPLog)
+ wxEND_EVENT_TABLE()
+ 
+ 
+@@ -173,6 +174,11 @@ void CServerWnd::OnBnClickedResetServerL
+ 	theApp->GetServerLog(true); // Reset it
+ }
+ 
++void CServerWnd::OnBnClickedResetDLPLog(wxCommandEvent& WXUNUSED(evt))
++{
++	wxTextCtrl* cv= CastByID( ID_DLPINFO, this, wxTextCtrl );
++	cv->Clear();
++}
+ 
+ void CServerWnd::UpdateED2KInfo()
+ {
+--- a/src/ServerWnd.h
++++ b/src/ServerWnd.h
+@@ -71,6 +71,7 @@ private:
+ 	void OnInfoListKeyDown(wxKeyEvent& evt);
+ 	void OnInfoListContextMenu(wxContextMenuEvent& evt);
+ 	void OnInfoListCopy(wxCommandEvent& evt);
++	void OnBnClickedResetDLPLog(wxCommandEvent& evt);
+ 
+ 	// Set in OnSashPositionChanging (only fires while the user is
+ 	// actually dragging the sash); checked by OnSashPositionChanged
+--- a/src/TextClient.cpp
++++ b/src/TextClient.cpp
+@@ -67,6 +67,7 @@ enum {
+ 	CMD_ID_RELOAD_SHARED,
+ 	CMD_ID_RELOAD_IPFILTER_LOCAL,
+ 	CMD_ID_RELOAD_IPFILTER_NET,
++	CMD_ID_RELOAD_ANTILEECH, /* Only used internally - Dynamic Leech Protect - Bill Lee */
+ 	CMD_ID_SET_IPFILTER_ON,
+ 	CMD_ID_SET_IPFILTER_OFF,
+ 	CMD_ID_SET_IPFILTER_CLIENTS_ON,
+@@ -316,6 +317,12 @@ int CamulecmdApp::ProcessCommand(int Cmd
+ 		case CMD_ID_DISCONNECT_KAD:
+ 			request_list.push_back(new CECPacket(EC_OP_KAD_STOP));
+ 			break;
++		//Dynamic Leech Protect - Bill Lee
++		#ifdef AMULE_DLP
++		case CMD_ID_RELOAD_ANTILEECH:
++			request_list.push_back(new CECPacket(EC_OP_ANTILEECH_RELOAD));
++			break;
++		#endif
+ 
+ 		case CMD_ID_RELOAD_SHARED:
+ 			request_list.push_back(new CECPacket(EC_OP_SHAREDFILES_RELOAD));
+@@ -999,6 +1006,9 @@ void CamulecmdApp::OnInitCommandSet()
+ 	tmp2->AddCommand("Net", CMD_ID_RELOAD_IPFILTER_NET, wxTRANSLATE("Update IP filtering table from URL."),
+ 					wxTRANSLATE("If URL is omitted the URL from the preferences is used."), CMD_PARAM_OPTIONAL);
+ 
++	#ifdef AMULE_DLP
++	tmp->AddCommand("AntiLeech", CMD_ID_RELOAD_ANTILEECH, wxTRANSLATE("Reloads antiLeech."), "", CMD_PARAM_NEVER); //Bill Lee
++	#endif
+ 	tmp = m_commands.AddCommand("Connect", CMD_ID_CONNECT, wxTRANSLATE("Connect to the network."),
+ 				    wxTRANSLATE("This will connect to all networks that are enabled in Preferences.\nYou may also optionally specify a server address in IP:Port form, to connect to\nthat server only. The IP must be a dotted decimal IPv4 address,\nor a resolvable DNS name."), CMD_PARAM_OPTIONAL);
+ 	tmp->AddCommand("ED2K", CMD_ID_CONNECT_ED2K, wxTRANSLATE("Connect to eD2k only."), "", CMD_PARAM_NEVER);
+--- a/src/updownclient.h
++++ b/src/updownclient.h
+@@ -408,7 +408,13 @@ public:
+ 	bool		GetSentCancelTransfer() const	{ return m_fSentCancelTransfer; }
+ 	void		SetSentCancelTransfer(bool bVal)	{ m_fSentCancelTransfer = bVal; }
+ 
+-	DEBUG_ONLY( wxString	GetClientFullInfo(); )
++#if defined (__DEBUG__) || defined (AMULE_DLP)
++	/*
++	 * This function is essential for dlp to produce ban log.
++	 * So I decide to retain it when dlp is enabled.
++	 */
++	wxString	GetClientFullInfo();
++#endif
+ 	wxString	GetClientShortInfo();
+ 
+ 	const wxString& GetClientOSInfo() const		{ return m_sClientOSInfo; }
+@@ -585,6 +591,10 @@ public:
+ 
+ 	bool		HasDisabledSharedFiles() const { return m_fNoViewSharedFiles; }
+ 
++	#ifdef AMULE_DLP
++	bool		HasNonOfficialOpCodes() const { return dlp_nonofficialopcodes; }	 //Dynamic Leecher Protection - Bill Lee
++	#endif
++
+ private:
+ 
+ 	CClientCredits	*credits;
+@@ -846,6 +856,10 @@ private:
+ #ifdef __DEBUG__
+ 	wxString	connection_reason;
+ #endif
++
++	#ifdef AMULE_DLP
++	bool dlp_nonofficialopcodes; //Dynamic Leecher Protect - Bill Lee
++	#endif
+ };
+ 
+ 
+--- a/src/UploadQueue.cpp
++++ b/src/UploadQueue.cpp
+@@ -404,6 +404,11 @@ void CUploadQueue::AddClientToQueue(CUpD
+ 		return;
+ 	}
+ 
++	//Dynamic Leecher Protect - Bill Lee
++	#if defined AMULE_DLP && defined __DEBUG__
++	AddLogLineN(client->GetClientFullInfo());
++	#endif
++
+ 	client->AddAskedCount();
+ 	client->SetLastUpRequest();
+ 
