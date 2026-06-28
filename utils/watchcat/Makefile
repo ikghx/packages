@@ -11,7 +11,7 @@ PKG_NAME:=watchcat
 PKG_VERSION:=1
 PKG_RELEASE:=24
 
-PKG_MAINTAINER:=Daniel F. Dickinson <dfdpublic@wildtechgarden.ca>
+PKG_MAINTAINER:=Roger D <rogerdammit@gmail.com>
 PKG_LICENSE:=GPL-2.0
 
 include $(INCLUDE_DIR)/package.mk

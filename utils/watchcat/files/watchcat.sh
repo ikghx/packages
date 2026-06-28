@@ -6,9 +6,6 @@
 # This is free software, licensed under the GNU General Public License v2.
 #
 
-# shellcheck shell=busybox
-
-# shellcheck source=/dev/null
 . /lib/network/config.sh
 
 get_ping_size() {
@@ -37,7 +34,6 @@ get_ping_size() {
 		echo "Corresponding ping packet sizes (bytes): small=1, windows=32, standard=56, big=248, huge=1492, jumbo=9000" 1>&2
 		;;
 	esac
-	# shellcheck disable=SC2086
 	echo $ps
 }
 
@@ -116,6 +112,11 @@ watchcat_monitor_network() {
 	mm_iface_unlock_bands="$7"
 	address_family="$8"
 	script="$9"
+	reset_failure_timer=""
+	if [ "$#" -gt 9 ]; then
+		shift 9
+		reset_failure_timer="$1"
+	fi
 
 	time_now="$(cat /proc/uptime)"
 	time_now="${time_now%%.*}"
@@ -146,13 +147,11 @@ watchcat_monitor_network() {
 		for host in $ping_hosts; do
 			if [ "$iface" != "" ]; then
 				ping_result="$(
-					# shellcheck disable=SC2086
 					ping $ping_family -I "$iface" -s "$ping_size" -c 1 "$host" &>/dev/null
 					echo $?
 				)"
 			else
 				ping_result="$(
-					# shellcheck disable=SC2086
 					ping $ping_family -s "$ping_size" -c 1 "$host" &>/dev/null
 					echo $?
 				)"
@@ -172,6 +171,8 @@ watchcat_monitor_network() {
 		done
 
 		[ "$((time_now - time_lastcheck_withinternet))" -ge "$failure_period" ] && {
+			recovery_started="$time_now"
+
 			if [ "$script" != "" ]; then
 				watchcat_run_script "$script" "$iface"
 			else
@@ -185,11 +186,16 @@ watchcat_monitor_network() {
 				fi
 			fi
 			/etc/init.d/watchcat start
-			# Restart the timer cycle from when recovery action finishes.
-			time_now="$(cat /proc/uptime)"
-			time_now="${time_now%%.*}"
-			time_lastcheck="$time_now"
-			time_lastcheck_withinternet="$time_now"
+			# Optionally start a fresh failure window after the recovery action
+			# finishes instead of continuing to count the original outage.
+			if [ "$reset_failure_timer" = "1" ]; then
+				time_now="$(cat /proc/uptime)"
+				time_now="${time_now%%.*}"
+				time_lastcheck="$time_now"
+				time_lastcheck_withinternet="$time_now"
+			else
+				time_lastcheck_withinternet="$recovery_started"
+			fi
 		}
 
 	done
@@ -233,13 +239,11 @@ watchcat_ping() {
 		for host in $ping_hosts; do
 			if [ "$iface" != "" ]; then
 				ping_result="$(
-					# shellcheck disable=SC2086
 					ping $ping_family -I "$iface" -s "$ping_size" -c 1 "$host" &>/dev/null
 					echo $?
 				)"
 			else
 				ping_result="$(
-					# shellcheck disable=SC2086
 					ping $ping_family -s "$ping_size" -c 1 "$host" &>/dev/null
 					echo $?
 				)"
@@ -248,7 +252,7 @@ watchcat_ping() {
 			if [ "$ping_result" -eq 0 ]; then
 				time_lastcheck_withinternet="$time_now"
 			else
-				logger -p daemon.info -t "watchcat[$$]" "Could not reach $host for $((time_now - time_lastcheck_withinternet)) seconds. Will reboot after $failure_period seconds of failed reachability"
+				logger -p daemon.info -t "watchcat[$$]" "Could not reach $host for $((time_now - time_lastcheck_withinternet)). Rebooting after reaching $failure_period"
 			fi
 		done
 
@@ -273,12 +277,47 @@ ping_reboot)
 	watchcat_ping "$2" "$3" "$4" "$5" "$6" "$7" "$8"
 	;;
 restart_iface)
-	# args from init script: period pinghosts pingperiod pingsize interface mmifacename unlockbands addressfamily
-	watchcat_monitor_network "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" ""
+	shift
+	# args from init script: period pinghosts pingperiod pingsize interface
+	# mmifacename unlockbands addressfamily script reset_failure_timer
+	failure_period="$1"
+	ping_hosts="$2"
+	ping_frequency_interval="$3"
+	ping_size="$4"
+	iface="$5"
+	mm_iface_name="$6"
+	mm_iface_unlock_bands="$7"
+	address_family="$8"
+	script="$9"
+	reset_failure_timer=""
+	if [ "$#" -gt 9 ]; then
+		shift 9
+		reset_failure_timer="$1"
+	fi
+	watchcat_monitor_network "$failure_period" "$ping_hosts" \
+		"$ping_frequency_interval" "$ping_size" "$iface" \
+		"$mm_iface_name" "$mm_iface_unlock_bands" \
+		"$address_family" "$script" "$reset_failure_timer"
 	;;
 run_script)
-	# args from init script: period pinghosts pingperiod pingsize interface addressfamily script
-	watchcat_monitor_network "$2" "$3" "$4" "$5" "$6" "" "" "$7" "$8"
+	shift
+	# args from init script: period pinghosts pingperiod pingsize interface
+	# addressfamily script reset_failure_timer
+	failure_period="$1"
+	ping_hosts="$2"
+	ping_frequency_interval="$3"
+	ping_size="$4"
+	iface="$5"
+	address_family="$6"
+	script="$7"
+	reset_failure_timer=""
+	if [ "$#" -gt 7 ]; then
+		shift 7
+		reset_failure_timer="$1"
+	fi
+	watchcat_monitor_network "$failure_period" "$ping_hosts" \
+		"$ping_frequency_interval" "$ping_size" "$iface" "" "" \
+		"$address_family" "$script" "$reset_failure_timer"
 	;;
 *)
 	echo "Error: invalid mode selected: $mode"
