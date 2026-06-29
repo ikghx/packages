@@ -1,10 +1,6 @@
+# SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright (C) 2021 ImmortalWrt
-# <https://immortalwrt.org>
-#
-# This is free software, licensed under the GNU General Public License v3.
-# See /LICENSE for more information.
-#
+# Copyright (C) 2021-2022 ImmortalWrt.org
 
 include $(TOPDIR)/rules.mk
 
@@ -19,15 +15,15 @@ PKG_SOURCE_VERSION:=1b14ed828ed227933333de31ffb8e24e6c10451c
 PKG_MIRROR_HASH:=c52fde67ce2a5a19a5736977c203f898d1df951ed67b9d3e9d1ac071fe706a8a
 
 PKG_FIXUP:=autoreconf
+PKG_BUILD_DEPENDS:=libgd
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
 define Package/antileech
-  SUBMENU:=P2P
-  SECTION:=net
-  CATEGORY:=Network
+  SECTION:=libs
+  CATEGORY:=Libraries
   TITLE:=AntiLeech for aMule
   URL:=https://github.com/persmule/amule-dlp.antiLeech
   DEPENDS:=+libc +libwxbase
@@ -43,7 +39,7 @@ define Build/Configure
 	$(SED) "s:^AC_CHECK_PROG.WXCONFIG,.*::g" $(PKG_BUILD_DIR)/configure.ac
 	$(SED) "s:wx-config --cppflags:$(STAGING_DIR)/usr/bin/wx-config --cppflags:g" $(PKG_BUILD_DIR)/configure.ac
 
-	cd $(PKG_BUILD_DIR); $(SHELL) ./autogen.sh
+	( cd $(PKG_BUILD_DIR); $(SHELL) ./autogen.sh; )
 	$(call Build/Configure/Default)
 endef
 
