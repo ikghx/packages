@@ -22,8 +22,7 @@ PKG_LICENSE_FILES:=LICENSE
 
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_VPNC_GNUTLS \
-	CONFIG_VPNC_OPENSSL \
-
+	CONFIG_VPNC_OPENSSL
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -41,8 +40,7 @@ define Package/vpnc
 	  +VPNC_OPENSSL:libopenssl \
 	  +VPNC_GNUTLS:libgnutls \
 	  +vpnc-scripts \
-	  +resolveip \
-
+	  +resolveip
   TITLE:=VPN client for Cisco EasyVPN
   URL:=https://davidepucci.it/doc/vpnc/
   SUBMENU:=VPN
@@ -63,7 +61,7 @@ endef
 OPENSSL-y:=OPENSSL_GPL_VIOLATION=yes
 
 define Build/Compile
-	mkdir $(PKG_BUILD_DIR)/bin
+	mkdir -p $(PKG_BUILD_DIR)/bin
 	$(call Build/Compile/Default, \
 		OFLAGS="$(TARGET_CFLAGS)" \
 		OS="Linux" \
@@ -76,10 +74,11 @@ endef
 define Package/vpnc/install
 	$(INSTALL_DIR) $(1)/lib/netifd/proto
 	$(INSTALL_BIN) ./files/vpnc.sh $(1)/lib/netifd/proto/
+
 	$(INSTALL_DIR) $(1)/usr/sbin
-	$(CP)	$(PKG_BUILD_DIR)/bin/vpnc \
-		$(PKG_BUILD_DIR)/src/vpnc-disconnect \
-		$(1)/usr/sbin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/bin/vpnc $(1)/usr/sbin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/vpnc-disconnect $(1)/usr/sbin/
+
 	$(INSTALL_DIR) $(1)/etc/vpnc
 	$(INSTALL_CONF) $(PKG_BUILD_DIR)/src/vpnc.conf $(1)/etc/vpnc/default.conf
 	$(INSTALL_DIR) $(1)/lib/upgrade/keep.d

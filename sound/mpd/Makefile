@@ -20,7 +20,7 @@ PKG_LICENSE_FILES:=COPYING
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_AUDIO_SUPPORT \
 	CONFIG_BUILD_PATENTED \
-	CONFIG_IPV6 \
+	CONFIG_IPV6
 
 PKG_BUILD_FLAGS:=no-mips16
 
@@ -49,7 +49,7 @@ define Package/mpd-full
 $(call Package/mpd/Default)
   TITLE+= (full)
   DEPENDS+= +AUDIO_SUPPORT:pulseaudio +libvorbis +libmms +libnpupnp +libshout +yajl \
-            +libffmpeg +lame-lib +libsoxr +!BUILD_PATENTED:libmad
+            +libffmpeg +lame-lib +libsoxr +BUILD_PATENTED:libmad
   PROVIDES:=mpd
   VARIANT:=full
 endef
@@ -183,7 +183,7 @@ ifeq ($(BUILD_VARIANT),full)
 	-Ddsd=true \
 	-Dsoundcloud=enabled \
 	-Dffmpeg=enabled \
-	-Dmad=$(if $(CONFIG_BUILD_PATENTED),dis,en)abled \
+	-Dmad=$(if $(CONFIG_BUILD_PATENTED),en,dis)abled \
 	-Dtremor=disabled \
 	-Dvorbis=enabled \
 	-Dfifo=true \
