@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gmediarender
 PKG_VERSION:=0.3.1
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/hzeller/gmrender-resurrect.git
@@ -25,8 +25,8 @@ define Package/gmediarender
   SECTION:=multimedia
   CATEGORY:=Multimedia
   TITLE:=A Headless UPnP media Renderer
-  DEPENDS:=+glib2 +gstreamer1 +gstreamer1-utils +gst1-plugins-base \
-	+gst1-plugins-bad +gst1-plugins-good +libupnp
+  DEPENDS:=+glib2 +gstreamer1 +gstreamer1-utils +gst1-plugins-base +gst1-plugins-bad +gst1-plugins-good +libupnp \
+	+gst1-mod-soup +gst1-mod-audioconvert +gst1-mod-audioresample +gst1-mod-typefindfunctions +gst1-mod-alsa
 endef
 
 define Package/gmediarender/description
@@ -35,16 +35,13 @@ define Package/gmediarender/description
   from a UPnP media server.
 endef
 
-define Package/gmediarender/config
-	select PACKAGE_gstreamer1-plugins-bad
-	select PACKAGE_gstreamer1-plugins-good
-endef
-
 define Package/gmediarender/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/gmediarender $(1)/usr/bin/gmediarender
-	$(INSTALL_DIR) $(1)/usr/share/gmediarender
-	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/share/gmediarender/*.png $(1)/usr/share/gmediarender
+	
+	$(INSTALL_DIR) $(1)/usr/share
+	$(CP) $(PKG_INSTALL_DIR)/usr/share/gmediarender $(1)/usr/share/
+	
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/gmediarender.config $(1)/etc/config/gmediarender
 	$(INSTALL_DIR) $(1)/etc/init.d

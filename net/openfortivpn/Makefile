@@ -32,7 +32,7 @@ define Package/openfortivpn
   CATEGORY:=Network
   TITLE:=Fortinet SSL VPN client
   URL:=https://github.com/adrienverge/openfortivpn
-  DEPENDS:=+ppp +libopenssl
+  DEPENDS:=+ppp-multilink +libopenssl
 endef
 
 define Package/openfortivpn/description

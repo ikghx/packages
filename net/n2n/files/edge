@@ -3,7 +3,7 @@ START=90
 STOP=10
 
 USE_PROCD=1
-PROG=/usr/bin/edge
+PROG=/usr/sbin/edge
 CONFIGFILE=/etc/n2n/edge.conf
 
 start_instance() {

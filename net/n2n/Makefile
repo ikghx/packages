@@ -1,4 +1,4 @@
-# SPDX-License-Identifer: GPL-3.0-only
+# SPDX-License-Identifier: GPL-3.0-only
 #
 # Copyright (C) 2021 - ntop.org and contributors
 #
@@ -7,16 +7,20 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=n2n
 PKG_VERSION:=3.0.0
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/ntop/n2n.git
 PKG_SOURCE_VERSION:=d8b02bcbdb7ee8aa33244b3f6fabd8dfc547571a
-PKG_MIRROR_HASH:=fc8852b959af52518eccd32214d09c79d36740ca6994bed8993d8e8ff202de77
+PKG_MIRROR_HASH:=8ca0f0cd4603c8645b4b32b9769b44ffc85018afc741a8dd7515e3150bdbbd0c
 
 PKG_LICENSE:=GPL-3.0
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=Emanuele Faranda <faranda@ntop.org>
+
+PKG_BUILD_DEPENDS:=libpcap
+PKG_BUILD_PARALLEL:=1
+PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -27,7 +31,7 @@ define Package/n2n/Default
   SUBMENU:=VPN
   TITLE:=N2N Peer-to-peer VPN
   URL:=http://www.ntop.org/n2n
-  DEPENDS+=+libcap
+  DEPENDS:=+libcap
 endef
 
 define Package/n2n-edge
@@ -42,6 +46,12 @@ define Package/n2n-supernode
   DEPENDS+=+libopenssl +libpthread +libzstd
 endef
 
+define Package/n2n-utils
+  $(call Package/n2n/Default)
+  TITLE+= extend utilities
+  DEPENDS+=+libpcap +libopenssl +libzstd
+endef
+
 define Package/n2n-edge/description
 The client node for the N2N infrastructure
 endef
@@ -50,9 +60,8 @@ define Package/n2n-supernode/description
 The supernode for the N2N infrastructure
 endef
 
-define Build/Configure
-	( cd $(PKG_BUILD_DIR); ./autogen.sh )
-	$(call Build/Configure/Default)
+define Package/n2n-utils/description
+  This package contains extend utilities for the N2N infrastructure.
 endef
 
 CMAKE_OPTIONS+= \
@@ -67,8 +76,8 @@ define Package/n2n-edge/conffiles
 endef
 
 define Package/n2n-edge/install
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/edge $(1)/usr/bin/
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/edge $(1)/usr/sbin/
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/edge $(1)/etc/init.d/edge
 	$(INSTALL_DIR) $(1)/etc/n2n
@@ -80,8 +89,8 @@ define Package/n2n-supernode/conffiles
 endef
 
 define Package/n2n-supernode/install
-	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/supernode $(1)/usr/bin/
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/supernode $(1)/usr/sbin/
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/supernode $(1)/etc/init.d/supernode
 	$(INSTALL_DIR) $(1)/etc/n2n
@@ -89,5 +98,13 @@ define Package/n2n-supernode/install
 	$(INSTALL_CONF) ./files/communities.list $(1)/etc/n2n/communities.list
 endef
 
+define Package/n2n-utils/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/n2n-benchmark $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/n2n-decode $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/n2n-keygen $(1)/usr/bin/
+endef
+
 $(eval $(call BuildPackage,n2n-edge))
 $(eval $(call BuildPackage,n2n-supernode))
+$(eval $(call BuildPackage,n2n-utils))

@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qbittorrent
 PKG_VERSION:=5.2.2
-PKG_RELEASE=1
+PKG_RELEASE:=1
 
 PKG_SOURCE:=qBittorrent-release-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/qbittorrent/qBittorrent/tar.gz/release-$(PKG_VERSION)?
@@ -34,7 +34,6 @@ define Package/qbittorrent
 	CATEGORY:=Network
 	SUBMENU:=BitTorrent
 	DEPENDS:= \
-		+@PACKAGE_boost +@PACKAGE_boost-system \
 		+libgcc +libstdcpp \
 		+libtorrent-rasterbar \
 		+libopenssl \
@@ -62,7 +61,7 @@ CMAKE_SHARED_LDFLAGS:=$(filter-out -Wl$(comma)-Bsymbolic-functions,$(CMAKE_SHARE
 
 CMAKE_OPTIONS += \
 	-DCMAKE_BUILD_TYPE=Release \
-	-DCMAKE_CXX_STANDARD=17 \
+	-DCMAKE_CXX_STANDARD=20 \
 	-DQT6=ON \
 	-DSTACKTRACE=OFF \
 	-DWEBUI=ON \
@@ -80,8 +79,8 @@ ifdef CONFIG_USE_GLIBC
   TARGET_LDFLAGS += -ldl -lrt -lpthread
 endif
 
-TARGET_CFLAGS += $(FPIC) -ffunction-sections -fdata-sections -flto=auto -fno-fat-lto-objects
-TARGET_LDFLAGS += $(FPIC) -specs=$(INCLUDE_DIR)/hardened-ld-pie.specs -Wl,--gc-sections,--as-needed -flto=auto -fuse-linker-plugin
+TARGET_CFLAGS += $(FPIC) -ffunction-sections -fdata-sections
+TARGET_LDFLAGS += $(FPIC) -specs=$(INCLUDE_DIR)/hardened-ld-pie.specs -Wl,--gc-sections,--as-needed
 
 define Package/qbittorrent/conffiles
 /etc/config/qbittorrent

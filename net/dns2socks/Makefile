@@ -19,8 +19,6 @@ PKG_LICENSE_FILES:=LICENSE
 
 include $(INCLUDE_DIR)/package.mk
 
-UNZIP_CMD:=unzip -q -d $(PKG_BUILD_DIR) $(DL_DIR)/$(PKG_SOURCE)
-
 define Package/dns2socks
   SECTION:=net
   CATEGORY:=Network
@@ -35,19 +33,22 @@ define Package/dns2socks/description
   a SOCKS tunnel like Tor or a HTTP proxy.
 endef
 
+define Build/Prepare
+	mkdir -p $(PKG_BUILD_DIR)
+	unzip -q -d $(PKG_BUILD_DIR) $(DL_DIR)/$(PKG_SOURCE)
+endef
+
 define Build/Compile
 	$(TARGET_CC) \
-	$(TARGET_CFLAGS) \
-	$(TARGET_CPPFLAGS) \
-	$(FPIC) \
-	-o $(PKG_BUILD_DIR)/DNS2SOCKS/dns2socks \
-	$(PKG_BUILD_DIR)/DNS2SOCKS/DNS2SOCKS.c \
-	$(TARGET_LDFLAGS) -pthread
+		$(TARGET_CFLAGS) $(TARGET_CPPFLAGS) -pthread \
+		-o $(PKG_BUILD_DIR)/dns2socks \
+		$(PKG_BUILD_DIR)/DNS2SOCKS/DNS2SOCKS.c \
+		$(TARGET_LDFLAGS) -pthread
 endef
 
 define Package/dns2socks/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/DNS2SOCKS/dns2socks $(1)/usr/bin/dns2socks
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/dns2socks $(1)/usr/bin/dns2socks
 endef
 
 $(eval $(call BuildPackage,dns2socks))

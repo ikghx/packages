@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Copyright (C) 2017-2023 bishuiwuhen
+
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libtorrent-rasterbar
@@ -29,7 +33,8 @@ define Package/libtorrent-rasterbar
 	$(call Package/libtorrent-rasterbar/Default)
 	SECTION:=libs
 	CATEGORY:=Libraries
-	DEPENDS:=+boost +boost-system +libatomic +libgcc +libopenssl +libstdcpp
+	DEPENDS:=+boost +libgcc +libopenssl +libstdcpp \
+	+(armeb||arm||powerpc||mips||mipsel):libatomic
 endef
 
 define Package/libtorrent-rasterbar/description
@@ -37,15 +42,15 @@ define Package/libtorrent-rasterbar/description
 	all the other bittorrent implementations around.
 endef
 
-TARGET_CFLAGS += $(FPIC) -ffunction-sections -fdata-sections -flto=auto -fno-fat-lto-objects
-TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed -flto=auto -fuse-linker-plugin
+TARGET_CFLAGS += $(FPIC) -ffunction-sections -fdata-sections
+TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
 
 CMAKE_OPTIONS += \
 	-DBUILD_SHARED_LIBS=ON \
 	-DCMAKE_BUILD_TYPE=Release \
 	-Ddeprecated-functions=OFF \
 	-Dlogging=OFF \
-	-DCMAKE_CXX_STANDARD=17 \
+	-DCMAKE_CXX_STANDARD=20 \
 	-Dpython-bindings=OFF
 
 define Build/InstallDev
@@ -59,7 +64,7 @@ endef
 
 define Package/libtorrent-rasterbar/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libtorrent-rasterbar.so.* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libtorrent-rasterbar.so* $(1)/usr/lib/
 endef
 
 $(eval $(call BuildPackage,libtorrent-rasterbar))

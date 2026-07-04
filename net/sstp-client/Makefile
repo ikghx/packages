@@ -27,7 +27,7 @@ define Package/sstp-client
   SECTION:=net
   CATEGORY:=Network
   SUBMENU:=VPN
-  DEPENDS=+libevent2 +libopenssl +ppp +resolveip
+  DEPENDS=+libevent2 +libopenssl +ppp-multilink +resolveip
   TITLE:=SSTP-Client is a SSTP client for Linux.
   URL:=http://sstp-client.sourceforge.net/
 endef

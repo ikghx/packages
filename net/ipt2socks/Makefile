@@ -15,7 +15,7 @@ PKG_HASH:=68dc76e63951d655c2fd9b420e175b5a75a50014d6db6e729398b41f2c988356
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_FLAGS:=no-mips16 gc-sections lto
 
-PKG_LICENSE:=AGPL-3.0
+PKG_LICENSE:=AGPL-3.0-only
 PKG_LICENSE_FILES:=LICENSE
 
 include $(INCLUDE_DIR)/package.mk
@@ -32,14 +32,15 @@ define Package/ipt2socks/description
   Utility for converting iptables (redirect/tproxy) to socks5.
 endef
 
-TARGET_CFLAGS += $(FPIC)
 MAKE_FLAGS += \
-	CFLAGS="-std=c99 -pthread $(TARGET_CFLAGS)" \
-	EVCFLAGS="$(TARGET_CFLAGS)"
+	CC="$(TARGET_CC)" \
+	CFLAGS="-std=c99 -pthread $(TARGET_CFLAGS) $(TARGET_CPPFLAGS)" \
+	EVCFLAGS="$(TARGET_CFLAGS) $(TARGET_CPPFLAGS)" \
+	LDFLAGS="$(TARGET_LDFLAGS) -pthread"
 
 define Package/ipt2socks/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipt2socks $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipt2socks $(1)/usr/bin/ipt2socks
 endef
 
 $(eval $(call BuildPackage,ipt2socks))

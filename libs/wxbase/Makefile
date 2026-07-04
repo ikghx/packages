@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=wxbase
 PKG_VERSION:=3.2.10
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=wxWidgets-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=https://github.com/wxWidgets/wxWidgets/releases/download/v$(PKG_VERSION)
@@ -34,13 +34,11 @@ endef
 
 define Package/libwxbase/description
   wxBase contains most of the non-GUI classes from the wxWindows cross-
-  -platform C++ framework. There are 2 categories: generally useful portable
-  code (date/time handling, command line parsing, regular expression support)
-  and wrappers for the OS objects (files, directories, sockets, threads,
-  etc.) allowing you to write portable programs easily.
+  -platform C++ framework.
 endef
 
 TARGET_CFLAGS += $(FPIC)
+TARGET_CXXFLAGS += $(FPIC)
 
 CONFIGURE_ARGS += \
 	--disable-backtrace \
@@ -76,6 +74,7 @@ CONFIGURE_ARGS += \
 	--with-expat="sys" \
 	--with-regex="sys" \
 	--with-zlib="sys" \
+	--with-libcurl \
 	--without-cocoa \
 	--without-dmalloc \
 	--without-gtk-prefix \
@@ -101,8 +100,8 @@ define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wx-config $(1)/usr/bin/
 	$(SED) "s,$(PKG_BUILD_DIR),$(STAGING_DIR)/usr,g" $(1)/usr/bin/wx-config
-	$(SED) 's,-I$$$${includedir}/wx-3.2,-I$(STAGING_DIR)/usr/include/wx-3.2,g' $(1)/usr/bin/wx-config
-	$(SED) 's,-I$$$${libdir}/wx/include,-I$(STAGING_DIR)/usr/lib/wx/include,g' $(1)/usr/bin/wx-config
+	$(SED) 's,-I$$$$ {includedir}/wx-3.2,-I$(STAGING_DIR)/usr/include/wx-3.2,g' $(1)/usr/bin/wx-config
+	$(SED) 's,-I$$$$ {libdir}/wx/include,-I$(STAGING_DIR)/usr/lib/wx/include,g' $(1)/usr/bin/wx-config
 
 	$(INSTALL_DIR) $(1)/usr/include
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/wx-3.2 $(1)/usr/include/

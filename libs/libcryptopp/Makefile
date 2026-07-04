@@ -6,7 +6,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libcryptopp
 PKG_VERSION:=8.9.0
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE:=cryptopp$(subst .,,$(PKG_VERSION)).zip
 PKG_SOURCE_URL:=https://github.com/weidai11/cryptopp/releases/download/CRYPTOPP_$(subst .,_,$(PKG_VERSION))/ \
@@ -22,8 +22,6 @@ PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
-UNZIP_CMD:=unzip -q -d $(PKG_BUILD_DIR) $(DL_DIR)/$(PKG_SOURCE)
-
 define Package/libcryptopp
   SECTION:=libs
   CATEGORY:=Libraries
@@ -38,24 +36,31 @@ define Package/libcryptopp/description
   use of templates and abstract base classes.
 endef
 
-ifdef CONFIG_TARGET_x86
-  TARGET_CFLAGS+= $(FPIC)
-endif
+define Build/Prepare
+	mkdir -p $(PKG_BUILD_DIR)
+	unzip -q -d $(PKG_BUILD_DIR) $(DL_DIR)/$(PKG_SOURCE)
+	$(Build/Patch)
+endef
 
-MAKE_FLAGS+= dynamic libcryptopp.pc
+MAKE_FLAGS += \
+	PREFIX=/usr \
+	CXX="$(TARGET_CXX)" \
+	CXXFLAGS="$(TARGET_CXXFLAGS) $(TARGET_CPPFLAGS) -fPIC" \
+	LDFLAGS="$(TARGET_LDFLAGS)" \
+	dynamic libcryptopp.pc
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/cryptopp
-	$(CP) $(PKG_INSTALL_DIR)/usr/local/include/cryptopp/* $(1)/usr/include/cryptopp/
+	$(CP) $(PKG_INSTALL_DIR)/usr/include/cryptopp/* $(1)/usr/include/cryptopp/
 	$(INSTALL_DIR) $(1)/usr/lib/pkgconfig
-	$(CP) $(PKG_INSTALL_DIR)/usr/local/lib/pkgconfig/libcryptopp.pc $(1)/usr/lib/pkgconfig/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/pkgconfig/libcryptopp.pc $(1)/usr/lib/pkgconfig/
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/local/lib/libcryptopp.so* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libcryptopp.so* $(1)/usr/lib/
 endef
 
 define Package/libcryptopp/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/local/lib/libcryptopp.so* $(1)/usr/lib/
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libcryptopp.so* $(1)/usr/lib/
 endef
 
 $(eval $(call BuildPackage,libcryptopp))

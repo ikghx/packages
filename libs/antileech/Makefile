@@ -5,17 +5,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=antileech
-PKG_VERSION:=v4405
-PKG_RELEASE:=1
+PKG_VERSION:=4405
+PKG_RELEASE:=3
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_DATE:=2021-12-05
 PKG_SOURCE_URL:=https://github.com/persmule/amule-dlp.antiLeech.git
 PKG_SOURCE_VERSION:=1b14ed828ed227933333de31ffb8e24e6c10451c
-PKG_MIRROR_HASH:=c52fde67ce2a5a19a5736977c203f898d1df951ed67b9d3e9d1ac071fe706a8a
+PKG_MIRROR_HASH:=71ecd127928528b5e263db4af618fb73db9b9f65e1725ee9b71b9b13a7237b96
 
 PKG_FIXUP:=autoreconf
-PKG_BUILD_DEPENDS:=libgd
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
@@ -26,7 +25,7 @@ define Package/antileech
   CATEGORY:=Libraries
   TITLE:=AntiLeech for aMule
   URL:=https://github.com/persmule/amule-dlp.antiLeech
-  DEPENDS:=+libc +libwxbase
+  DEPENDS:=+libwxbase
 endef
 
 define Package/antileech/description
@@ -35,13 +34,13 @@ define Package/antileech/description
   the plugin library "libantiLeech".
 endef
 
-define Build/Configure
+define Build/Prepare
+	$(call Build/Prepare/Default)
 	$(SED) "s:^AC_CHECK_PROG.WXCONFIG,.*::g" $(PKG_BUILD_DIR)/configure.ac
 	$(SED) "s:wx-config --cppflags:$(STAGING_DIR)/usr/bin/wx-config --cppflags:g" $(PKG_BUILD_DIR)/configure.ac
-
-	( cd $(PKG_BUILD_DIR); $(SHELL) ./autogen.sh; )
-	$(call Build/Configure/Default)
 endef
+
+TARGET_CXXFLAGS += -Wno-error=narrowing
 
 MAKE_FLAGS += HOSTCC="$(HOSTCC)"
 

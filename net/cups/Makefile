@@ -10,7 +10,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cups
 PKG_VERSION:=2.3.6
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/apple/cups/tar.gz/v$(PKG_VERSION)?
@@ -20,8 +20,6 @@ PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
-
-STRIP:=true
 
 define Package/cups/Default
   URL:=http://www.cups.org/
@@ -55,7 +53,7 @@ define Package/cups-bsd
 endef
 
 define Package/cups-client
-$(call Package/cups/Default)
+  $(call Package/cups/Default)
   SECTION:=net
   CATEGORY:=Network
   DEPENDS+=+libcupsimage
@@ -97,6 +95,8 @@ define Package/libcupsimage
   TITLE:=Common UNIX Printing System - Image library
 endef
 
+TARGET_CFLAGS += -Wno-error=implicit-function-declaration -Wno-error=int-conversion
+
 CONFIGURE_ARGS+= \
 	--with-cups-user="nobody" \
 	--with-cups-group="nogroup" \
@@ -111,6 +111,7 @@ CONFIGURE_ARGS+= \
 	--disable-avahi \
 	--disable-launchd \
 	--disable-pam \
+	--disable-slp \
 	--disable-gnutls \
 	--disable-cdsassl \
 	--disable-ssl \
@@ -141,25 +142,19 @@ define Package/cups/install
 
 	### Do install docs: cups web interface relies on them
 	$(INSTALL_DIR) $(1)/usr/share/doc/cups
-	$(CP) $(PKG_INSTALL_DIR)/usr/share/doc/cups/*.*html \
-		$(1)/usr/share/doc/cups/
-	$(CP) $(PKG_INSTALL_DIR)/usr/share/doc/cups/*.css \
-		$(1)/usr/share/doc/cups/
-	$(CP) $(PKG_INSTALL_DIR)/usr/share/doc/cups/*.txt \
-		$(1)/usr/share/doc/cups/
-	$(CP) $(PKG_INSTALL_DIR)/usr/share/doc/cups/images \
-		$(1)/usr/share/doc/cups/
+	$(CP) $(PKG_INSTALL_DIR)/usr/share/doc/cups/*.*html $(1)/usr/share/doc/cups/
+	$(CP) $(PKG_INSTALL_DIR)/usr/share/doc/cups/*.css $(1)/usr/share/doc/cups/
+	$(CP) $(PKG_INSTALL_DIR)/usr/share/doc/cups/*.txt $(1)/usr/share/doc/cups/
+	$(CP) $(PKG_INSTALL_DIR)/usr/share/doc/cups/images $(1)/usr/share/doc/cups/
 
 	$(INSTALL_DIR) $(1)/usr/sbin
-	# overwrite default config with our own
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/{cupsctl,cupsd} $(1)/usr/sbin/
+
 	$(CP) ./files/etc/cups/* $(1)/etc/cups/
 
 	# install initscript with priority 60
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/cupsd.init $(1)/etc/init.d/cupsd
-	$(INSTALL_BIN) \
-		$(PKG_INSTALL_DIR)/usr/sbin/{cupsctl,cupsd} \
-		$(1)/usr/sbin/
 
 	# needed for cups to find usb printers per http://wiki.openwrt.org/doc/howto/cups.server
 	chmod 700 $(1)/usr/lib/cups/backend/usb
@@ -217,6 +212,8 @@ endef
 define Build/InstallDev
 	$(INSTALL_DIR) $(2)/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/cups-config $(2)/bin/
+	$(SED) 's,^libdir=.*,libdir=$(STAGING_DIR)/usr/lib,g' $(2)/bin/cups-config
+	$(SED) 's,^includedir=.*,includedir=$(STAGING_DIR)/usr/include,g' $(2)/bin/cups-config
 
 	$(INSTALL_DIR) $(1)/usr/include
 	$(CP) $(PKG_INSTALL_DIR)/usr/include/cups $(1)/usr/include/
