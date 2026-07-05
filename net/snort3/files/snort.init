@@ -1,7 +1,7 @@
 #!/bin/sh /etc/rc.common
 # shellcheck disable=SC2039  # "local" not defined in POSIX sh
 
-START=99
+START=98
 STOP=10
 
 USE_PROCD=1
