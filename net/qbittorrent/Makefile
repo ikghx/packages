@@ -19,8 +19,7 @@ PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:qbittorrent:qbittorrent
 
 PKG_BUILD_DEPENDS:=\
-	boost qttools/host libtorrent-rasterbar \
-	openssl qtbase zlib
+	boost libtorrent-rasterbar openssl qtbase zlib
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
@@ -38,6 +37,7 @@ define Package/qbittorrent
 		+libtorrent-rasterbar \
 		+libopenssl \
 		+libqt6core \
+		+libqt6concurrent \
 		+libqt6network \
 		+libqt6network-tlsbackend-openssl \
 		+libqt6sql \
@@ -66,8 +66,9 @@ CMAKE_OPTIONS += \
 	-DSTACKTRACE=OFF \
 	-DWEBUI=ON \
 	-DGUI=OFF \
+	-DTRANSLATIONS=OFF \
 	-DVERBOSE_CONFIGURE=ON \
-	-DQT_ADDITIONAL_PACKAGES_PREFIX_PATH=$(STAGING_DIR_HOSTPKG)
+	-DQT_HOST_PATH=$(STAGING_DIR_HOSTPKG)
 
 # The pcre2 is compiled with support for mips16
 ifdef CONFIG_USE_MIPS16

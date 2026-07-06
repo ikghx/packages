@@ -12,8 +12,8 @@ PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-everywhere-src-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:= \
-		https://download.qt.io/official_releases/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules/ \
-		https://master.qt.io/archive/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules/
+	https://download.qt.io/official_releases/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules/ \
+	https://master.qt.io/archive/qt/$(PKG_BASE)/$(PKG_VERSION)/submodules/
 PKG_HASH:=383dc907816338f0cba72088a524c07458dfc69ce684ca9132fcc4fe91c24b0b
 
 HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/$(PKG_NAME)-everywhere-src-$(PKG_VERSION)
@@ -58,6 +58,7 @@ define Package/qtbase/description
   - network
   - xml
   - sql
+  - concurrent
 endef
 
 define Package/qtbase
@@ -77,19 +78,21 @@ CMAKE_SHARED_LDFLAGS:=$(filter-out -Wl$(comma)-Bsymbolic-functions,$(CMAKE_SHARE
 CMAKE_HOST_OPTIONS += \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DBUILD_SHARED_LIBS=OFF \
-	-DFEATURE_concurrent=OFF \
-	-DFEATURE_dbus=OFF \
-	-DFEATURE_gui=OFF \
-	-DFEATURE_optimize_size=ON \
-	-DFEATURE_sql=OFF \
-	-DFEATURE_testlib=OFF \
-	-DFEATURE_zstd=OFF \
-	-DFEATURE_glib=OFF \
-	-DFEATURE_icu=OFF \
-	-DFEATURE_brotli=OFF \
-	-DFEATURE_androiddeployqt=OFF \
-	-DFEATURE_macdeployqt=OFF \
-	-DFEATURE_windeployqt=OFF \
+	-DQT_FEATURE_concurrent=ON \
+	-DQT_FEATURE_dbus=OFF \
+	-DQT_FEATURE_gui=OFF \
+	-DQT_FEATURE_optimize_size=ON \
+	-DQT_FEATURE_sql=OFF \
+	-DQT_FEATURE_testlib=OFF \
+	-DQT_FEATURE_zstd=OFF \
+	-DQT_FEATURE_glib=OFF \
+	-DQT_FEATURE_icu=OFF \
+	-DQT_FEATURE_brotli=OFF \
+	-DQT_FEATURE_androiddeployqt=OFF \
+	-DQT_FEATURE_macdeployqt=OFF \
+	-DQT_FEATURE_windeployqt=OFF \
+	-DQT_FEATURE_wayland=OFF \
+	-DQT_FEATURE_qtwaylandscanner=OFF \
 	-DINPUT_libb2=no \
 	-DINPUT_openssl=no \
 	-DQT_BUILD_EXAMPLES=OFF \
@@ -105,46 +108,52 @@ CMAKE_OPTIONS += \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
 	-DCMAKE_SKIP_RPATH=TRUE \
-	-DFEATURE_concurrent=OFF \
-	-DFEATURE_dbus=OFF \
-	-DFEATURE_gui=OFF \
-	-DFEATURE_libudev=OFF \
-	-DFEATURE_optimize_size=ON \
-	-DFEATURE_printsupport=OFF \
-	-DFEATURE_testlib=OFF \
-	-DFEATURE_thread=ON \
-	-DFEATURE_widgets=OFF \
-	-DFEATURE_zstd=OFF \
-	-DFEATURE_system_zlib=ON \
+	-DQT_FEATURE_concurrent=ON \
+	-DQT_FEATURE_dbus=OFF \
+	-DQT_FEATURE_gui=OFF \
+	-DQT_FEATURE_libudev=OFF \
+	-DQT_FEATURE_optimize_size=ON \
+	-DQT_FEATURE_printsupport=OFF \
+	-DQT_FEATURE_testlib=OFF \
+	-DQT_FEATURE_thread=ON \
+	-DQT_FEATURE_widgets=OFF \
+	-DQT_FEATURE_zstd=OFF \
+	-DQT_FEATURE_system_zlib=ON \
+	-DQT_FEATURE_wayland=OFF \
+	-DQT_FEATURE_qtwaylandscanner=OFF \
+	-DQT_FEATURE_opengl=OFF \
+	-DQT_FEATURE_egl=OFF \
 	-DINPUT_doubleconversion=qt \
 	-DINPUT_pcre2=system \
-	-DFEATURE_glib=OFF \
-	-DFEATURE_icu=OFF \
-	-DFEATURE_mimetype=ON \
-	-DFEATURE_permissions=OFF \
-	-DFEATURE_opensslv30=ON \
-	-DFEATURE_network=ON \
+	-DQT_FEATURE_glib=OFF \
+	-DQT_FEATURE_icu=OFF \
+	-DQT_FEATURE_mimetype=ON \
+	-DQT_FEATURE_permissions=OFF \
+	-DQT_FEATURE_network=ON \
+	-DQT_FEATURE_openssl=ON \
+	-DQT_FEATURE_openssl_linked=ON \
 	-DINPUT_openssl=linked \
-	-DFEATURE_libproxy=OFF \
-	-DFEATURE_gssapi=OFF \
-	-DFEATURE_sql=ON \
-	-DFEATURE_system_sqlite=ON \
-	-DFEATURE_sql_db2=OFF \
-	-DFEATURE_sql_ibase=OFF \
-	-DFEATURE_sql_mysql=OFF \
-	-DFEATURE_sql_oci=OFF \
-	-DFEATURE_sql_odbc=OFF \
-	-DFEATURE_sql_psql=OFF \
-	-DFEATURE_sql_mimer=OFF \
-	-DFEATURE_xml=ON \
-	-DFEATURE_xkbcommon=OFF \
+	-DQT_FEATURE_libproxy=OFF \
+	-DQT_FEATURE_gssapi=OFF \
+	-DQT_FEATURE_sql=ON \
+	-DQT_FEATURE_system_sqlite=ON \
+	-DQT_FEATURE_sql_sqlite=ON \
+	-DQT_FEATURE_sql_db2=OFF \
+	-DQT_FEATURE_sql_ibase=OFF \
+	-DQT_FEATURE_sql_mysql=OFF \
+	-DQT_FEATURE_sql_oci=OFF \
+	-DQT_FEATURE_sql_odbc=OFF \
+	-DQT_FEATURE_sql_psql=OFF \
+	-DQT_FEATURE_sql_mimer=OFF \
+	-DQT_FEATURE_xml=ON \
+	-DQT_FEATURE_xkbcommon=OFF \
 	-DQT_BUILD_EXAMPLES=OFF \
 	-DQT_BUILD_TESTS=OFF \
 	-DQT_BUILD_TOOLS_WHEN_CROSSCOMPILING=OFF
 
 define Package/qtbase/Default/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libQt6$(2).so* $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libQt6$(shell echo $(2) | sed -e 's/\b[[:alpha:]]/\u&/g').so* $(1)/usr/lib
 endef
 
 # 1: library short name
@@ -156,7 +165,7 @@ define DefineQtbaseLibrary
   define Package/libqt6$(1)
     $(call Package/qtbase/Default)
     TITLE+=$(1) library
-    DEPENDS+=$(foreach lib,$(3),+libqt6$(lib)) $(4)
+    DEPENDS+=$(foreach lib,$(2),+libqt6$(lib)) $(3)
     ABI_VERSION:=6
     HIDDEN:=1
   endef
@@ -166,14 +175,15 @@ define DefineQtbaseLibrary
   endef
 
   define Package/libqt6$(1)/install
-    $(call Package/qtbase/Default/install,$$(1),$(2))
+    $(call Package/qtbase/Default/install,$$(1),$(1))
   endef
 endef
 
-$(eval $(call DefineQtbaseLibrary,core,Core,,+libatomic +libpcre2-16 +zlib))
-$(eval $(call DefineQtbaseLibrary,network,Network,core,+libopenssl +zlib))
-$(eval $(call DefineQtbaseLibrary,xml,Xml,core,))
-$(eval $(call DefineQtbaseLibrary,sql,Sql,core,))
+$(eval $(call DefineQtbaseLibrary,core,,+libatomic +libpcre2-16 +zlib))
+$(eval $(call DefineQtbaseLibrary,network,core,+libopenssl +zlib))
+$(eval $(call DefineQtbaseLibrary,xml,core,))
+$(eval $(call DefineQtbaseLibrary,sql,core,+libsqlite3))
+$(eval $(call DefineQtbaseLibrary,concurrent,core,))
 
 define Package/qtbase/Plugins/install
 	$(INSTALL_DIR) $(1)/usr/share/Qt6/plugins/$(2)
@@ -186,7 +196,7 @@ endef
 # 4: dependencies on other qtbase libraries (short name)
 # 5: dependencies on other packages
 define DefineQtbasePlugin
-  $(call DefineQtbaseLibrary,$(2),$(2),$(4),$(5))
+  $(call DefineQtbaseLibrary,$(2),$(4),$(5))
 
   define Package/libqt6$(2)/install
     $(call Package/qtbase/Plugins/install,$$(1),$(1),$(3))
