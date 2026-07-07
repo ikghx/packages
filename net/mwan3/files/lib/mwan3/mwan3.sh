@@ -1161,6 +1161,8 @@ mwan3_ifup()
 	}
 
 	if [ "$up" != "1" ] || [ -z "$l3_device" ]; then
+		echo "The network interace '${interface}' is not up."
+		echo "Please execute 'ifup ${interface}' first."
 		return
 	fi
 
