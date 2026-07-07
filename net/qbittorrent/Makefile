@@ -19,7 +19,8 @@ PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:qbittorrent:qbittorrent
 
 PKG_BUILD_DEPENDS:=\
-	boost libtorrent-rasterbar openssl qtbase zlib
+	boost qttools/host libtorrent-rasterbar \
+	openssl qtbase zlib
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
@@ -66,7 +67,6 @@ CMAKE_OPTIONS += \
 	-DSTACKTRACE=OFF \
 	-DWEBUI=ON \
 	-DGUI=OFF \
-	-DTRANSLATIONS=OFF \
 	-DVERBOSE_CONFIGURE=ON \
 	-DQT_HOST_PATH=$(STAGING_DIR_HOSTPKG)
 
