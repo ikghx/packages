@@ -97,6 +97,10 @@ endef
 
 TARGET_CFLAGS += -Wno-error=implicit-function-declaration -Wno-error=int-conversion
 
+MAKE_FLAGS += \
+	CHOWN=true \
+	CHGRP=true
+
 CONFIGURE_ARGS+= \
 	--with-cups-user="nobody" \
 	--with-cups-group="nogroup" \
