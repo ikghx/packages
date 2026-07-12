@@ -43,7 +43,6 @@ find_network_device() {
 }
 
 boot() {
-	uciadd
 	rc_procd start_service
 }
 
