@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=v2rayA
-PKG_VERSION:=2.4.7
+PKG_VERSION:=2.4.8
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/v2rayA/v2rayA/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=0a6604c07566422e4a0f11bf2a8f1c1ad63b0f687cb9d71ed13f7b73c5d3c07c
+PKG_HASH:=0929881370e52ed8b5a0b101f73b3b6610e6bf1e1362741fc517ec4da59a86bb
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)/service
 
 PKG_LICENSE:=AGPL-3.0-only
@@ -58,7 +58,7 @@ define Download/v2raya-web
 	URL:=https://github.com/v2rayA/v2rayA/releases/download/v$(PKG_VERSION)/
 	URL_FILE:=web.tar.gz
 	FILE:=$(WEB_FILE)
-	HASH:=b9ee3e93bd590f15f5a62a6774bb6fe8a33a0d56c2a6ac6532a1155cb93feb66
+	HASH:=8d397d06afed595a95dc2dc87ed7d5a1a5be4e67d538daa628cb987a13df9ac9
 endef
 
 define Build/Prepare
