@@ -97,10 +97,6 @@ endef
 
 TARGET_CFLAGS += -Wno-error=implicit-function-declaration -Wno-error=int-conversion
 
-MAKE_FLAGS += \
-	CHOWN=true \
-	CHGRP=true
-
 CONFIGURE_ARGS+= \
 	--with-cups-user="nobody" \
 	--with-cups-group="nogroup" \
@@ -120,6 +116,21 @@ CONFIGURE_ARGS+= \
 	--disable-cdsassl \
 	--disable-ssl \
 	--disable-gssapi
+
+define Build/Compile
+	$(MAKE) -C $(PKG_BUILD_DIR) \
+		CHOWN="true" \
+		CHGRP="true" \
+		all
+endef
+
+define Build/Install
+	$(MAKE) -C $(PKG_BUILD_DIR) \
+		CHOWN="true" \
+		CHGRP="true" \
+		BUILDROOT="$(PKG_INSTALL_DIR)" \
+		install
+endef
 
 define Package/cups/install
 	$(INSTALL_DIR) $(1)/etc/cups
