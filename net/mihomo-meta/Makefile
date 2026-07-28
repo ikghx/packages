@@ -51,7 +51,7 @@ endef
 define Package/mihomo-meta/install
 	$(call GoPackage/Package/Install/Bin,$(1))
 	$(INSTALL_DIR) $(1)/etc/openclash/core
-	$(LN) $(PKG_INSTALL_DIR)/usr/libexec/mihomo $(1)/etc/openclash/core/clash_meta
+	$(LN) /usr/libexec/mihomo $(1)/etc/openclash/core/clash_meta
 endef
 
 define Build/Prepare
