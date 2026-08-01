@@ -68,6 +68,7 @@ endef
 
 define Package/dnscrypt-proxy2/conffiles
 /etc/dnscrypt-proxy2/dnscrypt-proxy.toml
+/etc/dnscrypt-proxy2/blocked-names.txt
 endef
 
 define Package/golang-github-jedisct1-dnscrypt-proxy2-dev

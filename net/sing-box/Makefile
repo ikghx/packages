@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sing-box
-PKG_VERSION:=1.13.14
+PKG_VERSION:=1.13.15
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/SagerNet/sing-box/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=d18294eb00128743b1dbf1d5f4f01902bdfd59a2d2858cda809abe5351a9cd40
+PKG_HASH:=b43456c0cb2d4d7b81664010b2149a35ed6e3f6c245d78bcc7caf27c46eca816
 
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=LICENSE
@@ -45,14 +45,6 @@ define Package/sing-box/config
 	menu "Select build options"
 		depends on PACKAGE_sing-box
 
-		config SINGBOX_BADLINKNAME
-			bool "Enable go:linkname for internal kTLS/TLS APIs"
-			default y
-
-		config SINGBOX_TFOGO_CHECKLINKNAME0
-			bool "Bypass Go 1.23+ linkname restrictions (match -checklinkname=0)"
-			default y
-
 		config SINGBOX_WITH_ACME
 			bool "Build with ACME TLS certificate issuer support"
 
@@ -75,13 +67,6 @@ define Package/sing-box/config
 		config SINGBOX_WITH_GVISOR
 			bool "Build with gVisor support"
 			default y
-
-		config SINGBOX_WITH_MUSL
-			bool "Build with musl libc"
-			default y
-
-		config SINGBOX_WITH_NAIVE
-			bool "Build with NaiveProxy outbound support"
 
 		config SINGBOX_WITH_OCM
 			bool "Build with OpenAI Codex Multiplexer service support"
@@ -108,8 +93,6 @@ define Package/sing-box/config
 endef
 
 PKG_CONFIG_DEPENDS:= \
-	CONFIG_SINGBOX_BADLINKNAME \
-	CONFIG_SINGBOX_TFOGO_CHECKLINKNAME0 \
 	CONFIG_SINGBOX_WITH_ACME \
 	CONFIG_SINGBOX_WITH_CCM \
 	CONFIG_SINGBOX_WITH_CLASH_API \
@@ -117,8 +100,6 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_SINGBOX_WITH_EMBEDDED_TOR \
 	CONFIG_SINGBOX_WITH_GRPC \
 	CONFIG_SINGBOX_WITH_GVISOR \
-	CONFIG_SINGBOX_WITH_MUSL \
-	CONFIG_SINGBOX_WITH_NAIVE \
 	CONFIG_SINGBOX_WITH_OCM \
 	CONFIG_SINGBOX_WITH_QUIC \
 	CONFIG_SINGBOX_WITH_TAILSCALE \
@@ -127,8 +108,6 @@ PKG_CONFIG_DEPENDS:= \
 	CONFIG_SINGBOX_WITH_WIREGUARD
 
 GO_PKG_TAGS:=$(subst $(space),$(comma),$(strip \
-	$(if $(CONFIG_SINGBOX_BADLINKNAME),badlinkname) \
-	$(if $(CONFIG_SINGBOX_TFOGO_CHECKLINKNAME0),tfogo_checklinkname0) \
 	$(if $(CONFIG_SINGBOX_WITH_ACME),with_acme) \
 	$(if $(CONFIG_SINGBOX_WITH_CCM),with_ccm) \
 	$(if $(CONFIG_SINGBOX_WITH_CLASH_API),with_clash_api) \
@@ -136,14 +115,14 @@ GO_PKG_TAGS:=$(subst $(space),$(comma),$(strip \
 	$(if $(CONFIG_SINGBOX_WITH_EMBEDDED_TOR),with_embedded_tor) \
 	$(if $(CONFIG_SINGBOX_WITH_GRPC),with_grpc) \
 	$(if $(CONFIG_SINGBOX_WITH_GVISOR),with_gvisor) \
-	$(if $(CONFIG_SINGBOX_WITH_MUSL),with_musl) \
-	$(if $(CONFIG_SINGBOX_WITH_NAIVE),with_naive_outbound) \
 	$(if $(CONFIG_SINGBOX_WITH_OCM),with_ocm) \
 	$(if $(CONFIG_SINGBOX_WITH_QUIC),with_quic) \
 	$(if $(CONFIG_SINGBOX_WITH_TAILSCALE),with_tailscale) \
 	$(if $(CONFIG_SINGBOX_WITH_UTLS),with_utls) \
 	$(if $(CONFIG_SINGBOX_WITH_V2RAY_API),with_v2ray_api) \
 	$(if $(CONFIG_SINGBOX_WITH_WIREGUARD),with_wireguard) \
+	badlinkname \
+	tfogo_checklinkname0 \
 ))
 
 define Package/sing-box/conffiles
