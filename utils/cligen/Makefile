@@ -28,7 +28,7 @@ define Package/cligen
   CATEGORY:=Utilities
   URL:=https://www.cligen.se
   TITLE:=CLIgen is a Command-Line Interface generator
-  DEPENDS:=libxml2
+  DEPENDS:=+libxml2
 endef
 
 define Package/cligen/description
