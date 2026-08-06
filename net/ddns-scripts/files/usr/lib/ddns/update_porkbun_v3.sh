@@ -8,6 +8,8 @@
 # given domain and subdomain. Existing CNAME and ALIAS records WILL NOT BE
 # EDITED OR DELETED!  "username" and "password" configurations should be set to
 # Porkbun API key and secret key, respectively.
+# For second level domains or nested subdomains use "@" to separate between the subdomain and the domain
+# e.g. nested.sub@domain.co.tld
 #
 # Porkbun API documentation:
 # https://porkbun.com/api/json/v3/documentation#DNS%20Create%20Record
@@ -30,7 +32,7 @@ __API="https://api.porkbun.com/api/json/v3"
 [ -z "$password" ] && write_log 14 "Service section not configured correctly! Missing 'password'"
 
 if echo "$domain" | grep -Fq '@'; then
-	# split __HOST __DOMAIN from $domain
+	# split __SUBDOMAIN __DOMAIN from $domain
 	# given data:
 	# @example.com for "domain record"
 	# host.sub@example.com for a "host record"
@@ -43,6 +45,9 @@ else
 	__DOMAIN=$(echo $domain | sed -e "s/$__DOMAIN_REGEX/\3/")
 	__SUBDOMAIN=$(echo $domain | sed -e "s/$__DOMAIN_REGEX/\2/")
 fi
+
+# Porkbun returns record names as FQDNs
+__FQDN="${__SUBDOMAIN:+${__SUBDOMAIN}.}${__DOMAIN}"
 
 # Determine IPv4 or IPv6 address and record type
 if [ "$use_ipv6" -eq 1 ]; then
@@ -87,7 +92,7 @@ function callback_review_record() {
 	json_get_var id "id"
 	json_get_var name "name"
 	json_get_var type "type"
-	[ "$name" == "$domain" -a "$type" == "$__TYPE" ] && echo "$id"
+	[ "$name" == "$__FQDN" -a "$type" == "$__TYPE" ] && echo "$id"
 	json_select ..
 }
 
