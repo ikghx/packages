@@ -23,6 +23,9 @@ PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
 
+# AirPlay 2 sources are generated at build time by plistutil
+PKG_BUILD_DEPENDS:=libplist/host
+
 include $(INCLUDE_DIR)/package.mk
 
 define Package/shairport-sync/default
