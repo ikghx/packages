@@ -39,7 +39,6 @@ define Package/libplist
   $(call Package/libplist/Default)
   SECTION:=libs
   CATEGORY:=Libraries
-  DEPENDS:=+libxml2
   TITLE+= library
   PKG_LICENSE:=LGPL-2.1-or-later
   PKG_LICENSE_FILES:=COPYING.LESSER

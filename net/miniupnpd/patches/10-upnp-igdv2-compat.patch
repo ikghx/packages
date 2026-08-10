@@ -1,4 +1,4 @@
-From 4ff4c1131d62fee273f157ac287db05553afd813 Mon Sep 17 00:00:00 2001
+From 38e01919d585b0fd663d2b3249963b336061cbd3 Mon Sep 17 00:00:00 2001
 From: Self-Hosting-Group
  <155233284+Self-Hosting-Group@users.noreply.github.com>
 Date: Wed, 25 Mar 2026 00:00:00 +0000
@@ -12,6 +12,11 @@ Subject: [PATCH] miniupnpd: UPnP IGDv2 Microsoft/Apple compatibility
   that only caused problems if PCP/NAT-PMP (prioritised) was disabled
 
 Link: https://github.com/Self-Hosting-Group/miniupnp/tree/upnp-igdv2-compat
+Link: https://github.com/Self-Hosting-Group/wiki/wiki/Port-Mapping-Protocols-Overview#compatibility-issues
+---
+ upnphttp.c | 19 ++++++++++++++++---
+ upnpsoap.c | 16 ++++++++++++++++
+ 2 files changed, 32 insertions(+), 3 deletions(-)
 
 --- a/upnphttp.c
 +++ b/upnphttp.c

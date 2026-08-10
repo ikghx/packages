@@ -1,19 +1,55 @@
-From 7ca80bdb649b61c0092e1e9594058abbcbc69537 Mon Sep 17 00:00:00 2001
+From 38e01919d585b0fd663d2b3249963b336061cbd3 Mon Sep 17 00:00:00 2001
 From: Self-Hosting-Group
  <155233284+Self-Hosting-Group@users.noreply.github.com>
-Date: Wed, 25 Mar 2026 00:00:00 +0000
+Date: Tue, 12 May 2026 00:00:00 +0000
 Subject: [PATCH] miniupnpd: Improve logging
 
 * Clearer logging of enabled protocols/ports, IPv6 mapping, and UPnP IGD
-  compatibility mode
+  compatibility mode… in start banner
 * Log warnings with an enabled allow third-party mapping option
-* Log less with default/info log level
-* Remove excessive logging of normally occurring messages
-* Remove multiple log messages for the same event
-* Remove excessive logging caused by a daemon bug
+* Less verbose logging by changing the log level of many normally
+  occurring or internal messages, or those not relevant to users, to
+  debug or info
+* Comment out log-filling messages when internal interfaces lose link,
+  and for e.g. `rule with label '%s' is not a IGD pinhole`, as normally
+  occurring
 
+Fixes: https://redirect.github.com/openwrt/packages/issues/17601
+Fixes: https://redirect.github.com/openwrt/packages/issues/26483
 Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
+---
+ asyncsendto.c                 |  4 +--
+ getifaddr.c                   |  4 +--
+ minissdp.c                    | 24 ++++++-------
+ miniupnpd.c                   | 20 +++++------
+ natpmp.c                      | 16 ++++-----
+ netfilter/iptcrdr.c           | 10 +++---
+ netfilter/iptpinhole.c        |  4 +--
+ netfilter_nft/nftnlrdr.c      |  2 +-
+ netfilter_nft/nftnlrdr_misc.c |  8 ++---
+ netfilter_nft/nftpinhole.c    | 10 +++---
+ pcpserver.c                   | 18 +++++-----
+ pf/pfpinhole.c                |  8 ++---
+ upnphttp.c                    |  6 ++--
+ upnppinhole.c                 | 48 ++++++++++++-------------
+ upnpredirect.c                | 20 +++++------
+ upnpsoap.c                    | 28 +++++++--------
+ 16 files changed, 115 insertions(+), 115 deletions(-)
 
+--- a/asyncsendto.c
++++ b/asyncsendto.c
+@@ -254,9 +254,9 @@ int try_sendto(fd_set * writefds)
+ 					/* uncatched error */
+ 					if(sockaddr_to_string(elt->dest_addr, addr_str, sizeof(addr_str)) <= 0)
+ 						addr_str[0] = '\0';
+-					syslog(LOG_ERR, "%s(sock=%d, len=%u, dest=%s): sendto: %m",
++					/*syslog(LOG_DEBUG, "%s(sock=%d, len=%u, dest=%s): sendto: %m",
+ 					       "try_sendto", elt->sockfd, (unsigned)elt->len,
+-					       addr_str);
++					       addr_str);*/
+ 					ret--;
+ 				}
+ 			} else if((int)n != (int)elt->len) {
 --- a/getifaddr.c
 +++ b/getifaddr.c
 @@ -74,7 +74,7 @@ getifaddr(const char * ifname, char * bu
@@ -36,6 +72,37 @@ Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
  	}
 --- a/minissdp.c
 +++ b/minissdp.c
+@@ -741,8 +741,8 @@ SendSSDPNotify(int s, const struct socka
+ 	}
+ 	n = sendto_or_schedule(s, bufr, l, 0, dest, dest_len);
+ 	if(n < 0) {
+-		syslog(LOG_ERR, "sendto(udp_notify=%d, %s): %m", s,
+-		       host ? host : "NULL");
++		/*syslog(LOG_DEBUG, "sendto(udp_notify=%d, %s): %m", s,
++		       host ? host : "NULL");*/
+ 	} else if(n != l) {
+ 		syslog(LOG_NOTICE, "sendto() sent %d out of %d bytes", n, l);
+ 	}
+@@ -752,8 +752,8 @@ SendSSDPNotify(int s, const struct socka
+ 	 * discovery messages SHOULD NOT be sent more than three times. */
+ 	n = sendto_schedule(s, bufr, l, 0, dest, dest_len, 250);
+ 	if(n < 0) {
+-		syslog(LOG_ERR, "sendto(udp_notify=%d, %s): %m", s,
+-		       host ? host : "NULL");
++		/*syslog(LOG_DEBUG, "sendto(udp_notify=%d, %s): %m", s,
++		       host ? host : "NULL");*/
+ 	}
+ }
+ 
+@@ -1058,7 +1058,7 @@ ProcessSSDPData(int s, const char *bufr,
+ 	}
+ 	if(lan_addr == NULL)
+ 	{
+-		syslog(LOG_WARNING, "SSDP packet sender %s (if_index=%d) not from a LAN, ignoring",
++		syslog(LOG_DEBUG, "SSDP packet sender %s (if_index=%d) not from a LAN, ignoring",
+ 		       sender_str, source_if);
+ 		return;
+ 	}
 @@ -1161,7 +1161,7 @@ ProcessSSDPData(int s, const char *bufr,
  	           sender_str );*/
  		if(st && (st_len > 0))
@@ -90,8 +157,26 @@ Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
  					SendSSDPResponse(s, sender, st, st_len, "",
  					                 announced_host, http_port,
  #ifdef ENABLE_HTTPS
+@@ -1442,7 +1442,7 @@ SendSSDPbyebye(int s, const struct socka
+ 	n = sendto_or_schedule(s, bufr, l, 0, dest, destlen);
+ 	if(n < 0)
+ 	{
+-		syslog(LOG_ERR, "sendto(udp_shutdown=%d) to %s: %m", s, dest_str);
++		syslog(LOG_DEBUG, "sendto(udp_shutdown=%d) to %s: %m", s, dest_str);
+ 		return -1;
+ 	}
+ 	else if(n != l)
 --- a/miniupnpd.c
 +++ b/miniupnpd.c
+@@ -489,7 +489,7 @@ ProcessIncomingHTTP(int shttpl, const ch
+ 		if(get_lan_for_peer((struct sockaddr *)&clientname) == NULL)
+ 		{
+ 			/* The peer is not a LAN ! */
+-			syslog(LOG_WARNING,
++			syslog(LOG_DEBUG,
+ 			       "%s peer %s is not from a LAN, closing the connection",
+ 			       protocol, addr_str);
+ 			close(shttp);
 @@ -859,7 +859,7 @@ set_startup_time(void)
  			}
  			else
@@ -119,7 +204,7 @@ Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
 +#endif
 +	ext_if_name, upnp_bootid);
 +syslog(LOG_INFO, "More information at https://miniupnp.tuxfamily.org/ or http://miniupnp.free.fr/");
-+syslog(LOG_NOTICE, "Extra logging with log level info (-v) or debug (-vv)");
++syslog(LOG_NOTICE, "Extra logging with log level info (-v) or debug (-v -v)");
 +
  #ifdef USE_SYSTEMD
  	if (systemd_flag) {
@@ -161,7 +246,7 @@ Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
  		}
  		v.port = listen_port;
 -		syslog(LOG_NOTICE, "HTTP listening on port %d", v.port);
-+		syslog(LOG_NOTICE, "Listening for UPnP IGD (SOAP/HTTP) traffic on port %d/TCP, SSDP port 1900/UDP", v.port);
++		syslog(LOG_NOTICE, "Listening for UPnP IGD (SOAP/HTTP) traffic on port %d/TCP, SSDP 1900/UDP", v.port);
  #if defined(V6SOCKETS_ARE_V6ONLY) && defined(ENABLE_IPV6)
  		if(!GETFLAG(IPV6DISABLEDMASK))
  		{
@@ -188,14 +273,16 @@ Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
  				SETFLAG(IPV6DISABLEDMASK);
  			}
  		}
-@@ -2582,22 +2586,22 @@ main(int argc, char * * argv)
- 	}
- 
- #ifdef ENABLE_NATPMP
--	/* open socket for NAT PMP traffic */
-+	/* open socket for NAT-PMP traffic */
- 	if(GETFLAG(ENABLENATPMPMASK))
- 	{
+@@ -2563,7 +2567,7 @@ main(int argc, char * * argv)
+ 			if(SendSSDPGoodbye(snotify, addr_count * 2) < 0)
+ #endif
+ 			{
+-				syslog(LOG_WARNING, "Failed to broadcast good-bye notifications");
++				syslog(LOG_DEBUG, "Failed to broadcast good-bye notifications");
+ 			}
+ 		}
+ #endif /* UPNP_STRICT */
+@@ -2588,16 +2592,16 @@ main(int argc, char * * argv)
  		if(OpenAndConfNATPMPSockets(snatpmp) < 0)
  #ifdef ENABLE_PCP
  		{
@@ -221,10 +308,10 @@ Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
  #endif /* HAS_LIBCAP_NG */
  
 +if (GETFLAG(ENABLEUPNPMASK) && !GETFLAG(SECUREMODEMASK))
-+	syslog(LOG_WARNING, "WARNING: secure_mode=no, allow adding port maps for non-requesting IP addresses via UPnP IGD");
++	syslog(LOG_WARNING, "WARNING: Allow adding port maps for non-requesting IP addresses via UPnP IGD, as secure_mode=no set");
 +#ifdef ENABLE_PCP
 +if (GETFLAG(ENABLENATPMPMASK) && GETFLAG(PCP_ALLOWTHIRDPARTYMASK))
-+	syslog(LOG_WARNING, "WARNING: pcp_allow_thirdparty=yes, allow adding port maps for non-requesting IP addresses via PCP");
++	syslog(LOG_WARNING, "WARNING: Allow adding port maps for non-requesting IP addresses via PCP, as pcp_allow_thirdparty=yes set");
 +#endif
 +#ifdef ENABLE_IPV6
 +if (GETFLAG(IPV6DISABLEDMASK))
@@ -235,18 +322,45 @@ Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
 +if (GETFLAG(ENABLEUPNPMASK)) {
 +#ifdef IGD_V2
 +	if (GETFLAG(FORCEIGDDESCV1MASK)) {
-+		syslog(LOG_NOTICE, "UPnP IGD compatiblity mode set to IGDv1 (IPv4 only)");
++		syslog(LOG_NOTICE, "UPnP IGD compatibility mode set to IGDv1 (IPv4 only)");
 +	} else {
-+		syslog(LOG_NOTICE, "UPnP IGD compatiblity mode set to IGDv2 (with workarounds)");
++		syslog(LOG_NOTICE, "UPnP IGD compatibility mode set to IGDv2 (with workarounds)");
 +	}
 +#else
-+	syslog(LOG_NOTICE, "UPnP IGD compatiblity mode set to IGDv1 (IPv4 only)");
++	syslog(LOG_NOTICE, "UPnP IGD compatibility mode set to IGDv1 (IPv4 only)");
 +#endif
 +}
 +
  #ifdef USE_SYSTEMD
  	if (v.systemd_notify) {
  		upnp_update_status();
+@@ -3016,7 +3044,7 @@ main(int argc, char * * argv)
+ 		}
+ 		i = try_sendto(&writeset);
+ 		if(i < 0) {
+-			syslog(LOG_ERR, "try_sendto failed to send %d packets", -i);
++			/*syslog(LOG_DEBUG, "try_sendto failed to send %d packets", -i);*/
+ 		}
+ #ifdef USE_MINIUPNPDCTL
+ 		for(ectl = ctllisthead.lh_first; ectl;)
+@@ -3116,7 +3144,7 @@ main(int argc, char * * argv)
+ 					if(lan_addr == NULL) {
+ 						char sender_str[64];
+ 						sockaddr_to_string((struct sockaddr *)&senderaddr, sender_str, sizeof(sender_str));
+-						syslog(LOG_WARNING, "NAT-PMP packet sender %s not from a LAN, ignoring",
++						syslog(LOG_DEBUG, "NAT-PMP packet sender %s not from a LAN, ignoring",
+ 						       sender_str);
+ 						continue;
+ 					}
+@@ -3139,7 +3167,7 @@ main(int argc, char * * argv)
+ 				if(lan_addr == NULL) {
+ 					char sender_str[64];
+ 					sockaddr_to_string((struct sockaddr *)&senderaddr, sender_str, sizeof(sender_str));
+-					syslog(LOG_WARNING, "NAT-PMP packet sender %s not from a LAN, ignoring",
++					syslog(LOG_DEBUG, "NAT-PMP packet sender %s not from a LAN, ignoring",
+ 					       sender_str);
+ 					continue;
+ 				}
 @@ -3173,7 +3201,7 @@ main(int argc, char * * argv)
  		/* process SSDP packets */
  		if(sudp >= 0 && FD_ISSET(sudp, &readset))
@@ -274,6 +388,15 @@ Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
  #ifdef USE_SYSTEMD
  	if (v.systemd_notify) {
  		sd_notify(0,
+@@ -3304,7 +3332,7 @@ shutdown:
+ 		if(SendSSDPGoodbye(snotify, addr_count * 2) < 0)
+ #endif
+ 		{
+-			syslog(LOG_ERR, "Failed to broadcast good-bye notifications");
++			syslog(LOG_DEBUG, "Failed to broadcast good-bye notifications");
+ 		}
+ 	}
+ 	/* try to send pending packets */
 --- a/natpmp.c
 +++ b/natpmp.c
 @@ -106,7 +106,7 @@ static void FillPublicAddressResponse(un
@@ -436,6 +559,33 @@ Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
  	return 0;
  }
  
+@@ -745,7 +745,7 @@ refresh_nft_cache(struct rule_list *head
+ 		errno = 0;
+ 		ret = mnl_cb_run(buf, n, mnl_seq, mnl_portid, table_cb, &data);
+ 		if (ret <= -1 /*== MNL_CB_ERROR*/) {
+-			syslog(LOG_ERR, "%s: mnl_cb_run returned %d: %m",
++			syslog(LOG_DEBUG, "%s: mnl_cb_run returned %d: %m",
+ 			       "refresh_nft_cache", ret);
+ 			return -1;
+ 		}
+@@ -1279,7 +1279,7 @@ nft_send_rule(struct nftnl_rule * rule,
+ 
+ 		result = send_batch(batch);
+ 		if (result < 0) {
+-			syslog(LOG_ERR, "%s(%p, %d, %d) send_batch failed %d",
++			syslog(LOG_DEBUG, "%s(%p, %d, %d) send_batch failed %d",
+ 			       "nft_send_rule", rule, (int)cmd, (int)chain_type, result);
+ 		}
+ 	}
+@@ -1462,7 +1462,7 @@ send_batch(struct mnl_nlmsg_batch *batch
+ 		errno = 0;
+ 		ret = mnl_cb_run(buf, n, 0, mnl_portid, NULL, NULL);
+ 		if (ret <= -1 /*== MNL_CB_ERROR*/) {
+-			syslog(LOG_ERR, "%s: mnl_cb_run returned %d: %m",
++			syslog(LOG_DEBUG, "%s: mnl_cb_run returned %d: %m",
+ 			       "send_batch", ret);
+ 			return -4;
+ 		}
 --- a/netfilter_nft/nftpinhole.c
 +++ b/netfilter_nft/nftpinhole.c
 @@ -129,7 +129,7 @@ find_pinhole(const char * ifname,
@@ -538,6 +688,15 @@ Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
  				return pcp_msg_info->result_code;
  			}
  
+@@ -1601,7 +1601,7 @@ int ProcessIncomingPCPPacket(int s, unsi
+ 	if (!GETFLAG(PCP_ALLOWTHIRDPARTYMASK)) {
+ 		lan_addr = get_lan_for_peer(senderaddr);
+ 		if(lan_addr == NULL) {
+-			syslog(LOG_WARNING, "PCP packet sender %s not from a LAN, ignoring",
++			syslog(LOG_DEBUG, "PCP packet sender %s not from a LAN, ignoring",
+ 			       addr_str);
+ 			return 0;
+ 		}
 @@ -1722,7 +1722,7 @@ void PCPSendUnsolicitedAnnounce(int * so
  		}
  		len = sendto_or_schedule(sockets[i], buff, PCP_MIN_LEN, 0, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
@@ -895,15 +1054,6 @@ Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
  			eport, iaddr, iport, protocol, desc);
  		return upnp_redirect_internal(rhost, eport, iaddr, iport, proto,
  		                              desc, timestamp);
-@@ -404,7 +404,7 @@ upnp_redirect_internal(const char * rhos
-                        int proto, const char * desc,
-                        unsigned int timestamp)
- {
--	/*syslog(LOG_INFO, "redirecting port %hu to %s:%hu protocol %s for: %s",
-+	/*syslog(LOG_DEBUG, "redirecting port %hu to %s:%hu protocol %s for: %s",
- 		eport, iaddr, iport, protocol, desc);			*/
- 	if(disable_port_forwarding)
- 		return -1;
 @@ -641,7 +641,7 @@ get_upnp_rules_state_list(int max_rules_
  	{
  		if(tmp->to_remove)
@@ -915,15 +1065,6 @@ Link: https://github.com/Self-Hosting-Group/miniupnp/tree/improve-logging
  			*p = tmp->next;
 --- a/upnpsoap.c
 +++ b/upnpsoap.c
-@@ -366,7 +366,7 @@ GetExternalIPAddress(struct upnphttp * h
- 		struct in_addr addr;
- 		if(getifaddr(ext_if_name, ext_ip_addr, INET_ADDRSTRLEN, &addr, NULL) < 0)
- 		{
--			syslog(LOG_ERR, "Failed to get ip address for interface %s",
-+			syslog(LOG_DEBUG, "Failed to get ip address for interface %s",
- 				ext_if_name);
- 			ext_ip_addr[0] = '\0';
- 		} else if (addr_is_reserved(&addr)) {
 @@ -491,7 +491,7 @@ AddPortMapping(struct upnphttp * h, cons
  		}
  		else
