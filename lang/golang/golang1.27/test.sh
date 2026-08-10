@@ -6,7 +6,7 @@ case "$1" in
 	golang*doc|golang*misc|golang*src|golang*tests) exit ;;
 esac
 
-cat <<'EOF' > hello.go
+cat <<EOF > hello.go
 package main
 
 import "fmt"
