@@ -19,14 +19,16 @@ include $(INCLUDE_DIR)/package.mk
 # Upstream ships a plain Makefile that builds only a test binary, so the
 # shared object is built here -- and given a soname, since a bare libdht.so
 # leaves no way to express an ABI break. jech/dht offers no ABI guarantee of
-# its own, so 0 is a packaged ABI epoch: bump it if the exported surface
-# changes.
+# its own, so this is a packaged ABI epoch: bump PKG_ABI_VERSION if the
+# exported surface changes.
+PKG_ABI_VERSION:=0
+
 define Package/libdht
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=Kademlia Distributed Hash Table (DHT) library
   DEPENDS:= +USE_GLIBC:libcrypt-compat
-  ABI_VERSION:=0
+  ABI_VERSION:=$(PKG_ABI_VERSION)
 endef
 
 define Build/InstallDev
@@ -37,15 +39,15 @@ endef
 
 define Package/libdht/install
 	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_BUILD_DIR)/libdht.so.0 $(1)/usr/lib/
+	$(CP) $(PKG_BUILD_DIR)/libdht.so.$(PKG_ABI_VERSION) $(1)/usr/lib/
 endef
 
 define Build/Compile
 	$(TARGET_CC) $(FPIC) $(TARGET_CFLAGS) $(TARGET_CPPFLAGS) -Wall \
 		-c -o $(PKG_BUILD_DIR)/dht.o $(PKG_BUILD_DIR)/dht.c
-	$(TARGET_CC) $(TARGET_LDFLAGS) -shared -Wl,-soname,libdht.so.0 \
-		-o $(PKG_BUILD_DIR)/libdht.so.0 $(PKG_BUILD_DIR)/dht.o -lcrypt
-	ln -sf libdht.so.0 $(PKG_BUILD_DIR)/libdht.so
+	$(TARGET_CC) $(TARGET_LDFLAGS) -shared -Wl,-soname,libdht.so.$(PKG_ABI_VERSION) \
+		-o $(PKG_BUILD_DIR)/libdht.so.$(PKG_ABI_VERSION) $(PKG_BUILD_DIR)/dht.o -lcrypt
+	ln -sf libdht.so.$(PKG_ABI_VERSION) $(PKG_BUILD_DIR)/libdht.so
 endef
 
 $(eval $(call BuildPackage,libdht))
