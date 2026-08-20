@@ -24,7 +24,7 @@ dns:
   refuse_any: true
   upstream_dns:
     - https://cloudflare-dns.com/dns-query
-    - https://doh.opendns.com/dns-query
+    - https://doh.umbrella.com/dns-query
     - https://dns.google/dns-query
   upstream_dns_file: ""
   bootstrap_dns:
