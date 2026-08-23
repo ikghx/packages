@@ -10,7 +10,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=cups
 PKG_VERSION:=2.3.6
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/apple/cups/tar.gz/v$(PKG_VERSION)?
@@ -116,21 +116,6 @@ CONFIGURE_ARGS+= \
 	--disable-cdsassl \
 	--disable-ssl \
 	--disable-gssapi
-
-define Build/Compile
-	$(MAKE) -C $(PKG_BUILD_DIR) \
-		CHOWN="true" \
-		CHGRP="true" \
-		all
-endef
-
-define Build/Install
-	$(MAKE) -C $(PKG_BUILD_DIR) \
-		CHOWN="true" \
-		CHGRP="true" \
-		BUILDROOT="$(PKG_INSTALL_DIR)" \
-		install
-endef
 
 define Package/cups/install
 	$(INSTALL_DIR) $(1)/etc/cups

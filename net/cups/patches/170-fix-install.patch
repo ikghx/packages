@@ -1,0 +1,15 @@
+--- a/conf/Makefile
++++ b/conf/Makefile
+@@ -75,10 +75,10 @@ install-data:
+ 	$(INSTALL_DIR) -m 755 $(DATADIR)/mime
+ 	for file in $(REPLACE); do \
+ 		if test -r $(DATADIR)/mime/$$file ; then \
+-			$(MV) $(DATADIR)/mime/$$file $(DATADIR)/mime/$$file.O ; \
++			$(MV) -f $(DATADIR)/mime/$$file $(DATADIR)/mime/$$file.O ; \
+ 		fi ; \
+ 		if test -r $(SERVERROOT)/$$file ; then \
+-			$(MV) $(SERVERROOT)/$$file $(DATADIR)/mime/$$file.O ; \
++			$(MV) -f $(SERVERROOT)/$$file $(DATADIR)/mime/$$file.O ; \
+ 		fi ; \
+ 		$(INSTALL_DATA) $$file $(DATADIR)/mime ; \
+ 	done
