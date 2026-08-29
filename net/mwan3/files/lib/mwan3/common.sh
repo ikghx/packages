@@ -187,13 +187,11 @@ mwan3_init()
 	# remove unsupported flags, expiry and source based routing modifiers
 	config_get_bool source_routing globals source_routing 0
 	[ $source_routing -eq 1 ] && unset source_routing
-	route_modifiers="s/offload//; s/dead //; s/dead$//;"
-	route_modifiers="$route_modifiers s/linkdown //; s/linkdown$//;"
+	route_modifiers="s/offload//; s/ dead / /; s/ dead$/ /;"
+	route_modifiers="$route_modifiers s/ linkdown / /; s/ linkdown$/ /;"
 	route_modifiers="$route_modifiers s/expires [0-9]\+sec//;"
 	route_modifiers="$route_modifiers s/error [0-9]\+//;"
-	MWAN3_ROUTE_LINE_EXP="$route_modifiers"
-	MWAN3_ROUTE_LINE_EXP="$MWAN3_ROUTE_LINE_EXP \
-		${source_routing:+s/default\(.*\) from [^ ]*/default\1/;} p"
+	MWAN3_ROUTE_LINE_EXP="$route_modifiers ${source_routing:+s/default\(.*\) from [^ ]*/default\1/;} p"
 
 	# mark mask constants
 	bitcnt=$(mwan3_count_one_bits MMX_MASK)
