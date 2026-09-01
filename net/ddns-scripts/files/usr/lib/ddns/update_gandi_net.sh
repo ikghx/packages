@@ -9,21 +9,9 @@ local __ENDPOINT="https://api.gandi.net/v5/livedns"
 local __STATUS
 
 [ -z "$username" ] && write_log 14 "Service section not configured correctly! Missing subdomain as 'username'"
-[ -z "$password" ] && write_log 14 "Service section not configured correctly! Missing API Key as 'password'"
+[ -z "$password" ] && write_log 14 "Service section not configured correctly! Missing PAT as 'password'"
 
 [ $use_ipv6 -ne 0 ] && __RRTYPE="AAAA" || __RRTYPE="A"
-
-local _len
-local _auth
-_len=${#password}
-if [ "$_len" -eq "24" ]; then
-	_auth="Authorization: Apikey "
-elif [ "$_len" -eq "40" ]; then
-	_auth="Authorization: Bearer "
-else
-	write_log 14 "Password wasn't length 24 or 40, cannot determine type"
-	return 1
-fi;
 
 # Construct JSON payload
 json_init
@@ -34,13 +22,13 @@ json_close_array
 
 # Log the curl command
 write_log 7 "curl -s -X PUT \"$__ENDPOINT/domains/$domain/records/$username/$__RRTYPE\" \
-	-H \"$_auth $password\" \
+	-H \"Authorization: Bearer $password\" \
 	-H \"Content-Type: application/json\" \
 	-d \"$(json_dump)\" \
 	--connect-timeout 30"
 
 __STATUS=$(curl -s -X PUT "$__ENDPOINT/domains/$domain/records/$username/$__RRTYPE" \
-	-H "$_auth $password" \
+	-H "Authorization: Bearer $password" \
 	-H "Content-Type: application/json" \
 	-d "$(json_dump)" \
 	--connect-timeout 30 \
