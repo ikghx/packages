@@ -9,7 +9,7 @@ PKG_VERSION:=2.12.2
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/apernet/hysteria/tar.gz/app/v$(PKG_VERSION)?
+PKG_SOURCE_URL:=https://codeload.github.com/HyNetworks/hysteria/tar.gz/app/v$(PKG_VERSION)?
 PKG_HASH:=8db04a112e73685a1e5916d5d4d3df3ed897dbabc3e639fda4880b7ca9a7d18e
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-app-v$(PKG_VERSION)
 
@@ -21,7 +21,7 @@ PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_FLAGS:=no-mips16
 
-GO_PKG:=github.com/apernet/hysteria
+GO_PKG:=github.com/HyNetworks/hysteria
 GO_PKG_BUILD_PKG:=$(GO_PKG)/app/v2
 GO_PKG_LDFLAGS_X = \
 	$(GO_PKG)/app/v2/cmd.appVersion=v$(PKG_VERSION) \
@@ -37,7 +37,7 @@ define Package/hysteria
   CATEGORY:=Network
   SUBMENU:=Web Servers/Proxies
   TITLE:=A feature-packed network utility optimized for networks of poor quality
-  URL:=https://github.com/apernet/hysteria
+  URL:=https://github.com/HyNetworks/hysteria
   DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle
 endef
 
