@@ -57,7 +57,7 @@ define Download/openlist-web
 	URL:=https://github.com/OpenListTeam/OpenList-Frontend/releases/download/v$(WEB_VERSION)/
 	URL_FILE:=$(WEB_FILE)
 	FILE:=$(WEB_FILE)
-	HASH:=fa613bd495cd7708c22a3c511145e5a517c920eb6067513c74762ca15dfa0f3a
+	HASH:=eb620950a07dd081c5470a91361bde018ffd6a3cefb5b9a11b0f24f07960b444
 endef
 
 define Build/Prepare
