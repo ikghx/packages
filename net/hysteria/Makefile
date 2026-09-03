@@ -21,7 +21,7 @@ PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_FLAGS:=no-mips16
 
-GO_PKG:=github.com/HyNetworks/hysteria
+GO_PKG:=github.com/apernet/hysteria
 GO_PKG_BUILD_PKG:=$(GO_PKG)/app/v2
 GO_PKG_LDFLAGS_X = \
 	$(GO_PKG)/app/v2/cmd.appVersion=v$(PKG_VERSION) \
