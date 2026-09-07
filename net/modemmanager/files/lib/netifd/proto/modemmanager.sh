@@ -287,7 +287,7 @@ proto_modemmanager_init_config() {
 	proto_config_add_string init_iptype
 	proto_config_add_string 'init_allowedauth:list(string)'
 	proto_config_add_string init_password
-	proto_config_add_string init_username
+	proto_config_add_string init_user
 	proto_config_add_string init_apn
 	proto_config_add_defaults
 }
@@ -307,11 +307,10 @@ modemmanager_set_allowed_mode() {
 	local allowedmode="$3"
 
 	echo "setting allowed mode to '${allowedmode}'"
-	mmcli --modem="${device}" \
-		--set-allowed-modes="${allowedmode}" \
-		>/dev/null 2>&1 || {
-			echo "Ignoring failure to set allowed modes for device '${device}': modem may not support this operation"
-			return
+	mmcli --modem="${device}" --set-allowed-modes="${allowedmode}" || {
+		proto_notify_error "${interface}" MM_INVALID_ALLOWED_MODES_LIST
+		proto_block_restart "${interface}"
+		return 1
 	}
 }
 
@@ -445,7 +444,7 @@ modemmanager_check_state_locked() {
 	}
 
 	# Give the modem time to change to the initializing state after
-	# unlocking
+	# unlocking 
 	sleep 1
 
 	return 0
@@ -517,10 +516,10 @@ modemmanager_set_preferred_mode() {
 	echo "setting preferred mode to '${preferredmode}' (${allowedmode})"
 	mmcli --modem="${device}" \
 		--set-preferred-mode="${preferredmode}" \
-		--set-allowed-modes="${allowedmode}" \
-		>/dev/null 2>&1 || {
-			echo "Ignoring failure to set preferred mode for device '${device}: modem may not support this operation"
-			return
+		--set-allowed-modes="${allowedmode}" || {
+		proto_notify_error "${interface}" MM_FAILED_SETTING_PREFERRED_MODE
+		proto_block_restart "${interface}"
+		return 1
 	}
 }
 
@@ -539,10 +538,10 @@ modemmanager_init_epsbearer() {
 
 	mmcli --modem="${device}" \
 		--timeout "${timeout}" \
-		--3gpp-set-initial-eps-bearer-settings="${connectargs}" \
-		>/dev/null 2>&1	|| {
-			echo "Ignoring failure to set initial EPS bearer settings for device '${device}': modem may not support this operation"
-			return
+		--3gpp-set-initial-eps-bearer-settings="${connectargs}" || {
+		proto_notify_error "${interface}" MM_INIT_EPS_BEARER_SET_FAILED
+		proto_block_restart "${interface}"
+		return 1
 	}
 
 	# Wait here so that the modem can set the init EPS bearer
@@ -589,10 +588,10 @@ proto_modemmanager_setup() {
 
 	local init_epsbearer
 	local init_iptype init_allowedauth
-	local init_password init_username init_apn
+	local init_password init_user init_apn
 	json_get_vars init_epsbearer
 	json_get_vars init_iptype init_allowedauth
-	json_get_vars init_password init_username init_apn
+	json_get_vars init_password init_user init_apn
 
 	local address prefix gateway mtu dns1 dns2
 
@@ -624,7 +623,7 @@ proto_modemmanager_setup() {
 	# always cleanup before attempting a new connection, just in case
 	modemmanager_cleanup_connection "${modemstatus}"
 
-	mmcli --modem="${device}" --timeout 120 --enable || {
+	mmcli --modem="${device}" --timeout "${timeout}" --enable || {
 		proto_notify_error "${interface}" MM_MODEM_DISABLED
 		return 1
 	}
@@ -698,6 +697,8 @@ proto_modemmanager_setup() {
 					"$interface" "${allowedmode}" "${preferredmode}"
 				;;
 		esac
+		# check error for allowed_mode and preferred_mode function call
+		[ "$?" -ne "0" ] && return 1
 	fi
 
 	if [ -z "${plmn}" ]; then
