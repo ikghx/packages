@@ -133,7 +133,7 @@ start_service() {
 	fi
 
 	# Make sure all required directories exists and have correct rights
-	for i in "$logdir" "$sockdir"; do
+	for i in "$logdir" "$sockdir" "$datadir"; do
 		opts="-m 0750"
 		if ! [ -e "$i" ]; then
 			# $sockdir needs to be accessible for clients

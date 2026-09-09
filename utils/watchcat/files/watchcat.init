@@ -26,13 +26,14 @@ append_string() {
 time_to_seconds() {
 	time=$1
 
-	{ [ "$time" -ge 1 ] 2> /dev/null && seconds="$time"; } ||
-		{ [ "${time%s}" -ge 1 ] 2> /dev/null && seconds="${time%s}"; } ||
-		{ [ "${time%m}" -ge 1 ] 2> /dev/null && seconds=$((${time%m} * 60)); } ||
-		{ [ "${time%h}" -ge 1 ] 2> /dev/null && seconds=$((${time%h} * 3600)); } ||
-		{ [ "${time%d}" -ge 1 ] 2> /dev/null && seconds=$((${time%d} * 86400)); }
+	{ [ "$time" -ge 1 ] 2>/dev/null && seconds="$time"; } ||
+		{ [ "${time%s}" -ge 1 ] 2>/dev/null && seconds="${time%s}"; } ||
+		{ [ "${time%m}" -ge 1 ] 2>/dev/null && seconds=$((${time%m} * 60)); } ||
+		{ [ "${time%h}" -ge 1 ] 2>/dev/null && seconds=$((${time%h} * 3600)); } ||
+		{ [ "${time%d}" -ge 1 ] 2>/dev/null && seconds=$((${time%d} * 86400)); }
 
-	echo "$seconds"
+	# shellcheck disable=SC2086
+	echo $seconds
 	unset seconds
 	unset time
 }
@@ -147,6 +148,11 @@ config_watchcat() {
 }
 
 start_service() {
+	# procd expects $1 to be a specific instance
+	if [ "$2" = "ifup-any" ]; then
+		logger -p daemon.notice -t "watchcat[$$]" "Restarting due to an interface up with any unresolved interface."
+	fi
+
 	config_load watchcat
 	config_foreach config_watchcat watchcat
 }
@@ -190,6 +196,7 @@ service_triggers() {
 
 	if [ "$has_failed_interface_resolve" = "true" ]; then
 		# PROCD_RELOAD_DELAY is defined in /lib/functions/procd.sh, sourced by /etc/rc.common on the live device
-		procd_add_raw_trigger "interface.*.up" "$PROCD_RELOAD_DELAY" "/etc/init.d/watchcat" "restart"
+		# procd expects parameter after script action (here, restart) to be a specific instance
+		procd_add_raw_trigger "interface.*.up" "$PROCD_RELOAD_DELAY" "/etc/init.d/watchcat" "restart" "" "ifup-any"
 	fi
 }

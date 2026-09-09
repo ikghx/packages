@@ -31,7 +31,7 @@ CONF_DIR:=/etc/mysql
 PLUGIN_DIR:=/usr/lib/mariadb/plugin
 SHARE_DIR:=/usr/share/mariadb
 
-MARIADB_SOCKET=/var/run/mysql/mysql.sock
+MARIADB_SOCKET=/var/run/mysqld/mysqld.sock
 
 MARIADB_DISABLE_ENGINES := \
 	columnstore \
@@ -278,6 +278,7 @@ endef
 
 define Package/mariadb-server-base/conffiles
 $(CONF_DIR)/my.cnf
+$(CONF_DIR)/conf.d/40-mysql-clients.cnf
 $(CONF_DIR)/conf.d/50-server.cnf
 $(CONF_DIR)/conf.d/60-galera.cnf
 /etc/config/mysqld
@@ -338,7 +339,7 @@ CMAKE_OPTIONS += \
 	-DCONNECT_WITH_ODBC=NO \
 	-DDISABLE_SHARED=NO \
 	-DDEFAULT_CHARSET=utf8mb4 \
-	-DDEFAULT_COLLATION=utf8mb4_general_ci \
+	-DDEFAULT_COLLATION=utf8mb4_unicode_ci \
 	-DENABLED_PROFILING=OFF \
 	-DENABLE_STATIC_LIBS=OFF \
 	-DINSTALL_DOCDIR=share/doc/mariadb \
@@ -487,6 +488,7 @@ define Package/mariadb-server-base/install
 	$(INSTALL_BIN) files/mysqld.init $(1)/etc/init.d/mysqld
 	$(SED) '/^[a-z]/s/^/#/' $(PKG_INSTALL_DIR)$(SHARE_DIR)/wsrep.cnf
 	$(INSTALL_DATA) $(PKG_INSTALL_DIR)$(SHARE_DIR)/wsrep.cnf $(1)$(CONF_DIR)/conf.d/60-galera.cnf
+	$(INSTALL_DATA) conf/40-mysql-clients.cnf $(1)$(CONF_DIR)/conf.d
 	$(INSTALL_DATA) conf/50-server.cnf $(1)$(CONF_DIR)/conf.d
 	$(INSTALL_DATA) conf/my.cnf $(1)$(CONF_DIR)
 	$(INSTALL_CONF) files/mysqld.config $(1)/etc/config/mysqld
