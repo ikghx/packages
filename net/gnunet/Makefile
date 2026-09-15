@@ -42,7 +42,7 @@ endef
 define Package/gnunet
 $(call Package/gnunet/Default)
   TITLE+= - a peer-to-peer framework focusing on security
-  DEPENDS:=+libatomic +libgcrypt +libgmp +libgpg-error +libidn2 +libltdl \
+  DEPENDS:=$(ATOMIC64_DEPENDS) +libgcrypt +libgmp +libgpg-error +libidn2 +libltdl \
            +libsodium +libunistring +librt +zlib $(ICONV_DEPENDS) $(INTL_DEPENDS)
   USERID:=gnunet=958:gnunet=958
   MENU:=1
@@ -54,7 +54,7 @@ define Package/gnunet/description
  GNUnet is a peer-to-peer framework focusing on security. The first and
  primary application for GNUnet is anonymous file-sharing.  GNUnet is
  currently developed by a worldwide group of independent free software
- developers.  GNUnet is a GNU package (http://www.gnu.org/).
+ developers.  GNUnet is a GNU package (https://www.gnu.org/).
 
  This is an ALPHA release.  There are known and significant bugs as
  well as many missing features in this release.
@@ -401,5 +401,5 @@ $(eval $(call BuildComponent,gns-sqlite,libsqlite3 gns plugins,))
 $(eval $(call BuildComponent,peerstore-sqlite,libsqlite3 peerstore plugin,))
 $(eval $(call BuildComponent,communicator-tcp,tng transport TCP communicator,y))
 $(eval $(call BuildComponent,communicator-udp,tng transport UDP communicator,y))
-$(eval $(call BuildComponent,utils,administration utililties,))
+$(eval $(call BuildComponent,utils,administration utilities,))
 $(eval $(call BuildComponent,vpn,vpn components,y))

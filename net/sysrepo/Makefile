@@ -9,13 +9,13 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sysrepo
 PKG_VERSION:=3.7.11
-PKG_RELEASE:=1
+PKG_RELEASE:=3
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/sysrepo/sysrepo/tar.gz/v$(PKG_VERSION)?
 PKG_HASH:=c897206797427c79c4646baa1d8abe539bbc70af884ac869e827ff9f09d7fcc8
 
-PKG_MAINTAINER:=
+PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
 
@@ -29,7 +29,7 @@ define Package/libsysrepo
   CATEGORY:=Libraries
   TITLE:=YANG-based data store library
   URL:=https://www.sysrepo.org/
-  DEPENDS:=+libyang +libatomic +libprotobuf-c +libev +libredblack +librt +libpthread
+  DEPENDS:=+libyang $(ATOMIC64_DEPENDS) +libprotobuf-c +libev +librt +libpthread
 endef
 
 define Package/sysrepo
@@ -60,6 +60,8 @@ define Package/sysrepo/description
 Sysrepo is an YANG-based configuration and operational state data store for Unix/Linux applications.
 endef
 
+
+TARGET_LDFLAGS += -Wl,--as-needed
 
 CMAKE_OPTIONS += \
 	-DFORCE_WSL=TRUE \

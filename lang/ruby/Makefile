@@ -208,6 +208,7 @@ $(call Package/ruby/Default)
   CATEGORY:=Libraries
   TITLE+= (shared library)
   DEPENDS+= +libpthread +librt +libgmp +zlib
+  DEPENDS+= $(ATOMIC64_DEPENDS)
   ABI_VERSION:=$(PKG_ABI_VERSION)
 endef
 define Package/libruby/install

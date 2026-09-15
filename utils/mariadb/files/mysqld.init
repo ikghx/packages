@@ -13,9 +13,8 @@ NAME=mysqld
 LOGGER="/usr/bin/logger -p user.err -s -t $NAME --"
 [ -x "$LOGGER" ] || LOGGER="echo"
 
-MYSQLD="/usr/bin/$NAME"
+MYSQLD="/usr/bin/mariadbd"
 
-pidfile=""
 
 # mysqladmin likes to read /root/.my.cnf which could cause issues.
 export HOME="/etc/mysql"
@@ -27,11 +26,20 @@ mysqld_get_param() {
 	"$MYSQLD" --help --verbose | sed -n 's|^'"$1"'[[:blank:]]\+||p'
 }
 
+mariadb_get_pidfile() {
+	if [ -z "$pidfile" ]; then
+		pidfile="$(mysqld_get_param pid-file)"
+	fi
+	if [ -z "$pidfile" ]; then
+		sockdir="$(dirname "$(mysqld_get_param socket)")"
+		pidfile=$sockdir/mariadb.pid
+	fi
+}
+
 # Send kill signal to MariaDB process
 #
 # Usage: boolean mysqld_kill signal
 mysql_kill() {
-	[ -n "$pidfile" ] || pidfile="$(mysqld_get_param pid-file)"
 	[ -f "$pidfile" ] || return 1
 	pid="$(cat "$pidfile")"
 	[ -n "$pid" ] || return 2
@@ -42,14 +50,14 @@ mysql_kill() {
 #
 # Supported modes are 'check_alive' and 'check_dead'.
 # Both check for pidfile and whether the specified process is running and is
-# indeed mysqld. We could use mysqladmin for the check, but to be able to do
+# indeed mariadbd. We could use mysqladmin for the check, but to be able to do
 # so, mysqladmin requires access to the database, which sounds like overkill
 # and potential security issue.
 #
 # Usage: boolean mysqld_status [check_alive|check_dead]
 mysqld_status() {
+	mariadb_get_pidfile
 	ps_alive=0
-	pidfile="$(mysqld_get_param pid-file)"
 	if [ -f "$pidfile" ] && mysql_kill -0 2> /dev/null && \
 	   [ "$(readlink "/proc/$(cat "$pidfile")/exe")" = "$MYSQLD" ]; then
 		ps_alive=1
@@ -67,7 +75,7 @@ mysqld_status() {
 start_service() {
 	conf=/etc/mysql/my.cnf
 	logdir=/var/log/mysql
-	version="$(mysqld --version | sed -n 's|.*Ver[[:blank:]]*\([0-9.]*\)-.*|\1|p')"
+	version="$($MYSQLD --version | sed -n 's|.*Ver[[:blank:]]*\([0-9.]*\)-.*|\1|p')"
 
 	# Few basic checks
 	if [ ! -x "$MYSQLD" ]; then
@@ -118,12 +126,12 @@ start_service() {
 		# shellcheck disable=SC2154
 		if [ "$init_db" -gt 0 ]; then
 			# shellcheck disable=SC2154
-			mysql_install_db $args --skip-name-resolve --skip-test-db --datadir="$datadir" || exit 1
+			mariadb-install-db $args --skip-name-resolve --skip-test-db --datadir="$datadir" || exit 1
 			echo "$version" > "$datadir"/.version
 			chown -Rh "$my_user:$my_group" "$datadir"
 		else
 			$LOGGER "Cannot detect privileges table. You might need to run"
-			$LOGGER "'mysql_install_db \"$args\"'"
+			$LOGGER "'mariadb-install-db \"$args\"'"
 			$LOGGER "to initialize the system tables."
 			$LOGGER "Then hand it ower to MariaDB user"
 			# shellcheck disable=SC2154
@@ -146,8 +154,17 @@ start_service() {
 	done
 
 	# Migration from old versions
+	file_version=''
+	for f in mariadb_upgrade_info mysql_upgrade_info .version; do
+		if [ -f "$datadir"/$f ]; then
+			file_version=$(cat "$datadir/$f")
+			# removing trailing suffix
+			file_version=${file_version%%-*}
+			break
+		fi
+	done
 	# shellcheck disable=SC2154
-	if [ "$(cat "$datadir"/.version 2> /dev/null)" \!= "$version" ] && [ "$autoupgrade" -gt 0 ]; then
+	if [ "${file_version}" != "$version" ] && [ "$autoupgrade" -gt 0 ]; then
 		# Check for correct owner
 		local owner="$(stat --format %U:%G "$datadir" 2> /dev/null)"
 		if [ -n "$owner" ] && [ "$owner" != "$my_user:$my_group" ]; then
@@ -155,7 +172,7 @@ start_service() {
 		fi
 
 		# Start upgrade instance without credentials
-		sudo -u "$my_user" mysqld --skip-networking --skip-grant-tables --socket=/tmp/mysql_upgrade.sock &
+		sudo -u "$my_user" "$MYSQLD" --skip-networking --skip-grant-tables --socket=/tmp/mysql_upgrade.sock &
 		PID="$!"
 		i=0
 		# Wait for upgrade instance of db to start
@@ -168,18 +185,17 @@ start_service() {
 			exit 1
 		}
 		# Upgrade the database
-		mysql_upgrade --upgrade-system-tables --socket=/tmp/mysql_upgrade.sock
-		echo "$version" > "$datadir"/.version
+		mariadb-upgrade --upgrade-system-tables --socket=/tmp/mysql_upgrade.sock
 		# Stop the upgrade instance
 		kill "$PID"
 		i=0
-		while [ "$i" -lt 60 ] && grep -q mysql "/proc/$PID/cmdline"; do
+		while [ "$i" -lt 60 ] && grep -q "$MYSQLD" "/proc/$PID/cmdline"; do
 			sleep 1
 			[ "$i" -lt 30 ] || kill "$PID"
 			i="$((i + 1))"
 		done
 		# Use force
-		if grep -q mysql "/proc/$PID/cmdline"; then
+		if grep -q "$MYSQLD" "/proc/$PID/cmdline"; then
 			kill -9 "$PID"
 		fi
 	fi
@@ -187,8 +203,9 @@ start_service() {
 	# Start daemon
 	procd_open_instance
 
+	mariadb_get_pidfile
 	# shellcheck disable=SC2154 disable=SC2086
-	procd_set_param command "$MYSQLD" $options
+	procd_set_param command "$MYSQLD" $options --pid-file="${pidfile}"
 	procd_set_param respawn "${respawn_threshold:-3600}" "${respawn_timeout:-5}" "${respawn_retry:-5}"
 	# run as user
 	procd_set_param user "$my_user"

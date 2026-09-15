@@ -15,6 +15,8 @@ PKG_LICENSE_FILES:=BSD-3Clause COPYING LICENSE-pffft
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
 
+TARGET_LDFLAGS += -Wl,--as-needed
+
 CMAKE_OPTIONS +=\
 	-DALSOFT_UTILS=OFF \
 	-DALSOFT_EXAMPLES=OFF \
@@ -25,7 +27,7 @@ define Package/openal-soft
   SECTION:=sound
   CATEGORY:=Sound
   TITLE:=OpenAL Soft
-  DEPENDS:=+libatomic +libstdcpp
+  DEPENDS:=+libstdcpp
   URL:=https://openal-soft.org
 endef
 

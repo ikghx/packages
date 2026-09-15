@@ -215,12 +215,20 @@ for __key in $__RECORD_KEYS; do
 
 	write_log 7 "netcup DDNS: examining record id=$__rec_id '$__rec_name' [$__rec_type] = '$__rec_destination'"
 
-	if [ "$__rec_type" = "$__RRTYPE" ] \
-	&& [ "$__rec_name" = "$__REC_HOSTNAME" ] \
-	&& [ "$__rec_destination" = "$REGISTERED_IP" ]; then
-		__MATCH_ID="$__rec_id"
-		write_log 7 "netcup DDNS: matched record id=$__MATCH_ID"
-		break
+	if [ "$__rec_type" = "$__RRTYPE" ]; then
+		# compare hostname only if type always matches
+		if [ "$__rec_name" = "$__REC_HOSTNAME" ]; then
+			# compare ip's
+			if [ "$__rec_destination" != "$REGISTERED_IP" ]; then
+				__MATCH_ID="$__rec_id"
+				write_log 7 "netcup DDNS: need update for record id='$__MATCH_ID'"
+				break
+			else
+				json_cleanup
+				write_log 6 "netcup DDNS: no update required for host '$__REC_HOSTNAME'"
+				return 0
+			fi
+		fi
 	fi
 done
 

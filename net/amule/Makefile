@@ -31,8 +31,7 @@ define Package/amule
   TITLE:=A multi-platform eMule-like ed2k client
   URL:=https://github.com/amule-project/amule/
   DEPENDS:=+libpng +libpthread +libncurses +libreadline +libwxbase +libbfd \
-	+libcryptopp +libcurl +antileech +zlib +glib2 \
-	+(armeb||arm||powerpc||mips||mipsel):libatomic
+	+libcryptopp +libcurl +antileech +zlib +glib2 $(ATOMIC64_DEPENDS)
   USERID:=amule=4662:amule=4662
 endef
 

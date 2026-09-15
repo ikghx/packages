@@ -35,8 +35,7 @@ define Package/libtorrent-rasterbar
 	$(call Package/libtorrent-rasterbar/Default)
 	SECTION:=libs
 	CATEGORY:=Libraries
-	DEPENDS:=+boost +libgcc +libopenssl +libstdcpp \
-	+(armeb||arm||powerpc||mips||mipsel):libatomic
+	DEPENDS:=+boost +libgcc +libopenssl +libstdcpp $(ATOMIC64_DEPENDS)
 endef
 
 define Package/libtorrent-rasterbar/description

@@ -38,7 +38,6 @@ define Package/knot/Default
 	CATEGORY:=Network
 	SUBMENU:=IP Addresses and Names
 	TITLE:=Knot DNS
-	DEPENDS=+libatomic
 	URL:=https://www.knot-dns.cz
 	VERSION:=${PKG_VERSION}-r${PKG_RELEASE}
 endef

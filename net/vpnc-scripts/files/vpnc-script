@@ -64,6 +64,9 @@ do_connect() {
 		MTU=1412
 	fi
 
+	# from OpenConnect 9.xx set_tun_mtu is removed from source code
+	ip link set dev "$TUNDEV" mtu "$MTU"
+
 	proto_add_ipv4_address "$INTERNAL_IP4_ADDRESS" 32 "" "$INTERNAL_IP4_ADDRESS"
 
 	if [ -n "$INTERNAL_IP4_NETMASKLEN" ]; then
