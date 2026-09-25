@@ -22,9 +22,12 @@ include $(INCLUDE_DIR)/nls.mk
 
 # tvheadend needs iconv //TRANSLIT to build recording file names, which musl
 # does not implement, so always build against GNU libiconv.
-ICONV_FULL_PREFIX:=$(STAGING_DIR)/usr/lib/libiconv-full
-TARGET_CFLAGS += -I$(ICONV_FULL_PREFIX)/include
-TARGET_LDFLAGS += -L$(ICONV_FULL_PREFIX)/lib -Wl,-rpath-link=$(ICONV_FULL_PREFIX)/lib
+# With BUILD_NLS set, nls.mk already adds these for the same prefix.
+ifneq ($(CONFIG_BUILD_NLS),y)
+	ICONV_FULL_PREFIX:=$(STAGING_DIR)/usr/lib/libiconv-full
+	TARGET_CFLAGS += -I$(ICONV_FULL_PREFIX)/include
+	TARGET_LDFLAGS += -L$(ICONV_FULL_PREFIX)/lib -Wl,-rpath-link=$(ICONV_FULL_PREFIX)/lib
+endif
 
 define Package/tvheadend
   SECTION:=multimedia
@@ -268,8 +271,8 @@ define Package/tvheadend/install
 	$(INSTALL_BIN) ./files/tvheadend.init $(1)/etc/init.d/tvheadend
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/tvheadend.config $(1)/etc/config/tvheadend
-	$(INSTALL_DIR) $(1)/etc/hotplug.d/usb
-	$(INSTALL_BIN) ./files/dvb.hotplug $(1)/etc/hotplug.d/usb/50-dvb
+	$(INSTALL_DIR) $(1)/etc/hotplug.d/dvb
+	$(INSTALL_BIN) ./files/dvb.hotplug $(1)/etc/hotplug.d/dvb/50-dvb
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/build.linux/tvheadend $(1)/usr/bin/
 endef
