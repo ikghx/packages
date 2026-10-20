@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nginx
-PKG_VERSION:=1.30.4
+PKG_VERSION:=1.30.5
 PKG_RELEASE:=1
 
 PKG_SOURCE:=nginx-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://nginx.org/download/
-PKG_HASH:=4261dc90e9e47c1c4041276e9aaa3d48ebe2e664f728e14fa95ae6c67d57a08b
+PKG_HASH:=6c20565aa2325cb82216ae804f4a4ff1875179014759a381c42ddc8e11c4906d
 
 PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de> \
 				Christian Marangi <ansuelsmth@gmail.com>
@@ -236,7 +236,7 @@ endef
 define Package/nginx-mod-lua-resty-lrucache
   $(call Package/nginx/default)
   TITLE:=Nginx Lua OpenResty lrucache module
-  DEPENDS:=@HAS_LUAJIT_ARCH +luajit2
+  DEPENDS:=@HAS_LUAJIT_ARCH +PACKAGE_nginx-mod-lua-resty-lrucache:luajit2
 endef
 
 define Package/nginx-mod-lua-resty-core

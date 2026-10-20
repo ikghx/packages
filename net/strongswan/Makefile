@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=strongswan
 PKG_VERSION:=6.0.7
-PKG_RELEASE:=8
+PKG_RELEASE:=10
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=https://download.strongswan.org/ https://download2.strongswan.org/
@@ -150,6 +150,7 @@ $(call Package/strongswan/Default)
   DEPENDS:= strongswan \
 	+strongswan-charon \
 	+strongswan-charon-cmd \
+	+strongswan-ipsec \
 	+strongswan-mod-addrblock \
 	+strongswan-mod-aes \
 	+strongswan-mod-agent \
@@ -215,6 +216,7 @@ $(call Package/strongswan/Default)
 	+strongswan-mod-sql \
 	+strongswan-mod-sqlite \
 	+strongswan-mod-sshkey \
+	+strongswan-mod-stroke \
 	+strongswan-mod-test-vectors \
 	+strongswan-mod-unity \
 	+strongswan-mod-updown \
@@ -232,9 +234,10 @@ endef
 
 define Package/strongswan-full/description
 $(call Package/strongswan/description/Default)
-  This meta-package contains dependencies for most strongSwan plugins. It uses
-  kernel-netlink, socket-default and the swanctl frontend instead of
-  kernel-libipsec, socket-dynamic and the legacy stroke frontend.
+ This meta-package contains dependencies for all of the strongswan plugins
+ except kernel-libipsec,
+ socket-dynamic and which are omitted in favor of the kernel-netlink and
+ socket-default plugins.
 endef
 
 
@@ -447,7 +450,7 @@ CONFIGURE_ARGS+= \
 	--enable-mgf1 \
 	--enable-mediation \
 	--with-systemdsystemunitdir=no \
-	--with-plugins-packaged-seperately=yes \
+	--with-plugins-packaged-separately=yes \
 	PYTHON="python3" \
 	$(if $(CONFIG_PACKAGE_strongswan-charon-cmd),--enable-cmd,--disable-cmd) \
 	$(if $(CONFIG_PACKAGE_strongswan-mod-gmpdh),--enable-gmpdh,) \
@@ -564,6 +567,10 @@ define Package/strongswan-swanctl/install
 	$(INSTALL_BIN) ./files/swanctl.init $(1)/etc/init.d/swanctl
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/ipsec.config $(1)/etc/config/ipsec
+
+	$(INSTALL_DIR) $(1)/usr/libexec/strongswan/
+	$(INSTALL_BIN) ./files/usr/libexec/strongswan/migrate-ipsec-to-swanctl \
+		$(1)/usr/libexec/strongswan/
 endef
 
 define Package/strongswan-gencerts/install

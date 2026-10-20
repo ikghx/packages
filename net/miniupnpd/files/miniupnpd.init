@@ -5,7 +5,7 @@ START=94
 STOP=15
 USE_PROCD=1
 PROG=/usr/sbin/miniupnpd
-[ -x "$(command -v fw4)" ] && FW="fw4" || FW="fw3"
+[ -x "$(command -v nft)" ] && FW="fw4" || FW="fw3"
 
 start_service() {
 	config_load "upnpd"
@@ -115,7 +115,7 @@ upnpd_generate_config() {
 		network_find_wan6 external_iface6 && network_get_device ifname6 "$external_iface6"
 	fi
 	if [ "$ifname" = "" ]; then
-		log "No external network interface found, not starting" daemon.err
+		log "No external network interface detected yet, not starting" daemon.err
 		return 1
 	fi
 	# Workaround for daemon bug with UPnP IGDv2 if IPv6 is not ready at start
@@ -136,7 +136,7 @@ upnpd_generate_config() {
 	10.* | 100.6[4-9].* | 100.[7-9][0-9].* | 100.1[0-1][0-9].* | 100.12[0-7].* | 172.1[6-9].* | \
 		172.2[0-9].* | 172.3[0-1].* | 192.0.0.[1-6] | 192.168.* | 198.1[89].*) extipv4private=1 ;;
 	esac
-	[ "$extipv4private" = "1" ] && log "Private/CGNAT-reserved external IPv4 detected ($extipv4)"
+	[ "$extipv4private" = "1" ] && log "Private/CGNAT-reserved external IPv4 detected"
 
 	{
 		echo "# Daemon"
@@ -197,7 +197,9 @@ upnpd_generate_config() {
 		[ "$ipv6_disable" = "0" ] && echo "ipv6_disable=no" || echo "ipv6_disable=yes"
 		local rejectport
 		for rejectport in $reject_ports; do
-			is_port_or_range "$rejectport" allowport0 && echo "deny $rejectport 0.0.0.0/0 $rejectport # Reject port $rejectport" ||
+			[ "$rejectport" = "0" ] && continue
+			is_port_or_range "$rejectport" allowport0 && echo "deny 1-65535 0.0.0.0/0 $rejectport # Reject internal port $rejectport" &&
+				echo "deny $rejectport 0.0.0.0/0 1-65535 # Reject external port $rejectport" ||
 				log "Invalid port or port range ($rejectport) in reject_ports ignored" daemon.warn
 		done
 		[ "$check_acl" = "1" ] && echo "# Access control list" && config_foreach upnpd_add_acl_entry acl_entry
@@ -252,9 +254,9 @@ upnpd_add_acl_entry() {
 	local cfg="$1"
 	local comment int_addr int_port ext_port descr_filter action
 	config_get comment "$cfg" comment "unspecified" # comment
-	config_get int_addr "$cfg" int_addr "0.0.0.0/0" # IPv4 or network and subnet mask (internal)
-	config_get int_port "$cfg" int_port "1-65535"   # internal port/range: x or x-y
-	config_get ext_port "$cfg" ext_port "1-65535"   # external port/range: x or x-y
+	config_get int_addr "$cfg" int_addr "0.0.0.0/0" # IPv4 address or address and netmask (internal)
+	config_get int_port "$cfg" int_port "1-65535"   # internal port or range: x or x-y
+	config_get ext_port "$cfg" ext_port "1-65535"   # external port or range: x or x-y
 	config_get descr_filter "$cfg" descr_filter     # description regex filter (must be built in)
 	config_get action "$cfg" action                 # accept/reject/disabled
 	! is_port_or_range "$int_port" allowport0 &&
