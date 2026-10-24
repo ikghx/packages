@@ -124,12 +124,8 @@ case "$script_type" in
 
 		[ -n "$ifconfig_local" ] && proto_add_ipv4_address "$ifconfig_local" "${ifconfig_netmask:-255.255.255.255}"
 
-		if [ -n "$trusted_ip" -a "$DEFAULTROUTE" = "1" ]; then
-			if route_path_for_target 4 "$trusted_ip" && ! server_route_exists 4 32 "$trusted_ip"; then
-				ip -4 route add $trusted_ip ${route_path_gateway:+via $route_path_gateway} ${route_path_dev:+dev $route_path_dev}
-				SERVER_ROUTE_IPV4_CLEANUP_CMD="ip -4 route del $trusted_ip ${route_path_gateway:+via $route_path_gateway} ${route_path_dev:+dev $route_path_dev}"
-			fi
-		fi
+		[ -n "$trusted_ip" ] && [ "$nohostroute" != "1" ] && \
+			proto_add_host_dependency "$INTERFACE" "$trusted_ip"
 
 		[ "$DEFAULTROUTE" = "1" ] && [ -n "$route_vpn_gateway" ] && proto_add_ipv4_route "0.0.0.0" 0 "$route_vpn_gateway"
 
@@ -154,12 +150,8 @@ case "$script_type" in
 				proto_add_ipv6_address "$v6addr" "$v6plen"
 			fi
 
-			if [ -n "$trusted_ip6" -a "$DEFAULTROUTE" = "1" ]; then
-				if route_path_for_target 6 "$trusted_ip6" && ! server_route_exists 6 128 "$trusted_ip6"; then
-					ip -6 route add $trusted_ip6 ${route_path_gateway:+via $route_path_gateway} ${route_path_dev:+dev $route_path_dev}
-					SERVER_ROUTE_IPV6_CLEANUP_CMD="ip -6 route del $trusted_ip6 ${route_path_gateway:+via $route_path_gateway} ${route_path_dev:+dev $route_path_dev}"
-				fi
-			fi
+			[ -n "$trusted_ip6" ] && [ "$nohostroute" != "1" ] && \
+				proto_add_host_dependency "$INTERFACE" "$trusted_ip6"
 
 			[ "$DEFAULTROUTE" = "1" ] && [ -n "$ifconfig_ipv6_remote" ] && proto_add_ipv6_route "::" 0 "$ifconfig_ipv6_remote"
 

@@ -32,7 +32,6 @@ define Package/librespeed-cli-rust
   TITLE:=Command line client for LibreSpeed (Rust)
   URL:=https://github.com/librespeed/speedtest-cli-rust
   DEPENDS:=$(RUST_ARCH_DEPENDS) +libopenssl
-  PROVIDES:=@librespeed-cli
   CONFLICTS:=librespeed-cli
   DEFAULT_VARIANT:=1
 endef

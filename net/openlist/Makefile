@@ -5,26 +5,27 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=openlist
-PKG_VERSION:=4.2.6
+PKG_VERSION:=4.2.7
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/OpenListTeam/OpenList/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=028694b14ba7368429774f33c1b7eb584b2bf6235fb7d72df371e528a5c6b04c
+PKG_HASH:=5d2201596a81e85146eb8aec4028f66aacff65945fef5936193cbd41fc7e68b5
 PKG_BUILD_DIR:=$(BUILD_DIR)/OpenList-$(PKG_VERSION)
 
 PKG_LICENSE:=AGPL-3.0-only
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=Tianling Shen <cnsztl@immortalwrt.org>
+PKG_CPE_ID:=cpe:/a:oplist:openlist
 
 PKG_BUILD_DEPENDS:=golang/host fuse
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_FLAGS:=no-mips16
 
 GO_PKG:=github.com/OpenListTeam/OpenList/v4
-GO_PKG_LDFLAGS_X = \
+GO_PKG_LDFLAGS_X:= \
 	$(GO_PKG)/internal/conf.Version=$(PKG_VERSION) \
-	$(GO_PKG)/internal/conf.WebVersion=$(WEB_VERSION)
+	$(GO_PKG)/internal/conf.WebVersion=$(PKG_VERSION)
 ifeq ($(filter aarch64 x86_64, $(ARCH)),)
   GO_PKG_EXCLUDES:=drivers/lark
 endif
@@ -51,13 +52,12 @@ define Package/openlist/conffiles
 /etc/config/openlist
 endef
 
-WEB_VERSION:=4.2.6
-WEB_FILE:=$(PKG_NAME)-frontend-dist-v$(WEB_VERSION).tar.gz
+WEB_FILE:=$(PKG_NAME)-frontend-dist-v$(PKG_VERSION).tar.gz
 define Download/openlist-web
-	URL:=https://github.com/OpenListTeam/OpenList-Frontend/releases/download/v$(WEB_VERSION)/
+	URL:=https://github.com/OpenListTeam/OpenList-Frontend/releases/download/v$(PKG_VERSION)/
 	URL_FILE:=$(WEB_FILE)
 	FILE:=$(WEB_FILE)
-	HASH:=eb620950a07dd081c5470a91361bde018ffd6a3cefb5b9a11b0f24f07960b444
+	HASH:=88aba5260646ed784847a11e473880d749b17b80af53caf895fe1f31f36aa3e3
 endef
 
 define Build/Prepare
