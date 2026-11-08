@@ -53,7 +53,7 @@ endef
 define Package/libwebsockets-openssl
 	$(call Package/libwebsockets/Default)
 	TITLE += (OpenSSL)
-	DEPENDS += +libopenssl
+	DEPENDS += +libopenssl +@OPENSSL_WITH_DEPRECATED
 	VARIANT:=openssl
 	CONFLICTS:=libwebsockets-full
 endef
@@ -70,7 +70,7 @@ endef
 define Package/libwebsockets-full
 	$(call Package/libwebsockets/Default)
 	TITLE += (Full - OpenSSL, libuv, plugins, CGI)
-	DEPENDS += +libopenssl +libuv
+	DEPENDS += +libopenssl +libuv +@OPENSSL_WITH_DEPRECATED
 	VARIANT:=full
 	PROVIDES:=libwebsockets libwebsockets-openssl
 endef

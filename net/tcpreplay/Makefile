@@ -35,7 +35,7 @@ define Package/tcpreplay/default
   CATEGORY:=Network
   URL:=https://tcpreplay.appneta.com/
   MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
-  DEPENDS:=+librt +libpcap +libdnet +libbpf +libxdp +USE_MUSL:musl-fts
+  DEPENDS:=+librt +libpcap +libdnet +libbpf +libxdp +KERNEL_IO_URING:liburing +USE_MUSL:musl-fts
 endef
 
 define Package/tcpbridge
