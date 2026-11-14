@@ -621,9 +621,15 @@ do_transfer() {
 	local __CNT=0	# error counter
 	local __PROG  __RUNPROG
 	local __FALLBACK_RUNPROG __FALLBACK_DESC
+	local __HTTPS=$use_https
 	local __URL_HOST __DNS_HAS_AAAA=0
 
 	[ $# -ne 1 ] && write_log 12 "Error in 'do_transfer()' - wrong number of parameters"
+
+	# an https:// URL needs HTTPS support and the cacert settings even without use_https
+	case "$__URL" in
+		https://*) __HTTPS=1 ;;
+	esac
 
 	# Use ip_network as default for bind_network if not separately specified
 	[ -z "$bind_network" ] && [ $use_network -ne 0 ] && [ "$ip_source" = "network" ] && [ "$ip_network" ] && bind_network="$ip_network"
@@ -680,7 +686,7 @@ do_transfer() {
 			__PROG="$__PROG -6"	# use IPv6 if available
 		fi
 		# set certificate parameters
-		if [ $use_https -eq 1 ]; then
+		if [ $__HTTPS -eq 1 ]; then
 			if [ "$cacert" = "IGNORE" ]; then	# idea from Ticket #15327 to ignore server cert
 				__PROG="$__PROG --no-check-certificate"
 			elif [ -f "$cacert" ]; then
@@ -709,7 +715,7 @@ do_transfer() {
 	elif [ -n "$CURL" ]; then
 		__PROG="$CURL -RsS -o $DATFILE --stderr $ERRFILE"
 		# check HTTPS support
-		[ -z "$CURL_SSL" -a $use_https -eq 1 ] && \
+		[ -z "$CURL_SSL" -a $__HTTPS -eq 1 ] && \
 			write_log 13 "cURL: libcurl compiled without https support"
 		# force network/interface-device to use for communication
 		if [ -n "$bind_network" ]; then
@@ -739,7 +745,7 @@ do_transfer() {
 			__PROG="$__PROG -6"	# use IPv6 if available
 		fi
 		# set certificate parameters
-		if [ $use_https -eq 1 ]; then
+		if [ $__HTTPS -eq 1 ]; then
 			if [ "$cacert" = "IGNORE" ]; then	# idea from Ticket #15327 to ignore server cert
 				__PROG="$__PROG --insecure"	# but not empty better to use "IGNORE"
 			elif [ -f "$cacert" ]; then
@@ -786,12 +792,12 @@ do_transfer() {
 			__PROG="$__PROG -6"	# use IPv6 if available
 		fi
 		# https possibly not supported
-		[ $use_https -eq 1 -a -z "$UCLIENT_FETCH_SSL" ] && \
+		[ $__HTTPS -eq 1 -a -z "$UCLIENT_FETCH_SSL" ] && \
 			write_log 14 "uclient-fetch: no HTTPS support! Additional install one of ustream-ssl packages"
 		# proxy support
 		[ -z "$proxy" ] && __PROG="$__PROG -Y off" || __PROG="$__PROG -Y on"
 		# https & certificates
-		if [ $use_https -eq 1 ]; then
+		if [ $__HTTPS -eq 1 ]; then
 			if [ "$cacert" = "IGNORE" ]; then
 				__PROG="$__PROG --no-check-certificate"
 			elif [ -f "$cacert" ]; then
@@ -813,7 +819,7 @@ do_transfer() {
 		[ $force_ipversion -eq 1 ] && \
 			write_log 14 "BusyBox Wget: Force connecting to IPv4 or IPv6 addresses not supported"
 		# https not supported
-		[ $use_https -eq 1 ] && \
+		[ $__HTTPS -eq 1 ] && \
 			write_log 14 "BusyBox Wget: no HTTPS support"
 		# disable proxy if no set (there might be .wgetrc or .curlrc or wrong environment set)
 		[ -z "$proxy" ] && __PROG="$__PROG -Y off"

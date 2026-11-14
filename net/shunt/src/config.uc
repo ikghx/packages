@@ -12,6 +12,7 @@ export const DEFAULTS = {
 	enabled: true,
 	poll_interval: 300,
 	entry_ttl: 1200,
+	learn_limit: 4096,
 	snoop: true,
 	snoop_devices: [ 'br-lan' ],
 	debug: false,
@@ -21,7 +22,14 @@ export const DEFAULTS = {
 
 export const MIN = {
 	poll_interval: 30,
-	entry_ttl: 60
+	entry_ttl: 60,
+	learn_limit: 64
+};
+
+// The limit on a learned set is a bound on memory; one without a ceiling of
+// its own would not be one.
+export const MAX = {
+	learn_limit: 65536
 };
 
 function to_bool(v, dflt) {
@@ -109,6 +117,11 @@ export function parse(sections) {
 				n, MIN[key]));
 			n = MIN[key];
 		}
+		if (MAX[key] != null && n > MAX[key]) {
+			reject(section, key, sprintf('%d above maximum, clamped to %d',
+				n, MAX[key]));
+			n = MAX[key];
+		}
 		g[key] = n;
 	}
 
@@ -132,6 +145,7 @@ export function parse(sections) {
 			bool_opt(s.name ?? 'global', v, 'rp_filter_manage');
 			num_opt(s.name ?? 'global', v, 'poll_interval');
 			num_opt(s.name ?? 'global', v, 'entry_ttl');
+			num_opt(s.name ?? 'global', v, 'learn_limit');
 
 			if (v.snoop_device != null) {
 				let devs = [];
@@ -183,7 +197,11 @@ export function parse(sections) {
 		push(policies, {
 			name: s.name,
 			action: v.action,
-			interface: v.interface,
+			// In order: the first is used while it works, the next ones
+			// take over one after the other. A single entry is the plain
+			// one-interface policy.
+			interfaces: uniq(filter(to_list(v.interface),
+				(i) => type(i) == 'string' && length(i))),
 			fallback: v.fallback,
 			keep_local: v.keep_local,
 			gw4: v.gw4,
