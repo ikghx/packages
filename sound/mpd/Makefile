@@ -6,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mpd
-PKG_VERSION:=0.24.15
+PKG_VERSION:=0.24.17
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://www.musicpd.org/download/mpd/0.24
-PKG_HASH:=524c70bce3fcd268016156bdc97abcf5be1904f0c6fd622688999123e3c4c457
+PKG_HASH:=06d606da69112cbc999f23c72e8eadcb6bac0107abea6e658e3d01f66ad8a086
 
 PKG_MAINTAINER:=
 PKG_LICENSE:=GPL-2.0-or-later
@@ -49,7 +49,7 @@ define Package/mpd-full
 $(call Package/mpd/Default)
   TITLE+= (full)
   DEPENDS+= +AUDIO_SUPPORT:pulseaudio +libvorbis +libmms +libnpupnp +libshout \
-            +libffmpeg +lame-lib +libsoxr +BUILD_PATENTED:libmad
+            +libffmpeg +lame-lib +libsoxr +!BUILD_PATENTED:libmad
   PROVIDES:=mpd
   VARIANT:=full
 endef
@@ -183,7 +183,7 @@ ifeq ($(BUILD_VARIANT),full)
 	-Dmms=enabled \
 	-Ddsd=true \
 	-Dffmpeg=enabled \
-	-Dmad=$(if $(CONFIG_BUILD_PATENTED),en,dis)abled \
+	-Dmad=$(if $(CONFIG_BUILD_PATENTED),dis,en)abled \
 	-Dtremor=disabled \
 	-Dvorbis=enabled \
 	-Dfifo=true \
