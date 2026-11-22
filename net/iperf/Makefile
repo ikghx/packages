@@ -8,15 +8,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=iperf
-PKG_VERSION:=2.2.1
+PKG_VERSION:=2.2.2
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_HASH:=754ab0a7e28033dbea81308ef424bc7df4d6e2fe31b60cc536b61b51fefbd8fb
+PKG_HASH:=4008e1dc7cdeb68605747e11e954a5b25f4646ab6d71207d979acec5de7d385a
 PKG_SOURCE_URL:=@SF/iperf2
 
 PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
 PKG_LICENSE:=BSD-3-Clause
+PKG_LICENSE_FILES:=COPYING LICENSE
 PKG_CPE_ID:=cpe:/a:iperf_project:iperf
 
 PKG_BUILD_PARALLEL:=1
@@ -31,7 +32,7 @@ define Package/iperf
   CATEGORY:=Network
   DEPENDS:= +libstdcpp +libpthread
   TITLE:=Internet Protocol bandwidth measuring tool
-  URL:=http://sourceforge.net/projects/iperf2/
+  URL:=https://sourceforge.net/projects/iperf2/
 endef
 
 define Package/iperf/description

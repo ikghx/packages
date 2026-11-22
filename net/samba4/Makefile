@@ -124,13 +124,12 @@ endef
 define Package/samba4-admin
   $(call Package/samba4/Default)
   TITLE+= admin tools
-  DEPENDS:= +samba4-libs
+  DEPENDS:=+samba4-libs +tdb
 endef
 
 define Package/samba4-admin/description
   installs: net smbcontrol profiles rpcclient dbwrap_tool eventlogadm
             ldbadd ldbdel ldbedit ldbmodify ldbrename ldbsearch
-            tdbbackup tdbdump tdbrestore tdbtool
 
   Administration tools collection
 endef
@@ -442,7 +441,6 @@ define Package/samba4-admin/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/{net,smbcontrol,profiles,rpcclient,dbwrap_tool} $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/{ldbadd,ldbdel,ldbedit,ldbmodify,ldbrename,ldbsearch} $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/{tdbbackup,tdbdump,tdbrestore,tdbtool} $(1)/usr/bin/
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/eventlogadm $(1)/usr/sbin/
 endef
